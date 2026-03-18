@@ -6,7 +6,7 @@
   <groupId>com.tuyensinh</groupId>
   <artifactId>tuyensinh</artifactId>
   <version>1.0-SNAPSHOT</version>
-  <n>Phan Mem Quan Ly Tuyen Sinh</n>
+  <name>Phan Mem Quan Ly Tuyen Sinh</name>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
