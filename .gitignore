@@ -1,0 +1,30 @@
+# ===== MAVEN =====
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+release.properties
+
+# ===== JAVA =====
+*.class
+*.jar
+*.war
+
+# ===== IDE =====
+.idea/
+*.iml
+.vscode/
+*.project
+*.classpath
+.settings/
+nbproject/
+nb-configuration.xml
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===== LOG =====
+*.log
+logs/
