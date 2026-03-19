@@ -1,5 +1,5 @@
 package com.tuyensinh.model;
 
-public class DiemThiSinh {
+public class DiemThiXetTuyen {
     
 }
