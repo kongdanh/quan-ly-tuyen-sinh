@@ -7,10 +7,10 @@
         <!-- Database connection -->
         <property name="hibernate.connection.driver_class">com.mysql.cj.jdbc.Driver</property>
         <property name="hibernate.connection.url">
-            jdbc:mysql://localhost:3306/tuyen_sinh?useSSL=false&amp;serverTimezone=UTC&amp;characterEncoding=UTF-8
+            jdbc:mysql://localhost:3306/xettuyen2026?useSSL=false&amp;serverTimezone=UTC&amp;characterEncoding=UTF-8
         </property>
         <property name="hibernate.connection.username">root</property>
-        <property name="hibernate.connection.password">YOUR_PASSWORD</property>
+        <property name="hibernate.connection.password"></property>
 
         <!-- HikariCP connection pool -->
         <property name="hibernate.connection.provider_class">
@@ -24,17 +24,26 @@
         <property name="hibernate.dialect">org.hibernate.dialect.MySQLDialect</property>
         <property name="hibernate.show_sql">false</property>
         <property name="hibernate.format_sql">false</property>
-        <property name="hibernate.hbm2ddl.auto">validate</property>
+        <property name="hibernate.hbm2ddl.auto">update</property>
+        <!-- sau khi check db <-> entity success thì sử dụng validate -->
+        <!-- <property name="hibernate.hbm2ddl.auto">validate</property> -->
 
         <!-- Entity mappings -->
-        <mapping class="com.tuyen_sinh.model.User"/>
-        <mapping class="com.tuyen_sinh.model.ThiSinh"/>
-        <mapping class="com.tuyen_sinh.model.Nganh"/>
-        <mapping class="com.tuyen_sinh.model.ToHopMon"/>
-        <mapping class="com.tuyen_sinh.model.NganhToHop"/>
-        <mapping class="com.tuyen_sinh.model.DiemThiSinh"/>
-        <mapping class="com.tuyen_sinh.model.DiemCong"/>
-        <mapping class="com.tuyen_sinh.model.NguyenVong"/>
-        <mapping class="com.tuyen_sinh.model.BangQuyDoi"/>
+    <mapping class="com.tuyen_sinh.model.User"/>
+    <mapping class="com.tuyen_sinh.model.NhomQuyen"/>
+    <mapping class="com.tuyen_sinh.model.QuyenChucNang"/>
+
+    <mapping class="com.tuyen_sinh.model.ThiSinh"/>
+    <mapping class="com.tuyen_sinh.model.ThiSinhAccount"/>
+
+    <mapping class="com.tuyen_sinh.model.Nganh"/>
+    <mapping class="com.tuyen_sinh.model.ToHopMon"/>
+    <mapping class="com.tuyen_sinh.model.NganhToHop"/>
+
+    <mapping class="com.tuyen_sinh.model.DiemThiXetTuyen"/>
+    <mapping class="com.tuyen_sinh.model.DiemCong"/>
+    <mapping class="com.tuyen_sinh.model.NguyenVong"/>
+
+    <mapping class="com.tuyen_sinh.model.BangQuyDoi"/>
     </session-factory>
 </hibernate-configuration>
