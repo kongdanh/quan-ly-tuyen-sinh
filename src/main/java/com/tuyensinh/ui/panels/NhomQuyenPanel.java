@@ -1,5 +1,5 @@
 package com.tuyensinh.ui.panels;
 
-public class DiemThiSinhPanel {
+public class NhomQuyenPanel {
     
 }
