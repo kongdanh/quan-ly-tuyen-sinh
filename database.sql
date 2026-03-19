@@ -1,44 +1,304 @@
 -- ============================================================
 --  DATABASE: xettuyen2026
---  Trường Đại học Sài Gòn - Hệ thống Xét tuyển 2026
---  Tổng hợp từ: Chi_tieu_2025, Nguong_dau_vao_2025, tohopmon,
---               Ds_thi_sinh, Nguyenvong, Ds_quy_doi_tieng_Anh,
---               Uu_tien_xet_tuyen, Quy_doi_VSAT, BangBachPhanVi_DGNL
---  MySQL 8.0+ | Charset: utf8mb4
+--  Trường Đại học Sài Gòn – Hệ thống Xét tuyển 2026
+--  Cải tiến: thêm xt_nhom_quyen, xt_quyen_chuc_nang,
+--            xt_users, xt_thisinh_account
+--  Schema bảng theo: schema đã thống nhất (DBML v2)
+--  MySQL 8.0+ | utf8mb4
 -- ============================================================
 
 DROP DATABASE IF EXISTS xettuyen2026;
 CREATE DATABASE xettuyen2026 CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE xettuyen2026;
-
--- Disable checks for bulk insert
 SET FOREIGN_KEY_CHECKS=0;
 SET UNIQUE_CHECKS=0;
 SET SQL_MODE='NO_AUTO_VALUE_ON_ZERO';
 
 
 -- ============================================================
--- 1. xt_nganh - Danh sách ngành + chỉ tiêu + ngưỡng đầu vào
+-- [MỚI] xt_nhom_quyen
+-- ============================================================
+DROP TABLE IF EXISTS `xt_nhom_quyen`;
+CREATE TABLE `xt_nhom_quyen` (
+  `id`         INT          NOT NULL AUTO_INCREMENT,
+  `ma_nhom`    VARCHAR(50)  NOT NULL,
+  `ten_nhom`   VARCHAR(100) NOT NULL,
+  `mo_ta`      VARCHAR(200) DEFAULT NULL,
+  `trang_thai` VARCHAR(20)  NOT NULL DEFAULT 'HOAT_DONG',
+  `ngay_tao`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `ma_nhom_UNIQUE` (`ma_nhom`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO `xt_nhom_quyen` (`ma_nhom`,`ten_nhom`,`mo_ta`) VALUES
+  ('NHOM_ADMIN',     'Quản trị hệ thống',    'Toàn quyền tất cả chức năng kể cả phân quyền'),
+  ('NHOM_GIANG_VIEN','Giảng viên',            'Toàn quyền nghiệp vụ, không có phân quyền'),
+  ('NHOM_XETTUYEN',  'Hội đồng xét tuyển',   'Xem + nhập + xuất, không xóa, không phân quyền');
+
+-- ============================================================
+-- [MỚI] xt_quyen_chuc_nang
+-- ============================================================
+DROP TABLE IF EXISTS `xt_quyen_chuc_nang`;
+CREATE TABLE `xt_quyen_chuc_nang` (
+  `id`           INT         NOT NULL AUTO_INCREMENT,
+  `id_nhom`      INT         NOT NULL,
+  `ma_chuc_nang` VARCHAR(50) NOT NULL,
+  `co_xem`       TINYINT(1)  NOT NULL DEFAULT 0,
+  `co_them`      TINYINT(1)  NOT NULL DEFAULT 0,
+  `co_sua`       TINYINT(1)  NOT NULL DEFAULT 0,
+  `co_xoa`       TINYINT(1)  NOT NULL DEFAULT 0,
+  `co_xuat`      TINYINT(1)  NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_nhom_chucnang` (`id_nhom`,`ma_chuc_nang`),
+  CONSTRAINT `fk_quyen_nhom` FOREIGN KEY (`id_nhom`) REFERENCES `xt_nhom_quyen`(`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- NHOM_ADMIN (id=1): toàn quyền
+INSERT INTO `xt_quyen_chuc_nang` (`id_nhom`,`ma_chuc_nang`,`co_xem`,`co_them`,`co_sua`,`co_xoa`,`co_xuat`) VALUES
+  (1,'NGANH',        1,1,1,1,1),
+  (1,'TOHOP',        1,1,1,1,1),
+  (1,'NGANH_TOHOP',  1,1,1,1,1),
+  (1,'THI_SINH',     1,1,1,1,1),
+  (1,'DIEM_THI',     1,1,1,1,1),
+  (1,'DIEM_CONG',    1,1,1,1,1),
+  (1,'NGUYEN_VONG',  1,1,1,1,1),
+  (1,'BANG_QUY_DOI', 1,1,1,1,1),
+  (1,'THONG_KE',     1,1,1,1,1),
+  (1,'PHAN_QUYEN',   1,1,1,1,0);
+
+-- NHOM_GIANG_VIEN (id=2): toàn quyền nghiệp vụ, không có PHAN_QUYEN
+INSERT INTO `xt_quyen_chuc_nang` (`id_nhom`,`ma_chuc_nang`,`co_xem`,`co_them`,`co_sua`,`co_xoa`,`co_xuat`) VALUES
+  (2,'NGANH',        1,1,1,1,1),
+  (2,'TOHOP',        1,1,1,1,1),
+  (2,'NGANH_TOHOP',  1,1,1,1,1),
+  (2,'THI_SINH',     1,1,1,1,1),
+  (2,'DIEM_THI',     1,1,1,1,1),
+  (2,'DIEM_CONG',    1,1,1,1,1),
+  (2,'NGUYEN_VONG',  1,1,1,1,1),
+  (2,'BANG_QUY_DOI', 1,1,1,1,1),
+  (2,'THONG_KE',     1,0,0,0,1),
+  (2,'PHAN_QUYEN',   0,0,0,0,0);
+
+-- NHOM_XETTUYEN (id=3): xem + nhập + xuất, không xóa
+INSERT INTO `xt_quyen_chuc_nang` (`id_nhom`,`ma_chuc_nang`,`co_xem`,`co_them`,`co_sua`,`co_xoa`,`co_xuat`) VALUES
+  (3,'NGANH',        1,0,0,0,1),
+  (3,'TOHOP',        1,0,0,0,1),
+  (3,'NGANH_TOHOP',  1,0,0,0,1),
+  (3,'THI_SINH',     1,1,1,0,1),
+  (3,'DIEM_THI',     1,1,1,0,1),
+  (3,'DIEM_CONG',    1,1,1,0,1),
+  (3,'NGUYEN_VONG',  1,1,1,0,1),
+  (3,'BANG_QUY_DOI', 1,0,0,0,0),
+  (3,'THONG_KE',     1,0,0,0,1),
+  (3,'PHAN_QUYEN',   0,0,0,0,0);
+
+-- ============================================================
+-- [MỚI] xt_users
+-- ============================================================
+DROP TABLE IF EXISTS `xt_users`;
+CREATE TABLE `xt_users` (
+  `id`            INT          NOT NULL AUTO_INCREMENT,
+  `username`      VARCHAR(50)  NOT NULL,
+  `password_hash` VARCHAR(255) NOT NULL,
+  `ho_ten`        VARCHAR(150) NOT NULL,
+  `email`         VARCHAR(150) DEFAULT NULL,
+  `bo_phan`       VARCHAR(100) DEFAULT NULL,
+  `id_nhom`       INT          NOT NULL,
+  `trang_thai`    VARCHAR(20)  NOT NULL DEFAULT 'HOAT_DONG',
+  `ngay_tao`      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `username_UNIQUE` (`username`),
+  UNIQUE KEY `email_UNIQUE` (`email`),
+  CONSTRAINT `fk_users_nhom` FOREIGN KEY (`id_nhom`) REFERENCES `xt_nhom_quyen`(`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Password hash là BCrypt của: admin123, user123
+-- Thay bằng hash thật khi deploy
+INSERT INTO `xt_users` (`username`,`password_hash`,`ho_ten`,`email`,`bo_phan`,`id_nhom`,`trang_thai`) VALUES
+  ('admin',       '$2a$12$REPLACE_WITH_BCRYPT_HASH_admin123',   'Nguyễn Quản Trị',  'admin@sgu.edu.vn',       'Ban Giám hiệu',  1, 'HOAT_DONG'),
+  ('user',        '$2a$12$REPLACE_WITH_BCRYPT_HASH_user123',    'Trần Văn Minh',    'gv.cntt@sgu.edu.vn',     'Khoa CNTT',      2, 'HOAT_DONG'),
+  ('gv_khtoan',   '$2a$12$REPLACE_WITH_BCRYPT_HASH_user123',    'Lê Thị Lan',       'gv.khtoan@sgu.edu.vn',   'Khoa Kinh tế',   2, 'HOAT_DONG'),
+  ('gv_phapluat', '$2a$12$REPLACE_WITH_BCRYPT_HASH_user123',    'Phạm Văn Đức',     'gv.luat@sgu.edu.vn',     'Khoa Luật',      2, 'HOAT_DONG'),
+  ('gv_ngoaingu', '$2a$12$REPLACE_WITH_BCRYPT_HASH_user123',    'Hoàng Thị Mai',    'gv.ngoaingu@sgu.edu.vn', 'Khoa Ngoại ngữ', 2, 'BI_KHOA'),
+  ('admin2',      '$2a$12$REPLACE_WITH_BCRYPT_HASH_admin123',   'Vũ Thanh Tùng',    'admin2@sgu.edu.vn',      'Phòng Đào tạo',  1, 'HOAT_DONG'),
+  ('hd_xettuyen', '$2a$12$REPLACE_WITH_BCRYPT_HASH_user123',    'Ngô Thị Hương',    'hd.xt@sgu.edu.vn',       'Phòng Đào tạo',  3, 'HOAT_DONG');
+
+-- ============================================================
+-- 1. xt_nganh
 -- ============================================================
 DROP TABLE IF EXISTS `xt_nganh`;
 CREATE TABLE `xt_nganh` (
-  `idnganh`          INT NOT NULL AUTO_INCREMENT,
-  `manganh`          VARCHAR(20)  NOT NULL,
-  `tennganh`         VARCHAR(200) NOT NULL,
-  `n_tohopgoc`       VARCHAR(10)  DEFAULT NULL COMMENT 'Tổ hợp gốc của ngành',
-  `n_chitieu`        INT NOT NULL DEFAULT 0,
-  `n_diemsan`        DECIMAL(10,2) DEFAULT NULL COMMENT 'Ngưỡng đầu vào (điểm sàn)',
-  `n_diemtrungtuyen` DECIMAL(10,2) DEFAULT NULL COMMENT 'Điểm trúng tuyển năm trước',
-  `n_tuyenthang`     VARCHAR(1) DEFAULT NULL,
-  `n_dgnl`           VARCHAR(1) DEFAULT NULL COMMENT 'Y=có xét ĐGNL',
-  `n_thpt`           VARCHAR(1) DEFAULT NULL COMMENT 'Y=có xét THPT',
-  `n_vsat`           VARCHAR(1) DEFAULT NULL COMMENT 'Y=có xét VSAT',
-  `sl_xtt`           INT DEFAULT NULL,
-  `sl_dgnl`          INT DEFAULT NULL,
-  `sl_vsat`          INT DEFAULT NULL,
-  `sl_thpt`          VARCHAR(45) DEFAULT NULL,
+  `idnganh`          INT           NOT NULL AUTO_INCREMENT,
+  `manganh`          VARCHAR(20)   NOT NULL,
+  `tennganh`         VARCHAR(200)  NOT NULL,
+  `n_tohopgoc`       VARCHAR(10)   DEFAULT NULL,
+  `n_chitieu`        INT           NOT NULL DEFAULT 0,
+  `n_diemsan`        DECIMAL(10,2) DEFAULT NULL,
+  `n_diemtrungtuyen` DECIMAL(10,2) DEFAULT NULL,
+  `n_tuyenthang`     VARCHAR(1)    DEFAULT NULL,
+  `n_dgnl`           VARCHAR(1)    DEFAULT NULL,
+  `n_thpt`           VARCHAR(1)    DEFAULT NULL,
+  `n_vsat`           VARCHAR(1)    DEFAULT NULL,
+  `sl_xtt`           INT           DEFAULT NULL,
+  `sl_dgnl`          INT           DEFAULT NULL,
+  `sl_vsat`          INT           DEFAULT NULL,
+  `sl_thpt`          VARCHAR(45)   DEFAULT NULL,
   PRIMARY KEY (`idnganh`),
   UNIQUE KEY `manganh_UNIQUE` (`manganh`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 2. xt_tohop_monthi
+DROP TABLE IF EXISTS `xt_tohop_monthi`;
+CREATE TABLE `xt_tohop_monthi` (
+  `idtohop`  INT          NOT NULL AUTO_INCREMENT,
+  `matohop`  VARCHAR(45)  NOT NULL,
+  `mon1`     VARCHAR(10)  NOT NULL,
+  `mon2`     VARCHAR(10)  NOT NULL,
+  `mon3`     VARCHAR(10)  NOT NULL,
+  `tentohop` VARCHAR(100) DEFAULT NULL,
+  PRIMARY KEY (`idtohop`),
+  UNIQUE KEY `matohop_UNIQUE` (`matohop`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 3. xt_nganh_tohop
+DROP TABLE IF EXISTS `xt_nganh_tohop`;
+CREATE TABLE `xt_nganh_tohop` (
+  `id`      INT         NOT NULL AUTO_INCREMENT,
+  `manganh` VARCHAR(45) NOT NULL,
+  `matohop` VARCHAR(45) NOT NULL,
+  `th_mon1` VARCHAR(10) DEFAULT NULL, `hsmon1` TINYINT DEFAULT NULL,
+  `th_mon2` VARCHAR(10) DEFAULT NULL, `hsmon2` TINYINT DEFAULT NULL,
+  `th_mon3` VARCHAR(10) DEFAULT NULL, `hsmon3` TINYINT DEFAULT NULL,
+  `tb_keys` VARCHAR(45) DEFAULT NULL,
+  `N1`   TINYINT(1) DEFAULT NULL, `TO`   TINYINT(1) DEFAULT NULL,
+  `LI`   TINYINT(1) DEFAULT NULL, `HO`   TINYINT(1) DEFAULT NULL,
+  `SI`   TINYINT(1) DEFAULT NULL, `VA`   TINYINT(1) DEFAULT NULL,
+  `SU`   TINYINT(1) DEFAULT NULL, `DI`   TINYINT(1) DEFAULT NULL,
+  `TI`   TINYINT(1) DEFAULT NULL, `KHAC` TINYINT(1) DEFAULT NULL,
+  `KTPL` TINYINT(1) DEFAULT NULL,
+  `dolech` DECIMAL(6,2) DEFAULT '0.00',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `key_UNIQUE` (`tb_keys`),
+  CONSTRAINT `fk_nt_nganh` FOREIGN KEY (`manganh`) REFERENCES `xt_nganh`(`manganh`),
+  CONSTRAINT `fk_nt_tohop` FOREIGN KEY (`matohop`) REFERENCES `xt_tohop_monthi`(`matohop`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 4. xt_thisinhxettuyen25 (bỏ cột password – chuyển sang xt_thisinh_account)
+DROP TABLE IF EXISTS `xt_thisinhxettuyen25`;
+CREATE TABLE `xt_thisinhxettuyen25` (
+  `idthisinh`  INT          NOT NULL AUTO_INCREMENT,
+  `cccd`       VARCHAR(20)  NOT NULL,
+  `sobaodanh`  VARCHAR(45)  DEFAULT NULL,
+  `ho`         VARCHAR(100) DEFAULT NULL,
+  `ten`        VARCHAR(100) DEFAULT NULL,
+  `ngay_sinh`  VARCHAR(45)  DEFAULT NULL,
+  `dien_thoai` VARCHAR(20)  DEFAULT NULL,
+  `gioi_tinh`  VARCHAR(10)  DEFAULT NULL,
+  `email`      VARCHAR(100) DEFAULT NULL,
+  `noi_sinh`   VARCHAR(45) DEFAULT NULL,
+  `updated_at` DATE         DEFAULT NULL,
+  `doi_tuong`  VARCHAR(45)  DEFAULT NULL,
+  `khu_vuc`    VARCHAR(45)  DEFAULT NULL,
+  PRIMARY KEY (`idthisinh`),
+  UNIQUE KEY `cccd_UNIQUE` (`cccd`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- [MỚI] xt_thisinh_account (tách xác thực ra khỏi bảng thí sinh)
+DROP TABLE IF EXISTS `xt_thisinh_account`;
+CREATE TABLE `xt_thisinh_account` (
+  `id`                 INT          NOT NULL AUTO_INCREMENT,
+  `cccd`               VARCHAR(20)  NOT NULL,
+  `password_hash`      VARCHAR(255) NOT NULL,
+  `trang_thai`         VARCHAR(20)  NOT NULL DEFAULT 'HOAT_DONG',
+  `lan_dang_nhap_cuoi` DATETIME     DEFAULT NULL,
+  `ngay_tao`           DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `cccd_UNIQUE` (`cccd`),
+  CONSTRAINT `fk_thisinh_acc` FOREIGN KEY (`cccd`) REFERENCES `xt_thisinhxettuyen25`(`cccd`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 5. xt_diemthixettuyen
+DROP TABLE IF EXISTS `xt_diemthixettuyen`;
+CREATE TABLE `xt_diemthixettuyen` (
+  `iddiemthi`    INT          NOT NULL AUTO_INCREMENT,
+  `cccd`         VARCHAR(20)  NOT NULL,
+  `sobaodanh`    VARCHAR(45)  DEFAULT NULL,
+  `d_phuongthuc` VARCHAR(10)  DEFAULT NULL,
+  `TO`     DECIMAL(8,2) DEFAULT '0.00',
+  `LI`     DECIMAL(8,2) DEFAULT '0.00',
+  `HO`     DECIMAL(8,2) DEFAULT '0.00',
+  `SI`     DECIMAL(8,2) DEFAULT '0.00',
+  `SU`     DECIMAL(8,2) DEFAULT '0.00',
+  `DI`     DECIMAL(8,2) DEFAULT '0.00',
+  `VA`     DECIMAL(8,2) DEFAULT '0.00',
+  `N1_THI` DECIMAL(8,2) DEFAULT NULL,
+  `N1_CC`  DECIMAL(8,2) DEFAULT '0.00',
+  `CNCN`   DECIMAL(8,2) DEFAULT '0.00',
+  `CNNN`   DECIMAL(8,2) DEFAULT '0.00',
+  `TI`     DECIMAL(8,2) DEFAULT '0.00',
+  `KTPL`   DECIMAL(8,2) DEFAULT '0.00',
+  `NL1`    DECIMAL(8,2) DEFAULT NULL,
+  `NK1`    DECIMAL(8,2) DEFAULT NULL,
+  `NK2`    DECIMAL(8,2) DEFAULT NULL,
+  PRIMARY KEY (`iddiemthi`),
+  UNIQUE KEY `cccd_UNIQUE` (`cccd`),
+  CONSTRAINT `fk_diem_thisinh` FOREIGN KEY (`cccd`) REFERENCES `xt_thisinhxettuyen25`(`cccd`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 6. xt_nguyenvongxettuyen
+DROP TABLE IF EXISTS `xt_nguyenvongxettuyen`;
+CREATE TABLE `xt_nguyenvongxettuyen` (
+  `idnv`          INT           NOT NULL AUTO_INCREMENT,
+  `nn_cccd`       VARCHAR(45)   NOT NULL,
+  `nv_manganh`    VARCHAR(45)   NOT NULL,
+  `nv_tt`         INT           NOT NULL,
+  `diem_thxt`     DECIMAL(10,5) DEFAULT NULL,
+  `diem_utqd`     DECIMAL(10,5) DEFAULT NULL,
+  `diem_cong`     DECIMAL(6,2)  DEFAULT NULL,
+  `diem_xettuyen` DECIMAL(10,5) DEFAULT NULL,
+  `nv_ketqua`     VARCHAR(45)   DEFAULT 'CHO',
+  `nv_keys`       VARCHAR(45)   DEFAULT NULL,
+  `tt_phuongthuc` VARCHAR(45)   DEFAULT NULL,
+  `tt_thm`        VARCHAR(45)   DEFAULT NULL,
+  PRIMARY KEY (`idnv`),
+  UNIQUE KEY `nv_keys_UNIQUE` (`nv_keys`),
+  CONSTRAINT `fk_nv_thisinh` FOREIGN KEY (`nn_cccd`)    REFERENCES `xt_thisinhxettuyen25`(`cccd`),
+  CONSTRAINT `fk_nv_nganh`   FOREIGN KEY (`nv_manganh`) REFERENCES `xt_nganh`(`manganh`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 7. xt_diemcongxetuyen
+DROP TABLE IF EXISTS `xt_diemcongxetuyen`;
+CREATE TABLE `xt_diemcongxetuyen` (
+  `iddiemcong`         INT          NOT NULL AUTO_INCREMENT,
+  `ts_cccd`    VARCHAR(20)  NOT NULL,
+  `manganh`    VARCHAR(45)  DEFAULT NULL,
+  `matohop`    VARCHAR(45)  DEFAULT NULL,
+  `phuongthuc` VARCHAR(10)  DEFAULT NULL,
+  `diemCC`     DECIMAL(4,2) DEFAULT NULL,
+  `diemUtxt`   DECIMAL(4,2) DEFAULT NULL,
+  `diemTong`   DECIMAL(4,2) DEFAULT NULL,
+  `ghichu`     VARCHAR(200) DEFAULT NULL,
+  `dc_keys`    VARCHAR(100) DEFAULT NULL,
+  PRIMARY KEY (`iddiemcong`),
+  UNIQUE KEY `dc_keys_UNIQUE` (`dc_keys`),
+  CONSTRAINT `fk_dc_thisinh` FOREIGN KEY (`ts_cccd`) REFERENCES `xt_thisinhxettuyen25`(`cccd`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 8. xt_bangquydoi (giữ đúng tên cột gốc)
+DROP TABLE IF EXISTS `xt_bangquydoi`;
+CREATE TABLE `xt_bangquydoi` (
+  `idqd`         INT          NOT NULL AUTO_INCREMENT,
+  `d_phuongthuc` VARCHAR(45)  DEFAULT NULL,
+  `d_tohop`      VARCHAR(45)  DEFAULT NULL,
+  `d_mon`        VARCHAR(45)  DEFAULT NULL,
+  `d_diema`      DECIMAL(6,2) DEFAULT NULL,
+  `d_diemb`      DECIMAL(6,2) DEFAULT NULL,
+  `d_diemc`      DECIMAL(6,2) DEFAULT NULL,
+  `d_diemd`      DECIMAL(6,2) DEFAULT NULL,
+  `d_maquydoi`   VARCHAR(45)  DEFAULT NULL,
+  `d_phanvi`     VARCHAR(45)  DEFAULT NULL,
+  PRIMARY KEY (`idqd`),
+  UNIQUE KEY `d_maquydoi_UNIQUE` (`d_maquydoi`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `xt_nganh` (`manganh`,`tennganh`,`n_tohopgoc`,`n_chitieu`,`n_diemsan`,`n_dgnl`,`n_thpt`,`n_vsat`) VALUES
@@ -92,18 +352,8 @@ INSERT INTO `xt_nganh` (`manganh`,`tennganh`,`n_tohopgoc`,`n_chitieu`,`n_diemsan
 
 -- ============================================================
 -- 2. xt_tohop_monthi - Tổ hợp môn xét tuyển
+-- (Bảng đã được tạo đầy đủ ở trên, phần INSERT bên dưới)
 -- ============================================================
-DROP TABLE IF EXISTS `xt_tohop_monthi`;
-CREATE TABLE `xt_tohop_monthi` (
-  `idtohop`  INT NOT NULL AUTO_INCREMENT,
-  `matohop`  VARCHAR(45) NOT NULL,
-  `mon1`     VARCHAR(10) NOT NULL,
-  `mon2`     VARCHAR(10) NOT NULL,
-  `mon3`     VARCHAR(10) NOT NULL,
-  `tentohop` VARCHAR(100) DEFAULT NULL,
-  PRIMARY KEY (`idtohop`),
-  UNIQUE KEY `matohop_UNIQUE` (`matohop`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `xt_tohop_monthi` (`matohop`,`mon1`,`mon2`,`mon3`,`tentohop`) VALUES
   ('A00','TO','LI','HO','A00'),
@@ -211,29 +461,8 @@ INSERT INTO `xt_tohop_monthi` (`matohop`,`mon1`,`mon2`,`mon3`,`tentohop`) VALUES
 
 -- ============================================================
 -- 3. xt_nganh_tohop - Ngành - Tổ hợp + hệ số + độ lệch
+-- (Bảng đã được tạo đầy đủ ở trên, phần INSERT bên dưới)
 -- ============================================================
-DROP TABLE IF EXISTS `xt_nganh_tohop`;
-CREATE TABLE `xt_nganh_tohop` (
-  `id`       INT NOT NULL AUTO_INCREMENT,
-  `manganh`  VARCHAR(45) NOT NULL,
-  `matohop`  VARCHAR(45) NOT NULL,
-  `th_mon1`  VARCHAR(10) DEFAULT NULL,
-  `hsmon1`   TINYINT DEFAULT NULL COMMENT 'Hệ số môn 1',
-  `th_mon2`  VARCHAR(10) DEFAULT NULL,
-  `hsmon2`   TINYINT DEFAULT NULL,
-  `th_mon3`  VARCHAR(10) DEFAULT NULL,
-  `hsmon3`   TINYINT DEFAULT NULL,
-  `tb_keys`  VARCHAR(45) DEFAULT NULL COMMENT 'manganh_matohop',
-  `N1`   TINYINT(1) DEFAULT NULL, `TO`   TINYINT(1) DEFAULT NULL,
-  `LI`   TINYINT(1) DEFAULT NULL, `HO`   TINYINT(1) DEFAULT NULL,
-  `SI`   TINYINT(1) DEFAULT NULL, `VA`   TINYINT(1) DEFAULT NULL,
-  `SU`   TINYINT(1) DEFAULT NULL, `DI`   TINYINT(1) DEFAULT NULL,
-  `TI`   TINYINT(1) DEFAULT NULL, `KHAC` TINYINT(1) DEFAULT NULL,
-  `KTPL` TINYINT(1) DEFAULT NULL,
-  `dolech` DECIMAL(6,2) DEFAULT '0.00' COMMENT 'Độ lệch về tổ hợp gốc',
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `key_UNIQUE` (`tb_keys`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `xt_nganh_tohop` (`manganh`,`matohop`,`th_mon1`,`hsmon1`,`th_mon2`,`hsmon2`,`th_mon3`,`hsmon3`,`tb_keys`,`N1`,`TO`,`LI`,`HO`,`SI`,`VA`,`SU`,`DI`,`TI`,`KHAC`,`KTPL`,`dolech`) VALUES
   ('7140114','B03','TO',3,'VA',3,'SI',1,'7140114_B03',0,1,0,0,1,1,0,0,0,0,0,0.0),
@@ -1711,157 +1940,115 @@ INSERT INTO `xt_nganh_tohop` (`manganh`,`matohop`,`th_mon1`,`hsmon1`,`th_mon2`,`
 
 -- ============================================================
 -- 4. xt_thisinhxettuyen25 - Thí sinh (100 mẫu từ Ds_thi_sinh.xlsx)
+-- (Bảng đã được tạo đầy đủ ở trên, phần INSERT bên dưới)
 -- ============================================================
-DROP TABLE IF EXISTS `xt_thisinhxettuyen25`;
-CREATE TABLE `xt_thisinhxettuyen25` (
-  `idthisinh`  INT NOT NULL AUTO_INCREMENT,
-  `cccd`       VARCHAR(20) NOT NULL,
-  `sobaodanh`  VARCHAR(45) DEFAULT NULL,
-  `ho`         VARCHAR(100) DEFAULT NULL,
-  `ten`        VARCHAR(100) DEFAULT NULL,
-  `ngay_sinh`  VARCHAR(45) DEFAULT NULL,
-  `dien_thoai` VARCHAR(20) DEFAULT NULL,
-  `password`   VARCHAR(100) DEFAULT NULL,
-  `gioi_tinh`  VARCHAR(10) DEFAULT NULL,
-  `email`      VARCHAR(100) DEFAULT NULL,
-  `noi_sinh`   VARCHAR(45) DEFAULT NULL,
-  `updated_at` DATE DEFAULT NULL,
-  `doi_tuong`  VARCHAR(45) DEFAULT NULL,
-  `khu_vuc`    VARCHAR(45) DEFAULT NULL,
-  PRIMARY KEY (`idthisinh`),
-  UNIQUE KEY `cccd_UNIQUE` (`cccd`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO `xt_thisinhxettuyen25` (`cccd`,`sobaodanh`,`ho`,`ten`,`ngay_sinh`,`dien_thoai`,`password`,`gioi_tinh`,`email`,`noi_sinh`,`updated_at`,`doi_tuong`,`khu_vuc`) VALUES
-  ('TS_0001',NULL,'TS_0001',NULL,'25/07/2007',NULL,NULL,'Nữ',NULL,'An Giang',NULL,NULL,'1'),
-  ('TS_0002',NULL,'TS_0002',NULL,'08/09/2007',NULL,NULL,'Nữ',NULL,'Trà Vinh',NULL,NULL,'1'),
-  ('TS_0003',NULL,'TS_0003',NULL,'02/10/2006',NULL,NULL,'Nữ',NULL,'Hà Nội',NULL,NULL,'3'),
-  ('TS_0004',NULL,'TS_0004',NULL,'02/08/2007',NULL,NULL,'Nữ',NULL,'Trà Vinh',NULL,NULL,'2'),
-  ('TS_0005',NULL,'TS_0005',NULL,'27/01/2007',NULL,NULL,'Nữ',NULL,'Sóc Trăng',NULL,NULL,'1'),
-  ('TS_0006',NULL,'TS_0006',NULL,'16/07/2007',NULL,NULL,'Nữ',NULL,'Bạc Liêu',NULL,NULL,'2NT'),
-  ('TS_0007',NULL,'TS_0007',NULL,'14/04/2007',NULL,NULL,'Nữ',NULL,'Tp. Hồ Chí Minh',NULL,NULL,'3'),
-  ('TS_0008',NULL,'TS_0008',NULL,'17/04/2007',NULL,NULL,'Nữ',NULL,'Quảng Ngãi',NULL,NULL,'2NT'),
-  ('TS_0009',NULL,'TS_0009',NULL,'05/02/2007',NULL,NULL,'Nữ',NULL,'Tp. Hồ Chí Minh',NULL,'01','1'),
-  ('TS_0010',NULL,'TS_0010',NULL,'16/03/2007',NULL,NULL,'Nữ',NULL,'Đồng Tháp',NULL,NULL,'2NT'),
-  ('TS_0011',NULL,'TS_0011',NULL,'29/06/2007',NULL,NULL,'Nữ',NULL,'An Giang',NULL,NULL,'2NT'),
-  ('TS_0012',NULL,'TS_0012',NULL,'26/05/2007',NULL,NULL,'Nữ',NULL,'Bình Định',NULL,NULL,'2NT'),
-  ('TS_0013',NULL,'TS_0013',NULL,'16/04/2007',NULL,NULL,'Nữ',NULL,'KIÊN GIANG',NULL,NULL,'2'),
-  ('TS_0014',NULL,'TS_0014',NULL,'14/07/2007',NULL,NULL,'Nữ',NULL,'Bình Định',NULL,NULL,'2'),
-  ('TS_0015',NULL,'TS_0015',NULL,'24/11/2006',NULL,NULL,'Nữ',NULL,'Bình Dương',NULL,NULL,'2NT'),
-  ('TS_0016',NULL,'TS_0016',NULL,'07/03/2007',NULL,NULL,'Nữ',NULL,'Bình Dương',NULL,NULL,'2'),
-  ('TS_0017',NULL,'TS_0017',NULL,'03/05/2007',NULL,NULL,'Nữ',NULL,'Đắk Nông',NULL,NULL,'1'),
-  ('TS_0018',NULL,'TS_0018',NULL,'07/07/2007',NULL,NULL,'Nữ',NULL,'Bạc Liêu',NULL,'06a','2'),
-  ('TS_0019',NULL,'TS_0019',NULL,'26/11/2007',NULL,NULL,'Nữ',NULL,'GIA LAI',NULL,'06a','2'),
-  ('TS_0020',NULL,'TS_0020',NULL,'03/02/2007',NULL,NULL,'Nữ',NULL,'Trà Vinh',NULL,NULL,'2'),
-  ('TS_0021',NULL,'TS_0021',NULL,'07/09/2007',NULL,NULL,'Nữ',NULL,'SÓC TRĂNG',NULL,NULL,'3'),
-  ('TS_0022',NULL,'TS_0022',NULL,'16/10/2007',NULL,NULL,'Nữ',NULL,'An Giang',NULL,NULL,'2'),
-  ('TS_0023',NULL,'TS_0023',NULL,'05/08/2007',NULL,NULL,'Nữ',NULL,'Lâm Đồng',NULL,NULL,'1'),
-  ('TS_0024',NULL,'TS_0024',NULL,'13/03/2007',NULL,NULL,'Nam',NULL,'TIỀN GIANG',NULL,NULL,'2'),
-  ('TS_0025',NULL,'TS_0025',NULL,'18/10/2007',NULL,NULL,'Nữ',NULL,'Tp. Hồ Chí Minh',NULL,NULL,'3'),
-  ('TS_0026',NULL,'TS_0026',NULL,'20/10/2007',NULL,NULL,'Nữ',NULL,'Tp. Hồ Chí Minh',NULL,NULL,'3'),
-  ('TS_0027',NULL,'TS_0027',NULL,'27/11/2007',NULL,NULL,'Nữ',NULL,'Cà Mau',NULL,NULL,'1'),
-  ('TS_0028',NULL,'TS_0028',NULL,'29/04/2007',NULL,NULL,'Nữ',NULL,'TP. HỒ CHÍ MINH',NULL,NULL,'2'),
-  ('TS_0029',NULL,'TS_0029',NULL,'17/03/2007',NULL,NULL,'Nữ',NULL,'VĨNH LONG',NULL,NULL,'3'),
-  ('TS_0030',NULL,'TS_0030',NULL,'02/08/2007',NULL,NULL,'Nữ',NULL,'Cà Mau',NULL,NULL,'1'),
-  ('TS_0031',NULL,'TS_0031',NULL,'29/10/2007',NULL,NULL,'Nữ',NULL,'Bạc Liêu',NULL,NULL,'2'),
-  ('TS_0032',NULL,'TS_0032',NULL,'21/07/2007',NULL,NULL,'Nữ',NULL,'Quảng Ngãi',NULL,NULL,'2NT'),
-  ('TS_0033',NULL,'TS_0033',NULL,'14/10/2006',NULL,NULL,'Nữ',NULL,'Kiên Giang',NULL,NULL,'2'),
-  ('TS_0034',NULL,'TS_0034',NULL,'28/12/2007',NULL,NULL,'Nữ',NULL,'Cà Mau',NULL,NULL,'2NT'),
-  ('TS_0035',NULL,'TS_0035',NULL,'19/05/2007',NULL,NULL,'Nữ',NULL,'Bạc Liêu',NULL,NULL,'2'),
-  ('TS_0036',NULL,'TS_0036',NULL,'24/01/2007',NULL,NULL,'Nữ',NULL,'Cà Mau',NULL,NULL,'1'),
-  ('TS_0037',NULL,'TS_0037',NULL,'13/02/2007',NULL,NULL,'Nam',NULL,'BÌNH THUẬN',NULL,NULL,'1'),
-  ('TS_0038',NULL,'TS_0038',NULL,'21/12/2007',NULL,NULL,'Nữ',NULL,'Bạc Liêu',NULL,NULL,'1'),
-  ('TS_0039',NULL,'TS_0039',NULL,'09/07/2007',NULL,NULL,'Nữ',NULL,'Long An',NULL,NULL,'2NT'),
-  ('TS_0040',NULL,'TS_0040',NULL,'16/01/2007',NULL,NULL,'Nữ',NULL,'Bạc Liêu',NULL,NULL,'2NT'),
-  ('TS_0041',NULL,'TS_0041',NULL,'16/03/2007',NULL,NULL,'Nữ',NULL,'TP. HỒ CHÍ MINH',NULL,NULL,'2'),
-  ('TS_0042',NULL,'TS_0042',NULL,'14/08/2007',NULL,NULL,'Nữ',NULL,'An Giang',NULL,NULL,'2'),
-  ('TS_0043',NULL,'TS_0043',NULL,'20/08/2007',NULL,NULL,'Nữ',NULL,'Tp. Hồ Chí Minh',NULL,NULL,'2'),
-  ('TS_0044',NULL,'TS_0044',NULL,'05/07/2007',NULL,NULL,'Nữ',NULL,'Đồng Nai',NULL,NULL,'2NT'),
-  ('TS_0045',NULL,'TS_0045',NULL,'09/02/2007',NULL,NULL,'Nữ',NULL,'Kiên Giang',NULL,NULL,'2NT'),
-  ('TS_0046',NULL,'TS_0046',NULL,'11/04/2007',NULL,NULL,'Nữ',NULL,'Bình Thuận',NULL,NULL,'3'),
-  ('TS_0047',NULL,'TS_0047',NULL,'18/11/2007',NULL,NULL,'Nữ',NULL,'Quảng Ngãi',NULL,NULL,'2NT'),
-  ('TS_0048',NULL,'TS_0048',NULL,'22/01/2007',NULL,NULL,'Nữ',NULL,'QUẢNG NGÃI',NULL,NULL,'2'),
-  ('TS_0049',NULL,'TS_0049',NULL,'16/02/2006',NULL,NULL,'Nữ',NULL,'CÀ MAU',NULL,NULL,'1'),
-  ('TS_0050',NULL,'TS_0050',NULL,'20/07/2007',NULL,NULL,'Nam',NULL,'Tp. Hồ Chí Minh',NULL,'06a','3'),
-  ('TS_0051',NULL,'TS_0051',NULL,'16/11/2007',NULL,NULL,'Nữ',NULL,'Bà Rịa-Vũng Tàu',NULL,NULL,'2NT'),
-  ('TS_0052',NULL,'TS_0052',NULL,'22/05/2007',NULL,NULL,'Nam',NULL,'Tiền Giang',NULL,NULL,'2'),
-  ('TS_0053',NULL,'TS_0053',NULL,'22/10/2007',NULL,NULL,'Nam',NULL,'Bạc Liêu',NULL,NULL,'1'),
-  ('TS_0054',NULL,'TS_0054',NULL,'13/09/2007',NULL,NULL,'Nam',NULL,'Bạc Liêu',NULL,NULL,'2'),
-  ('TS_0055',NULL,'TS_0055',NULL,'15/08/2007',NULL,NULL,'Nam',NULL,'Đắk Lắk',NULL,NULL,'1'),
-  ('TS_0056',NULL,'TS_0056',NULL,'13/01/2007',NULL,NULL,'Nữ',NULL,'Tp. Hồ Chí Minh',NULL,NULL,'3'),
-  ('TS_0057',NULL,'TS_0057',NULL,'30/03/2007',NULL,NULL,'Nữ',NULL,'TP. HỒ CHÍ MINH',NULL,NULL,'3'),
-  ('TS_0058',NULL,'TS_0058',NULL,'16/01/2007',NULL,NULL,'Nữ',NULL,'Tp. Hồ Chí Minh',NULL,NULL,'3'),
-  ('TS_0059',NULL,'TS_0059',NULL,'28/09/2007',NULL,NULL,'Nữ',NULL,'Bến Tre',NULL,NULL,'2'),
-  ('TS_0060',NULL,'TS_0060',NULL,'04/05/2007',NULL,NULL,'Nam',NULL,'bệnh viện đa khoa Vũng Liêm',NULL,NULL,'2NT'),
-  ('TS_0061',NULL,'TS_0061',NULL,'19/11/2007',NULL,NULL,'Nữ',NULL,'Lâm Đồng',NULL,NULL,'1'),
-  ('TS_0062',NULL,'TS_0062',NULL,'27/01/2007',NULL,NULL,'Nữ',NULL,'Phú Yên',NULL,NULL,'2'),
-  ('TS_0063',NULL,'TS_0063',NULL,'06/02/2007',NULL,NULL,'Nam',NULL,'Tp. Hồ Chí Minh',NULL,NULL,'3'),
-  ('TS_0064',NULL,'TS_0064',NULL,'17/09/2007',NULL,NULL,'Nữ',NULL,'Tp. Hồ Chí Minh',NULL,NULL,'3'),
-  ('TS_0065',NULL,'TS_0065',NULL,'25/08/2007',NULL,NULL,'Nữ',NULL,'Bến Tre',NULL,NULL,'2'),
-  ('TS_0066',NULL,'TS_0066',NULL,'24/09/2006',NULL,NULL,'Nam',NULL,'Bình Dương',NULL,NULL,'2'),
-  ('TS_0067',NULL,'TS_0067',NULL,'01/01/2007',NULL,NULL,'Nam',NULL,'BẾN TRE',NULL,NULL,'2NT'),
-  ('TS_0068',NULL,'TS_0068',NULL,'19/07/2007',NULL,NULL,'Nam',NULL,'Tp. Hồ Chí Minh',NULL,NULL,'3'),
-  ('TS_0069',NULL,'TS_0069',NULL,'20/05/2007',NULL,NULL,'Nam',NULL,'Tp. Hồ Chí Minh',NULL,NULL,'2'),
-  ('TS_0070',NULL,'TS_0070',NULL,'26/09/2007',NULL,NULL,'Nữ',NULL,'ĐỒNG NAI',NULL,NULL,'2NT'),
-  ('TS_0071',NULL,'TS_0071',NULL,'11/05/2007',NULL,NULL,'Nam',NULL,'Tây Ninh',NULL,NULL,'2'),
-  ('TS_0072',NULL,'TS_0072',NULL,'10/12/2007',NULL,NULL,'Nữ',NULL,'BÀ RỊA-VŨNG TÀU',NULL,NULL,'3'),
-  ('TS_0073',NULL,'TS_0073',NULL,'08/10/2007',NULL,NULL,'Nữ',NULL,'Tp. Hồ Chí Minh',NULL,NULL,'2'),
-  ('TS_0074',NULL,'TS_0074',NULL,'10/08/2007',NULL,NULL,'Nam',NULL,'Tp. Hồ Chí Minh',NULL,NULL,'3'),
-  ('TS_0075',NULL,'TS_0075',NULL,'04/05/2007',NULL,NULL,'Nữ',NULL,'Bình Phước',NULL,NULL,'2'),
-  ('TS_0076',NULL,'TS_0076',NULL,'03/10/2007',NULL,NULL,'Nữ',NULL,'TP. HỒ CHÍ MINH',NULL,NULL,'2'),
-  ('TS_0077',NULL,'TS_0077',NULL,'12/03/2007',NULL,NULL,'Nữ',NULL,'Tiền Giang',NULL,NULL,'3'),
-  ('TS_0078',NULL,'TS_0078',NULL,'18/05/2007',NULL,NULL,'Nam',NULL,'Bình Thuận',NULL,NULL,'2NT'),
-  ('TS_0079',NULL,'TS_0079',NULL,'16/08/2007',NULL,NULL,'Nam',NULL,'Quảng Ngãi',NULL,NULL,'1'),
-  ('TS_0080',NULL,'TS_0080',NULL,'05/09/2007',NULL,NULL,'Nam',NULL,'Hà Nội',NULL,NULL,'3'),
-  ('TS_0081',NULL,'TS_0081',NULL,'22/01/2007',NULL,NULL,'Nam',NULL,'Đồng Nai',NULL,NULL,'2NT'),
-  ('TS_0082',NULL,'TS_0082',NULL,'27/10/2007',NULL,NULL,'Nữ',NULL,'Đồng Nai',NULL,NULL,'2'),
-  ('TS_0083',NULL,'TS_0083',NULL,'18/12/2007',NULL,NULL,'Nam',NULL,'Bình Định',NULL,NULL,'2'),
-  ('TS_0084',NULL,'TS_0084',NULL,'17/10/2007',NULL,NULL,'Nữ',NULL,'Bình Dương',NULL,NULL,'3'),
-  ('TS_0085',NULL,'TS_0085',NULL,'02/07/2007',NULL,NULL,'Nữ',NULL,'THÁI NGUYÊN',NULL,NULL,'3'),
-  ('TS_0086',NULL,'TS_0086',NULL,'14/03/2007',NULL,NULL,'Nữ',NULL,'Tp. Hồ Chí Minh',NULL,NULL,'3'),
-  ('TS_0087',NULL,'TS_0087',NULL,'03/11/2007',NULL,NULL,'Nam',NULL,'Bình Thuận',NULL,NULL,'2NT'),
-  ('TS_0088',NULL,'TS_0088',NULL,'01/09/2007',NULL,NULL,'Nữ',NULL,'Tp. Hồ Chí Minh',NULL,NULL,'3'),
-  ('TS_0089',NULL,'TS_0089',NULL,'23/08/2007',NULL,NULL,'Nữ',NULL,'Tp. Hồ Chí Minh',NULL,NULL,'2'),
-  ('TS_0090',NULL,'TS_0090',NULL,'24/02/2007',NULL,NULL,'Nữ',NULL,'Tp. Hồ Chí Minh',NULL,NULL,'2'),
-  ('TS_0091',NULL,'TS_0091',NULL,'22/09/2007',NULL,NULL,'Nữ',NULL,'Khánh Hoà',NULL,NULL,'2'),
-  ('TS_0092',NULL,'TS_0092',NULL,'22/10/2007',NULL,NULL,'Nữ',NULL,'Đắk Lắk',NULL,NULL,'2'),
-  ('TS_0093',NULL,'TS_0093',NULL,'19/12/2007',NULL,NULL,'Nam',NULL,'Kiên Giang',NULL,NULL,'1'),
-  ('TS_0094',NULL,'TS_0094',NULL,'17/12/2007',NULL,NULL,'Nam',NULL,'Tp. Hồ Chí Minh',NULL,NULL,'2'),
-  ('TS_0095',NULL,'TS_0095',NULL,'26/12/2007',NULL,NULL,'Nam',NULL,'Bình Dương',NULL,NULL,'2'),
-  ('TS_0096',NULL,'TS_0096',NULL,'22/10/2007',NULL,NULL,'Nữ',NULL,'Đà Nẵng',NULL,NULL,'3'),
-  ('TS_0097',NULL,'TS_0097',NULL,'16/04/2007',NULL,NULL,'Nữ',NULL,'Tp. Hồ Chí Minh',NULL,NULL,'3'),
-  ('TS_0098',NULL,'TS_0098',NULL,'12/03/2007',NULL,NULL,'Nam',NULL,'Vĩnh Long',NULL,NULL,'2'),
-  ('TS_0099',NULL,'TS_0099',NULL,'27/11/2007',NULL,NULL,'Nữ',NULL,'TP. HỒ CHÍ MINH',NULL,NULL,'2'),
-  ('TS_0100',NULL,'TS_0100',NULL,'16/01/2007',NULL,NULL,'Nữ',NULL,'Lâm Đồng',NULL,NULL,'3');
+INSERT INTO `xt_thisinhxettuyen25` (`cccd`,`sobaodanh`,`ho`,`ten`,`ngay_sinh`,`dien_thoai`,`gioi_tinh`,`email`,`noi_sinh`,`updated_at`,`doi_tuong`,`khu_vuc`) VALUES
+  ('TS_0001',NULL,'TS_0001',NULL,'25/07/2007',NULL,'Nữ',NULL,'An Giang',NULL,NULL,'1'),
+  ('TS_0002',NULL,'TS_0002',NULL,'08/09/2007',NULL,'Nữ',NULL,'Trà Vinh',NULL,NULL,'1'),
+  ('TS_0003',NULL,'TS_0003',NULL,'02/10/2006',NULL,'Nữ',NULL,'Hà Nội',NULL,NULL,'3'),
+  ('TS_0004',NULL,'TS_0004',NULL,'02/08/2007',NULL,'Nữ',NULL,'Trà Vinh',NULL,NULL,'2'),
+  ('TS_0005',NULL,'TS_0005',NULL,'27/01/2007',NULL,'Nữ',NULL,'Sóc Trăng',NULL,NULL,'1'),
+  ('TS_0006',NULL,'TS_0006',NULL,'16/07/2007',NULL,'Nữ',NULL,'Bạc Liêu',NULL,NULL,'2NT'),
+  ('TS_0007',NULL,'TS_0007',NULL,'14/04/2007',NULL,'Nữ',NULL,'Tp. Hồ Chí Minh',NULL,NULL,'3'),
+  ('TS_0008',NULL,'TS_0008',NULL,'17/04/2007',NULL,'Nữ',NULL,'Quảng Ngãi',NULL,NULL,'2NT'),
+  ('TS_0009',NULL,'TS_0009',NULL,'05/02/2007',NULL,'Nữ',NULL,'Tp. Hồ Chí Minh',NULL,'01','1'),
+  ('TS_0010',NULL,'TS_0010',NULL,'16/03/2007',NULL,'Nữ',NULL,'Đồng Tháp',NULL,NULL,'2NT'),
+  ('TS_0011',NULL,'TS_0011',NULL,'29/06/2007',NULL,'Nữ',NULL,'An Giang',NULL,NULL,'2NT'),
+  ('TS_0012',NULL,'TS_0012',NULL,'26/05/2007',NULL,'Nữ',NULL,'Bình Định',NULL,NULL,'2NT'),
+  ('TS_0013',NULL,'TS_0013',NULL,'16/04/2007',NULL,'Nữ',NULL,'KIÊN GIANG',NULL,NULL,'2'),
+  ('TS_0014',NULL,'TS_0014',NULL,'14/07/2007',NULL,'Nữ',NULL,'Bình Định',NULL,NULL,'2'),
+  ('TS_0015',NULL,'TS_0015',NULL,'24/11/2006',NULL,'Nữ',NULL,'Bình Dương',NULL,NULL,'2NT'),
+  ('TS_0016',NULL,'TS_0016',NULL,'07/03/2007',NULL,'Nữ',NULL,'Bình Dương',NULL,NULL,'2'),
+  ('TS_0017',NULL,'TS_0017',NULL,'03/05/2007',NULL,'Nữ',NULL,'Đắk Nông',NULL,NULL,'1'),
+  ('TS_0018',NULL,'TS_0018',NULL,'07/07/2007',NULL,'Nữ',NULL,'Bạc Liêu',NULL,'06a','2'),
+  ('TS_0019',NULL,'TS_0019',NULL,'26/11/2007',NULL,'Nữ',NULL,'GIA LAI',NULL,'06a','2'),
+  ('TS_0020',NULL,'TS_0020',NULL,'03/02/2007',NULL,'Nữ',NULL,'Trà Vinh',NULL,NULL,'2'),
+  ('TS_0021',NULL,'TS_0021',NULL,'07/09/2007',NULL,'Nữ',NULL,'SÓC TRĂNG',NULL,NULL,'3'),
+  ('TS_0022',NULL,'TS_0022',NULL,'16/10/2007',NULL,'Nữ',NULL,'An Giang',NULL,NULL,'2'),
+  ('TS_0023',NULL,'TS_0023',NULL,'05/08/2007',NULL,'Nữ',NULL,'Lâm Đồng',NULL,NULL,'1'),
+  ('TS_0024',NULL,'TS_0024',NULL,'13/03/2007',NULL,'Nam',NULL,'TIỀN GIANG',NULL,NULL,'2'),
+  ('TS_0025',NULL,'TS_0025',NULL,'18/10/2007',NULL,'Nữ',NULL,'Tp. Hồ Chí Minh',NULL,NULL,'3'),
+  ('TS_0026',NULL,'TS_0026',NULL,'20/10/2007',NULL,'Nữ',NULL,'Tp. Hồ Chí Minh',NULL,NULL,'3'),
+  ('TS_0027',NULL,'TS_0027',NULL,'27/11/2007',NULL,'Nữ',NULL,'Cà Mau',NULL,NULL,'1'),
+  ('TS_0028',NULL,'TS_0028',NULL,'29/04/2007',NULL,'Nữ',NULL,'TP. HỒ CHÍ MINH',NULL,NULL,'2'),
+  ('TS_0029',NULL,'TS_0029',NULL,'17/03/2007',NULL,'Nữ',NULL,'VĨNH LONG',NULL,NULL,'3'),
+  ('TS_0030',NULL,'TS_0030',NULL,'02/08/2007',NULL,'Nữ',NULL,'Cà Mau',NULL,NULL,'1'),
+  ('TS_0031',NULL,'TS_0031',NULL,'29/10/2007',NULL,'Nữ',NULL,'Bạc Liêu',NULL,NULL,'2'),
+  ('TS_0032',NULL,'TS_0032',NULL,'21/07/2007',NULL,'Nữ',NULL,'Quảng Ngãi',NULL,NULL,'2NT'),
+  ('TS_0033',NULL,'TS_0033',NULL,'14/10/2006',NULL,'Nữ',NULL,'Kiên Giang',NULL,NULL,'2'),
+  ('TS_0034',NULL,'TS_0034',NULL,'28/12/2007',NULL,'Nữ',NULL,'Cà Mau',NULL,NULL,'2NT'),
+  ('TS_0035',NULL,'TS_0035',NULL,'19/05/2007',NULL,'Nữ',NULL,'Bạc Liêu',NULL,NULL,'2'),
+  ('TS_0036',NULL,'TS_0036',NULL,'24/01/2007',NULL,'Nữ',NULL,'Cà Mau',NULL,NULL,'1'),
+  ('TS_0037',NULL,'TS_0037',NULL,'13/02/2007',NULL,'Nam',NULL,'BÌNH THUẬN',NULL,NULL,'1'),
+  ('TS_0038',NULL,'TS_0038',NULL,'21/12/2007',NULL,'Nữ',NULL,'Bạc Liêu',NULL,NULL,'1'),
+  ('TS_0039',NULL,'TS_0039',NULL,'09/07/2007',NULL,'Nữ',NULL,'Long An',NULL,NULL,'2NT'),
+  ('TS_0040',NULL,'TS_0040',NULL,'16/01/2007',NULL,'Nữ',NULL,'Bạc Liêu',NULL,NULL,'2NT'),
+  ('TS_0041',NULL,'TS_0041',NULL,'16/03/2007',NULL,'Nữ',NULL,'TP. HỒ CHÍ MINH',NULL,NULL,'2'),
+  ('TS_0042',NULL,'TS_0042',NULL,'14/08/2007',NULL,'Nữ',NULL,'An Giang',NULL,NULL,'2'),
+  ('TS_0043',NULL,'TS_0043',NULL,'20/08/2007',NULL,'Nữ',NULL,'Tp. Hồ Chí Minh',NULL,NULL,'2'),
+  ('TS_0044',NULL,'TS_0044',NULL,'05/07/2007',NULL,'Nữ',NULL,'Đồng Nai',NULL,NULL,'2NT'),
+  ('TS_0045',NULL,'TS_0045',NULL,'09/02/2007',NULL,'Nữ',NULL,'Kiên Giang',NULL,NULL,'2NT'),
+  ('TS_0046',NULL,'TS_0046',NULL,'11/04/2007',NULL,'Nữ',NULL,'Bình Thuận',NULL,NULL,'3'),
+  ('TS_0047',NULL,'TS_0047',NULL,'18/11/2007',NULL,'Nữ',NULL,'Quảng Ngãi',NULL,NULL,'2NT'),
+  ('TS_0048',NULL,'TS_0048',NULL,'22/01/2007',NULL,'Nữ',NULL,'QUẢNG NGÃI',NULL,NULL,'2'),
+  ('TS_0049',NULL,'TS_0049',NULL,'16/02/2006',NULL,'Nữ',NULL,'CÀ MAU',NULL,NULL,'1'),
+  ('TS_0050',NULL,'TS_0050',NULL,'20/07/2007',NULL,'Nam',NULL,'Tp. Hồ Chí Minh',NULL,'06a','3'),
+  ('TS_0051',NULL,'TS_0051',NULL,'16/11/2007',NULL,'Nữ',NULL,'Bà Rịa-Vũng Tàu',NULL,NULL,'2NT'),
+  ('TS_0052',NULL,'TS_0052',NULL,'22/05/2007',NULL,'Nam',NULL,'Tiền Giang',NULL,NULL,'2'),
+  ('TS_0053',NULL,'TS_0053',NULL,'22/10/2007',NULL,'Nam',NULL,'Bạc Liêu',NULL,NULL,'1'),
+  ('TS_0054',NULL,'TS_0054',NULL,'13/09/2007',NULL,'Nam',NULL,'Bạc Liêu',NULL,NULL,'2'),
+  ('TS_0055',NULL,'TS_0055',NULL,'15/08/2007',NULL,'Nam',NULL,'Đắk Lắk',NULL,NULL,'1'),
+  ('TS_0056',NULL,'TS_0056',NULL,'13/01/2007',NULL,'Nữ',NULL,'Tp. Hồ Chí Minh',NULL,NULL,'3'),
+  ('TS_0057',NULL,'TS_0057',NULL,'30/03/2007',NULL,'Nữ',NULL,'TP. HỒ CHÍ MINH',NULL,NULL,'3'),
+  ('TS_0058',NULL,'TS_0058',NULL,'16/01/2007',NULL,'Nữ',NULL,'Tp. Hồ Chí Minh',NULL,NULL,'3'),
+  ('TS_0059',NULL,'TS_0059',NULL,'28/09/2007',NULL,'Nữ',NULL,'Bến Tre',NULL,NULL,'2'),
+  ('TS_0060',NULL,'TS_0060',NULL,'04/05/2007',NULL,'Nam',NULL,'bệnh viện đa khoa Vũng Liêm',NULL,NULL,'2NT'),
+  ('TS_0061',NULL,'TS_0061',NULL,'19/11/2007',NULL,'Nữ',NULL,'Lâm Đồng',NULL,NULL,'1'),
+  ('TS_0062',NULL,'TS_0062',NULL,'27/01/2007',NULL,'Nữ',NULL,'Phú Yên',NULL,NULL,'2'),
+  ('TS_0063',NULL,'TS_0063',NULL,'06/02/2007',NULL,'Nam',NULL,'Tp. Hồ Chí Minh',NULL,NULL,'3'),
+  ('TS_0064',NULL,'TS_0064',NULL,'17/09/2007',NULL,'Nữ',NULL,'Tp. Hồ Chí Minh',NULL,NULL,'3'),
+  ('TS_0065',NULL,'TS_0065',NULL,'25/08/2007',NULL,'Nữ',NULL,'Bến Tre',NULL,NULL,'2'),
+  ('TS_0066',NULL,'TS_0066',NULL,'24/09/2006',NULL,'Nam',NULL,'Bình Dương',NULL,NULL,'2'),
+  ('TS_0067',NULL,'TS_0067',NULL,'01/01/2007',NULL,'Nam',NULL,'BẾN TRE',NULL,NULL,'2NT'),
+  ('TS_0068',NULL,'TS_0068',NULL,'19/07/2007',NULL,'Nam',NULL,'Tp. Hồ Chí Minh',NULL,NULL,'3'),
+  ('TS_0069',NULL,'TS_0069',NULL,'20/05/2007',NULL,'Nam',NULL,'Tp. Hồ Chí Minh',NULL,NULL,'2'),
+  ('TS_0070',NULL,'TS_0070',NULL,'26/09/2007',NULL,'Nữ',NULL,'ĐỒNG NAI',NULL,NULL,'2NT'),
+  ('TS_0071',NULL,'TS_0071',NULL,'11/05/2007',NULL,'Nam',NULL,'Tây Ninh',NULL,NULL,'2'),
+  ('TS_0072',NULL,'TS_0072',NULL,'10/12/2007',NULL,'Nữ',NULL,'BÀ RỊA-VŨNG TÀU',NULL,NULL,'3'),
+  ('TS_0073',NULL,'TS_0073',NULL,'08/10/2007',NULL,'Nữ',NULL,'Tp. Hồ Chí Minh',NULL,NULL,'2'),
+  ('TS_0074',NULL,'TS_0074',NULL,'10/08/2007',NULL,'Nam',NULL,'Tp. Hồ Chí Minh',NULL,NULL,'3'),
+  ('TS_0075',NULL,'TS_0075',NULL,'04/05/2007',NULL,'Nữ',NULL,'Bình Phước',NULL,NULL,'2'),
+  ('TS_0076',NULL,'TS_0076',NULL,'03/10/2007',NULL,'Nữ',NULL,'TP. HỒ CHÍ MINH',NULL,NULL,'2'),
+  ('TS_0077',NULL,'TS_0077',NULL,'12/03/2007',NULL,'Nữ',NULL,'Tiền Giang',NULL,NULL,'3'),
+  ('TS_0078',NULL,'TS_0078',NULL,'18/05/2007',NULL,'Nam',NULL,'Bình Thuận',NULL,NULL,'2NT'),
+  ('TS_0079',NULL,'TS_0079',NULL,'16/08/2007',NULL,'Nam',NULL,'Quảng Ngãi',NULL,NULL,'1'),
+  ('TS_0080',NULL,'TS_0080',NULL,'05/09/2007',NULL,'Nam',NULL,'Hà Nội',NULL,NULL,'3'),
+  ('TS_0081',NULL,'TS_0081',NULL,'22/01/2007',NULL,'Nam',NULL,'Đồng Nai',NULL,NULL,'2NT'),
+  ('TS_0082',NULL,'TS_0082',NULL,'27/10/2007',NULL,'Nữ',NULL,'Đồng Nai',NULL,NULL,'2'),
+  ('TS_0083',NULL,'TS_0083',NULL,'18/12/2007',NULL,'Nam',NULL,'Bình Định',NULL,NULL,'2'),
+  ('TS_0084',NULL,'TS_0084',NULL,'17/10/2007',NULL,'Nữ',NULL,'Bình Dương',NULL,NULL,'3'),
+  ('TS_0085',NULL,'TS_0085',NULL,'02/07/2007',NULL,'Nữ',NULL,'THÁI NGUYÊN',NULL,NULL,'3'),
+  ('TS_0086',NULL,'TS_0086',NULL,'14/03/2007',NULL,'Nữ',NULL,'Tp. Hồ Chí Minh',NULL,NULL,'3'),
+  ('TS_0087',NULL,'TS_0087',NULL,'03/11/2007',NULL,'Nam',NULL,'Bình Thuận',NULL,NULL,'2NT'),
+  ('TS_0088',NULL,'TS_0088',NULL,'01/09/2007',NULL,'Nữ',NULL,'Tp. Hồ Chí Minh',NULL,NULL,'3'),
+  ('TS_0089',NULL,'TS_0089',NULL,'23/08/2007',NULL,'Nữ',NULL,'Tp. Hồ Chí Minh',NULL,NULL,'2'),
+  ('TS_0090',NULL,'TS_0090',NULL,'24/02/2007',NULL,'Nữ',NULL,'Tp. Hồ Chí Minh',NULL,NULL,'2'),
+  ('TS_0091',NULL,'TS_0091',NULL,'22/09/2007',NULL,'Nữ',NULL,'Khánh Hoà',NULL,NULL,'2'),
+  ('TS_0092',NULL,'TS_0092',NULL,'22/10/2007',NULL,'Nữ',NULL,'Đắk Lắk',NULL,NULL,'2'),
+  ('TS_0093',NULL,'TS_0093',NULL,'19/12/2007',NULL,'Nam',NULL,'Kiên Giang',NULL,NULL,'1'),
+  ('TS_0094',NULL,'TS_0094',NULL,'17/12/2007',NULL,'Nam',NULL,'Tp. Hồ Chí Minh',NULL,NULL,'2'),
+  ('TS_0095',NULL,'TS_0095',NULL,'26/12/2007',NULL,'Nam',NULL,'Bình Dương',NULL,NULL,'2'),
+  ('TS_0096',NULL,'TS_0096',NULL,'22/10/2007',NULL,'Nữ',NULL,'Đà Nẵng',NULL,NULL,'3'),
+  ('TS_0097',NULL,'TS_0097',NULL,'16/04/2007',NULL,'Nữ',NULL,'Tp. Hồ Chí Minh',NULL,NULL,'3'),
+  ('TS_0098',NULL,'TS_0098',NULL,'12/03/2007',NULL,'Nam',NULL,'Vĩnh Long',NULL,NULL,'2'),
+  ('TS_0099',NULL,'TS_0099',NULL,'27/11/2007',NULL,'Nữ',NULL,'TP. HỒ CHÍ MINH',NULL,NULL,'2'),
+  ('TS_0100',NULL,'TS_0100',NULL,'16/01/2007',NULL,'Nữ',NULL,'Lâm Đồng',NULL,NULL,'3');
 
 -- ============================================================
 -- 5. xt_diemthixettuyen - Điểm thi thí sinh
+-- (Bảng đã được tạo đầy đủ ở trên, phần INSERT bên dưới)
 -- ============================================================
-DROP TABLE IF EXISTS `xt_diemthixettuyen`;
-CREATE TABLE `xt_diemthixettuyen` (
-  `iddiemthi`    INT NOT NULL AUTO_INCREMENT,
-  `cccd`         VARCHAR(20) NOT NULL,
-  `sobaodanh`    VARCHAR(45) DEFAULT NULL,
-  `d_phuongthuc` VARCHAR(10) DEFAULT NULL COMMENT 'THPT/VSAT/DGNL',
-  `TO`   DECIMAL(8,2) DEFAULT '0.00' COMMENT 'Toán',
-  `LI`   DECIMAL(8,2) DEFAULT '0.00' COMMENT 'Vật lý',
-  `HO`   DECIMAL(8,2) DEFAULT '0.00' COMMENT 'Hóa học',
-  `SI`   DECIMAL(8,2) DEFAULT '0.00' COMMENT 'Sinh học',
-  `SU`   DECIMAL(8,2) DEFAULT '0.00' COMMENT 'Lịch sử',
-  `DI`   DECIMAL(8,2) DEFAULT '0.00' COMMENT 'Địa lý',
-  `VA`   DECIMAL(8,2) DEFAULT '0.00' COMMENT 'Ngữ văn',
-  `N1_THI` DECIMAL(8,2) DEFAULT NULL  COMMENT 'Điểm Ngoại ngữ gốc',
-  `N1_CC`  DECIMAL(8,2) DEFAULT '0.00' COMMENT 'max(N1_Thi, N1_QD chứng chỉ)',
-  `CNCN`   DECIMAL(8,2) DEFAULT '0.00' COMMENT 'Công nghệ CN',
-  `CNNN`   DECIMAL(8,2) DEFAULT '0.00' COMMENT 'Công nghệ NN',
-  `TI`     DECIMAL(8,2) DEFAULT '0.00' COMMENT 'Tin học',
-  `KTPL`   DECIMAL(8,2) DEFAULT '0.00' COMMENT 'Kinh tế Pháp luật',
-  `NL1`    DECIMAL(8,2) DEFAULT NULL  COMMENT 'Điểm ĐGNL (thang 1200)',
-  `NK1`    DECIMAL(8,2) DEFAULT NULL  COMMENT 'Năng khiếu 1',
-  `NK2`    DECIMAL(8,2) DEFAULT NULL  COMMENT 'Năng khiếu 2',
-  PRIMARY KEY (`iddiemthi`),
-  UNIQUE KEY `cccd_UNIQUE` (`cccd`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `xt_diemthixettuyen` (`cccd`,`sobaodanh`,`d_phuongthuc`,`TO`,`LI`,`HO`,`SI`,`SU`,`DI`,`VA`,`N1_THI`,`N1_CC`,`CNCN`,`CNNN`,`TI`,`KTPL`,`NL1`,`NK1`,`NK2`) VALUES
   ('TS_0001',NULL,'THPT',3.35,5.75,NULL,NULL,NULL,NULL,5.25,4.0,4.0,NULL,NULL,NULL,'0.00',2018.0,NULL,NULL),
@@ -1967,24 +2154,8 @@ INSERT INTO `xt_diemthixettuyen` (`cccd`,`sobaodanh`,`d_phuongthuc`,`TO`,`LI`,`H
 
 -- ============================================================
 -- 6. xt_nguyenvongxettuyen - Nguyện vọng thí sinh
+-- (Bảng đã được tạo đầy đủ ở trên, phần INSERT bên dưới)
 -- ============================================================
-DROP TABLE IF EXISTS `xt_nguyenvongxettuyen`;
-CREATE TABLE `xt_nguyenvongxettuyen` (
-  `idnv`          INT NOT NULL AUTO_INCREMENT,
-  `nn_cccd`       VARCHAR(45) NOT NULL,
-  `nv_manganh`    VARCHAR(45) NOT NULL,
-  `nv_tt`         INT NOT NULL COMMENT 'Thứ tự nguyện vọng',
-  `diem_thxt`     DECIMAL(10,5) DEFAULT NULL COMMENT 'Điểm tổ hợp XT đã nhân hệ số',
-  `diem_utqd`     DECIMAL(10,5) DEFAULT NULL COMMENT 'Điểm ưu tiên quy đổi theo PT',
-  `diem_cong`     DECIMAL(6,2)  DEFAULT NULL COMMENT 'Tổng 3 môn + điểm cộng',
-  `diem_xettuyen` DECIMAL(10,5) DEFAULT NULL COMMENT 'Điểm XS cuối (max 30)',
-  `nv_ketqua`     VARCHAR(45)   DEFAULT NULL COMMENT 'TRUNG_TUYEN/KHONG_DAT/CHO',
-  `nv_keys`       VARCHAR(45)   DEFAULT NULL COMMENT 'cccd_manganh_tt',
-  `tt_phuongthuc` VARCHAR(45)   DEFAULT NULL COMMENT 'THPT/VSAT/DGNL',
-  `tt_thm`        VARCHAR(45)   DEFAULT NULL COMMENT 'Tuyển thẳng/Ưu tiên XT',
-  PRIMARY KEY (`idnv`),
-  UNIQUE KEY `nv_keys_UNIQUE` (`nv_keys`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `xt_nguyenvongxettuyen` (`nn_cccd`,`nv_manganh`,`nv_tt`,`diem_thxt`,`diem_utqd`,`diem_cong`,`diem_xettuyen`,`nv_ketqua`,`nv_keys`,`tt_phuongthuc`,`tt_thm`) VALUES
   ('TS_33417','7140217',3,NULL,NULL,NULL,NULL,NULL,'TS_33417_7140217_3',NULL,NULL),
@@ -2292,22 +2463,8 @@ INSERT INTO `xt_nguyenvongxettuyen` (`nn_cccd`,`nv_manganh`,`nv_tt`,`diem_thxt`,
 -- ============================================================
 -- 7. xt_diemcongxetuyen - Điểm cộng xét tuyển
 --    (Chứng chỉ ngoại ngữ + Giải học sinh giỏi + KV/ĐT)
+-- (Bảng đã được tạo đầy đủ ở trên, phần INSERT bên dưới)
 -- ============================================================
-DROP TABLE IF EXISTS `xt_diemcongxetuyen`;
-CREATE TABLE `xt_diemcongxetuyen` (
-  `iddiemcong`  INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `ts_cccd`     VARCHAR(45) NOT NULL,
-  `manganh`     VARCHAR(20) DEFAULT NULL,
-  `matohop`     VARCHAR(10) DEFAULT NULL,
-  `phuongthuc`  VARCHAR(45) DEFAULT NULL COMMENT 'THPT/VSAT/DGNL',
-  `diemCC`      DECIMAL(6,2) DEFAULT NULL COMMENT 'Điểm CC quy đổi sang thang TA',
-  `diemUtxt`    DECIMAL(6,2) DEFAULT NULL COMMENT 'Điểm cộng ưu tiên XT',
-  `diemTong`    DECIMAL(6,2) DEFAULT '0.00' COMMENT 'Tổng điểm cộng (tối đa 3.0)',
-  `ghichu`      TEXT,
-  `dc_keys`     VARCHAR(45) NOT NULL,
-  PRIMARY KEY (`iddiemcong`),
-  UNIQUE KEY `dc_keys_UNIQUE` (`dc_keys`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `xt_diemcongxetuyen` (`ts_cccd`,`manganh`,`matohop`,`phuongthuc`,`diemCC`,`diemUtxt`,`diemTong`,`ghichu`,`dc_keys`) VALUES
   ('TS_12077',NULL,NULL,'THPT',10.0,2.0,2.0,'Tiếng Anh - IELTS','TS_12077__TA'),
@@ -7000,22 +7157,8 @@ INSERT INTO `xt_diemcongxetuyen` (`ts_cccd`,`manganh`,`matohop`,`phuongthuc`,`di
 --    VSAT: quy từng môn về thang THPT (nội suy tuyến tính)
 --    ĐGNL: quy tổng về thang 30 (bách phân vị ĐHQG-HCM 2025)
 --    TA:   chứng chỉ → điểm môn TA THPT → điểm cộng
+-- (Bảng đã được tạo đầy đủ ở trên, phần INSERT bên dưới)
 -- ============================================================
-DROP TABLE IF EXISTS `xt_bangquydoi`;
-CREATE TABLE `xt_bangquydoi` (
-  `idqd`         INT NOT NULL AUTO_INCREMENT,
-  `d_phuongthuc` VARCHAR(45) DEFAULT NULL COMMENT 'VSAT/DGNL/TA',
-  `d_tohop`      VARCHAR(45) DEFAULT NULL COMMENT 'Tên môn hoặc nhóm',
-  `d_mon`        VARCHAR(45) DEFAULT NULL COMMENT 'Mã môn',
-  `d_diema`      DECIMAL(6,2) DEFAULT NULL COMMENT 'Điểm gốc từ (a) - không bao gồm',
-  `d_diemb`      DECIMAL(6,2) DEFAULT NULL COMMENT 'Điểm gốc đến (b) - bao gồm',
-  `d_diemc`      DECIMAL(6,2) DEFAULT NULL COMMENT 'Điểm THPT từ (c)',
-  `d_diemd`      DECIMAL(6,2) DEFAULT NULL COMMENT 'Điểm THPT đến (d)',
-  `d_maquydoi`   VARCHAR(45) DEFAULT NULL COMMENT 'Khóa duy nhất: PT_mon_khoang',
-  `d_phanvi`     VARCHAR(45) DEFAULT NULL COMMENT 'Thứ hạng phần trăm',
-  PRIMARY KEY (`idqd`),
-  UNIQUE KEY `d_maquydoi_UNIQUE` (`d_maquydoi`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `xt_bangquydoi` (`d_phuongthuc`,`d_tohop`,`d_mon`,`d_diema`,`d_diemb`,`d_diemc`,`d_diemd`,`d_maquydoi`,`d_phanvi`) VALUES
   ('VSAT','Toan','TO',132,150,8.5,10,'VSAT_TO_3pct','3%'),
@@ -7113,15 +7256,26 @@ INSERT INTO `xt_bangquydoi` (`d_phuongthuc`,`d_tohop`,`d_mon`,`d_diema`,`d_diemb
   ('TA','VSTEP','N1',4,4,9.0,9.0,'TA_VSTEP_Bac4','Bac4'),
   ('TA','VSTEP','N1',5,5,10.0,10.0,'TA_VSTEP_Bac5','Bac5');
 
+
 -- ============================================================
--- VIEWS hỗ trợ tra cứu và kiểm tra
+-- VIEWS
 -- ============================================================
 
--- View: Tổng hợp điểm xét tuyển theo thí sinh - ngành
+CREATE OR REPLACE VIEW v_user_quyen AS
+SELECT
+    u.id, u.username, u.ho_ten, u.bo_phan, u.trang_thai,
+    n.ma_nhom, n.ten_nhom,
+    q.ma_chuc_nang,
+    q.co_xem, q.co_them, q.co_sua, q.co_xoa, q.co_xuat
+FROM xt_users u
+JOIN xt_nhom_quyen      n ON n.id = u.id_nhom
+JOIN xt_quyen_chuc_nang q ON q.id_nhom = n.id
+WHERE u.trang_thai = 'HOAT_DONG';
+
 CREATE OR REPLACE VIEW v_xettuyen_summary AS
 SELECT
     ts.cccd,
-    ts.ho,
+    CONCAT(ts.ho, ' ', ts.ten) AS ho_ten,
     ts.gioi_tinh,
     ts.khu_vuc,
     ts.doi_tuong,
@@ -7137,7 +7291,6 @@ JOIN xt_thisinhxettuyen25  ts ON ts.cccd = nv.nn_cccd
 JOIN xt_nganh              n  ON n.manganh = nv.nv_manganh
 ORDER BY nv.diem_xettuyen DESC;
 
--- View: Thống kê nguyện vọng theo ngành
 CREATE OR REPLACE VIEW v_thongke_nguyen_vong AS
 SELECT
     n.manganh,
@@ -7150,16 +7303,15 @@ FROM xt_nganh n
 LEFT JOIN xt_nguyenvongxettuyen nv ON nv.nv_manganh = n.manganh
 GROUP BY n.manganh, n.tennganh, n.n_chitieu;
 
--- View: Điểm cộng tổng hợp theo thí sinh
 CREATE OR REPLACE VIEW v_diem_cong_thisinh AS
 SELECT
     ts.cccd,
-    ts.ho,
+    CONCAT(ts.ho, ' ', ts.ten) AS ho_ten,
     COALESCE(SUM(dc.diemTong), 0) AS tong_diem_cong,
     LEAST(COALESCE(SUM(dc.diemTong), 0), 3.0) AS diem_cong_ap_dung
 FROM xt_thisinhxettuyen25 ts
 LEFT JOIN xt_diemcongxetuyen dc ON dc.ts_cccd = ts.cccd
-GROUP BY ts.cccd, ts.ho;
+GROUP BY ts.cccd, ts.ho, ts.ten;
 
 -- ============================================================
 -- RE-ENABLE
@@ -7170,11 +7322,15 @@ SET UNIQUE_CHECKS=1;
 -- ============================================================
 -- KIỂM TRA DỮ LIỆU
 -- ============================================================
-SELECT 'xt_nganh'                AS bang, COUNT(*) AS so_luong FROM xt_nganh
-UNION ALL SELECT 'xt_tohop_monthi',       COUNT(*) FROM xt_tohop_monthi
-UNION ALL SELECT 'xt_nganh_tohop',        COUNT(*) FROM xt_nganh_tohop
-UNION ALL SELECT 'xt_thisinhxettuyen25',  COUNT(*) FROM xt_thisinhxettuyen25
-UNION ALL SELECT 'xt_diemthixettuyen',    COUNT(*) FROM xt_diemthixettuyen
-UNION ALL SELECT 'xt_nguyenvongxettuyen', COUNT(*) FROM xt_nguyenvongxettuyen
-UNION ALL SELECT 'xt_diemcongxetuyen',    COUNT(*) FROM xt_diemcongxetuyen
-UNION ALL SELECT 'xt_bangquydoi',         COUNT(*) FROM xt_bangquydoi;
+SELECT 'xt_nhom_quyen'          AS bang, COUNT(*) AS so_luong FROM xt_nhom_quyen
+UNION ALL SELECT 'xt_quyen_chuc_nang',   COUNT(*) FROM xt_quyen_chuc_nang
+UNION ALL SELECT 'xt_users',             COUNT(*) FROM xt_users
+UNION ALL SELECT 'xt_nganh',             COUNT(*) FROM xt_nganh
+UNION ALL SELECT 'xt_tohop_monthi',      COUNT(*) FROM xt_tohop_monthi
+UNION ALL SELECT 'xt_nganh_tohop',       COUNT(*) FROM xt_nganh_tohop
+UNION ALL SELECT 'xt_thisinhxettuyen25', COUNT(*) FROM xt_thisinhxettuyen25
+UNION ALL SELECT 'xt_thisinh_account',   COUNT(*) FROM xt_thisinh_account
+UNION ALL SELECT 'xt_diemthixettuyen',   COUNT(*) FROM xt_diemthixettuyen
+UNION ALL SELECT 'xt_nguyenvongxettuyen',COUNT(*) FROM xt_nguyenvongxettuyen
+UNION ALL SELECT 'xt_diemcongxetuyen',   COUNT(*) FROM xt_diemcongxetuyen
+UNION ALL SELECT 'xt_bangquydoi',        COUNT(*) FROM xt_bangquydoi;
