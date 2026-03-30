@@ -2,63 +2,57 @@ package com.tuyensinh.model;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
 
-@Data
-@Entity
-@NoArgsConstructor
+import java.math.BigDecimal;
+
 @AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@Setter
+@Entity
 @Table(name = "xt_nguyenvongxettuyen")
 public class NguyenVong {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "idnv", nullable = false)
+    private Integer id;
 
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Column(name = "idnv")
-  private Integer idnv;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "nn_cccd", nullable = false, referencedColumnName = "cccd")
+    private ThiSinh thiSinh;
 
-  @ManyToOne
-  @ToString.Exclude
-  @EqualsAndHashCode.Exclude
-  @JoinColumn(name = "nn_cccd", referencedColumnName = "cccd")
-  private ThiSinh thiSinh;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "nv_manganh", nullable = false, referencedColumnName = "manganh")
+    private Nganh nganh;
 
-  @ManyToOne
-  @ToString.Exclude
-  @EqualsAndHashCode.Exclude
-  @JoinColumn(name = "nv_manganh", referencedColumnName = "manganh")
-  private Nganh nganh;
+    @Column(name = "nv_tt", nullable = false)
+    private Integer nvTt;
 
-  @Column(name = "nv_tt")
-  private Integer nvTt;
+    @Column(name = "diem_thxt", precision = 10, scale = 5)
+    private BigDecimal diemThxt;
 
-  @Column(name = "diem_thxt")
-  private Double diemThxt;
+    @Column(name = "diem_utqd", precision = 10, scale = 5)
+    private BigDecimal diemUtqd;
 
-  @Column(name = "diem_utqd")
-  private Double diemUtqd;
+    @Column(name = "diem_cong", precision = 6, scale = 2)
+    private BigDecimal diemCong;
 
-  @Column(name = "diem_cong")
-  private Double diemCong;
+    @Column(name = "diem_xettuyen", precision = 10, scale = 5)
+    private BigDecimal diemXettuyen;
 
-  @Column(name = "diem_xettuyen")
-  private Double diemXettuyen;
+    @Column(name = "nv_ketqua", length = 45)
+    private String nvKetqua;
 
-  @Column(name = "nv_ketqua")
-  private String nvKetqua;
+    @Column(name = "nv_keys", length = 45)
+    private String nvKeys;
 
-  @Column(name = "nv_keys", unique = true, nullable = false)
-  private String nvKeys;
+    @Column(name = "tt_phuongthuc", length = 45)
+    private String ttPhuongthuc;
 
-  @Column(name = "tt_phuongthuc")
-  private String ttPhuongthuc;
-
-  @ManyToOne
-  @ToString.Exclude
-  @EqualsAndHashCode.Exclude
-  @JoinColumn(name = "tt_thm", referencedColumnName = "matohop")
-  private ToHopMon toHopMon;
-
+    @Column(name = "tt_thm", length = 45)
+    private String ttThm;
 }

@@ -2,81 +2,80 @@ package com.tuyensinh.model;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
 
-@Data
-@Entity
-@NoArgsConstructor
+import java.math.BigDecimal;
+
 @AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@Setter
+@Entity
 @Table(name = "xt_diemthixettuyen")
 public class DiemThiXetTuyen {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "iddiemthi", nullable = false)
+    private Integer id;
 
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Column(name = "iddiemthi")
-  private Integer iddiemthi;
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "cccd", nullable = false, referencedColumnName = "cccd")
+    private ThiSinh thiSinh;
 
-  @ManyToOne
-  @ToString.Exclude
-  @EqualsAndHashCode.Exclude
-  @JoinColumn(name = "cccd", referencedColumnName = "cccd")
-  private ThiSinh thiSinh;
+    @Column(name = "sobaodanh", length = 45)
+    private String sobaodanh;
 
-  @Column(name = "sobaodanh")
-  private String sobaodanh;
+    @Column(name = "d_phuongthuc", length = 10)
+    private String dPhuongthuc;
 
-  @Column(name = "d_phuongthuc")
-  private String dPhuongthuc;
+    @Column(name = "`TO`", precision = 8, scale = 2)
+    private BigDecimal to;
 
-  @Column(name = "TO")
-  private Double to;
+    @Column(name = "LI", precision = 8, scale = 2)
+    private BigDecimal li;
 
-  @Column(name = "LI")
-  private Double li;
+    @Column(name = "HO", precision = 8, scale = 2)
+    private BigDecimal ho;
 
-  @Column(name = "HO")
-  private Double ho;
+    @Column(name = "SI", precision = 8, scale = 2)
+    private BigDecimal si;
 
-  @Column(name = "SI")
-  private Double si;
+    @Column(name = "SU", precision = 8, scale = 2)
+    private BigDecimal su;
 
-  @Column(name = "SU")
-  private Double su;
+    @Column(name = "DI", precision = 8, scale = 2)
+    private BigDecimal di;
 
-  @Column(name = "DI")
-  private Double di;
+    @Column(name = "VA", precision = 8, scale = 2)
+    private BigDecimal va;
 
-  @Column(name = "VA")
-  private Double va;
+    @Column(name = "N1_THI", precision = 8, scale = 2)
+    private BigDecimal n1Thi;
 
-  @Column(name = "N1_THI")
-  private Double n1Thi;
+    @Column(name = "N1_CC", precision = 8, scale = 2)
+    private BigDecimal n1Cc;
 
-  @Column(name = "N1_CC")
-  private Double n1Cc;
+    @Column(name = "CNCN", precision = 8, scale = 2)
+    private BigDecimal cncn;
 
-  @Column(name = "CNCN")
-  private Double cncn;
+    @Column(name = "CNNN", precision = 8, scale = 2)
+    private BigDecimal cnnn;
 
-  @Column(name = "CNNN")
-  private Double cnnn;
+    @Column(name = "TI", precision = 8, scale = 2)
+    private BigDecimal ti;
 
-  @Column(name = "TI")
-  private Double ti;
+    @Column(name = "KTPL", precision = 8, scale = 2)
+    private BigDecimal ktpl;
 
-  @Column(name = "KTPL")
-  private Double ktpl;
+    @Column(name = "NL1", precision = 8, scale = 2)
+    private BigDecimal nl1;
 
-  @Column(name = "NL1")
-  private Double nl1;
+    @Column(name = "NK1", precision = 8, scale = 2)
+    private BigDecimal nk1;
 
-  @Column(name = "NK1")
-  private Double nk1;
-
-  @Column(name = "NK2")
-  private Double nk2;
-
+    @Column(name = "NK2", precision = 8, scale = 2)
+    private BigDecimal nk2;
 }

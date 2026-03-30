@@ -1,81 +1,58 @@
 package com.tuyensinh.model;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.Setter;
 
-@Data
-@Entity
-@NoArgsConstructor
+import java.time.LocalDate;
+
 @AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@Setter
+@Entity
 @Table(name = "xt_thisinhxettuyen25")
 public class ThiSinh {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "idthisinh", nullable = false)
+    private Integer id;
 
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Column(name = "idthisinh")
-  private Integer idthisinh;
+    @Column(name = "cccd", nullable = false, length = 20)
+    private String cccd;
 
-  @Column(name = "cccd", unique = true, nullable = false)
-  private String cccd;
+    @Column(name = "sobaodanh", length = 45)
+    private String sobaodanh;
 
-  @OneToMany(mappedBy = "thiSinh", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
-  @ToString.Exclude
-  @EqualsAndHashCode.Exclude
-  private List<ThiSinhAccount> thiSinhAccounts = new ArrayList<>();
+    @Column(name = "ho", length = 100)
+    private String ho;
 
-  @OneToMany(mappedBy = "thiSinh", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
-  @ToString.Exclude
-  @EqualsAndHashCode.Exclude
-  private List<DiemThiXetTuyen> diemThiXetTuyens = new ArrayList<>();
+    @Column(name = "ten", length = 100)
+    private String ten;
 
-  @OneToMany(mappedBy = "thiSinh", cascade = CascadeType.ALL)
-  @ToString.Exclude
-  @EqualsAndHashCode.Exclude
-  private List<NguyenVong> danhSachNguyenvong = new ArrayList<>();
+    @Column(name = "ngay_sinh", length = 45)
+    private String ngaySinh;
 
-  @OneToMany(mappedBy = "thiSinh", cascade = CascadeType.ALL)
-  @ToString.Exclude
-  @EqualsAndHashCode.Exclude
-  private List<DiemCong> danhSachDiemCong = new ArrayList<>();
+    @Column(name = "dien_thoai", length = 20)
+    private String dienThoai;
 
-  @Column(name = "sobaodanh")
-  private String sobaodanh;
+    @Column(name = "gioi_tinh", length = 10)
+    private String gioiTinh;
 
-  @Column(name = "ho")
-  private String ho;
+    @Column(name = "email", length = 100)
+    private String email;
 
-  @Column(name = "ten")
-  private String ten;
+    @Column(name = "noi_sinh", length = 45)
+    private String noiSinh;
 
-  @Column(name = "ngay_sinh")
-  private String ngaySinh;
+    @Column(name = "updated_at")
+    private LocalDate updatedAt;
 
-  @Column(name = "dien_thoai")
-  private String dienThoai;
+    @Column(name = "doi_tuong", length = 45)
+    private String doiTuong;
 
-  @Column(name = "gioi_tinh")
-  private String gioiTinh;
-
-  @Column(name = "email")
-  private String email;
-
-  @Column(name = "noi_sinh")
-  private String noiSinh;
-
-  @Column(name = "updated_at")
-  private java.time.LocalDateTime updatedAt;
-
-  @Column(name = "doi_tuong")
-  private String doiTuong;
-
-  @Column(name = "khu_vuc")
-  private String khuVuc;
-
+    @Column(name = "khu_vuc", length = 45)
+    private String khuVuc;
 }

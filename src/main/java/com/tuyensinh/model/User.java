@@ -2,43 +2,47 @@ package com.tuyensinh.model;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
 
-@Data
-@Entity
-@NoArgsConstructor
+import java.time.LocalDateTime;
+
 @AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@Setter
+@Entity
 @Table(name = "xt_users")
 public class User {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", nullable = false)
+    private Integer id;
 
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Column(name = "id")
-  private Integer id;
+    @Column(name = "username", nullable = false, length = 50)
+    private String username;
 
-  @Column(name = "username")
-  private String username;
+    @Column(name = "password_hash", nullable = false)
+    private String passwordHash;
 
-  @Column(name = "password_hash")
-  private String passwordHash;
+    @Column(name = "ho_ten", nullable = false, length = 150)
+    private String hoTen;
 
-  @Column(name = "ho_ten")
-  private String hoTen;
+    @Column(name = "email", length = 150)
+    private String email;
 
-  @Column(name = "email")
-  private String email;
+    @Column(name = "bo_phan", length = 100)
+    private String boPhan;
 
-  @Column(name = "bo_phan")
-  private String boPhan;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "id_nhom", nullable = false)
+    private NhomQuyen nhomQuyen;
 
-  @Column(name = "id_nhom")
-  private Integer idNhom;
+    @Column(name = "trang_thai", nullable = false, length = 20)
+    private String trangThai;
 
-  @Column(name = "trang_thai")
-  private String trangThai;
-
-  @Column(name = "ngay_tao")
-  private java.util.Date ngayTao;
-
+    @Column(name = "ngay_tao", nullable = false)
+    private LocalDateTime ngayTao;
 }

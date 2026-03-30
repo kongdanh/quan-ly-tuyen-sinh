@@ -2,40 +2,42 @@ package com.tuyensinh.model;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
 
-@Data
-@Entity
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@Setter
+@Entity
 @Table(name = "xt_quyen_chuc_nang")
 public class QuyenChucNang {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", nullable = false)
+    private Integer id;
 
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Column(name = "id")
-  private Integer id;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "id_nhom", nullable = false)
+    private NhomQuyen nhomQuyen;
 
-  @Column(name = "id_nhom")
-  private Integer idNhom;
+    @Column(name = "ma_chuc_nang", nullable = false, length = 50)
+    private String maChucNang;
 
-  @Column(name = "ma_chuc_nang")
-  private String maChucNang;
+    @Column(name = "co_xem", nullable = false)
+    private Boolean coXem;
 
-  @Column(name = "co_xem")
-  private Integer coXem;
+    @Column(name = "co_them", nullable = false)
+    private Boolean coThem;
 
-  @Column(name = "co_them")
-  private Integer coThem;
+    @Column(name = "co_sua", nullable = false)
+    private Boolean coSua;
 
-  @Column(name = "co_sua")
-  private Integer coSua;
+    @Column(name = "co_xoa", nullable = false)
+    private Boolean coXoa;
 
-  @Column(name = "co_xoa")
-  private Integer coXoa;
-
-  @Column(name = "co_xuat")
-  private Integer coXuat;
-
+    @Column(name = "co_xuat", nullable = false)
+    private Boolean coXuat;
 }

@@ -1,45 +1,35 @@
 package com.tuyensinh.model;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.Setter;
 
-@Data
-@Entity
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@Setter
+@Entity
 @Table(name = "xt_tohop_monthi")
 public class ToHopMon {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "idtohop", nullable = false)
+    private Integer id;
 
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Column(name = "idtohop")
-  private Integer idtohop;
+    @Column(name = "matohop", nullable = false, length = 45)
+    private String matohop;
 
-  @Column(name = "matohop", unique = true, nullable = false)
-  private String matohop;
+    @Column(name = "mon1", nullable = false, length = 10)
+    private String mon1;
 
-  @OneToMany(mappedBy = "toHopMon", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
-  @ToString.Exclude
-  @EqualsAndHashCode.Exclude
-  private List<NganhToHop> nganhToHops = new ArrayList<>();
+    @Column(name = "mon2", nullable = false, length = 10)
+    private String mon2;
 
-  @Column(name = "mon1")
-  private String mon1;
+    @Column(name = "mon3", nullable = false, length = 10)
+    private String mon3;
 
-  @Column(name = "mon2")
-  private String mon2;
-
-  @Column(name = "mon3")
-  private String mon3;
-
-  @Column(name = "tentohop")
-  private String tentohop;
-
+    @Column(name = "tentohop", length = 100)
+    private String tentohop;
 }

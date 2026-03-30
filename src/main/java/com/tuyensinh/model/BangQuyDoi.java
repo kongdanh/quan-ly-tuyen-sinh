@@ -2,51 +2,48 @@ package com.tuyensinh.model;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.Setter;
 
-@Data
-@Entity
-@NoArgsConstructor
+import java.math.BigDecimal;
+
 @AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@Setter
+@Entity
 @Table(name = "xt_bangquydoi")
 public class BangQuyDoi {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "idqd", nullable = false)
+    private Integer id;
 
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Column(name = "idqd")
-  private Integer idqd;
+    @Column(name = "d_phuongthuc", length = 45)
+    private String dPhuongthuc;
 
-  @Column(name = "d_phuongthuc")
-  private String dPhuongthuc;
+    @Column(name = "d_tohop", length = 45)
+    private String dTohop;
 
-  @ManyToOne
-  @ToString.Exclude
-  @EqualsAndHashCode.Exclude
-  @JoinColumn(name = "d_tohop", referencedColumnName = "matohop")
-  private ToHopMon toHopMon;
+    @Column(name = "d_mon", length = 45)
+    private String dMon;
 
-  @Column(name = "d_mon")
-  private String dMon;
+    @Column(name = "d_diema", precision = 6, scale = 2)
+    private BigDecimal dDiema;
 
-  @Column(name = "d_diema")
-  private Double dDiema;
+    @Column(name = "d_diemb", precision = 6, scale = 2)
+    private BigDecimal dDiemb;
 
-  @Column(name = "d_diemb")
-  private Double dDiemb;
+    @Column(name = "d_diemc", precision = 6, scale = 2)
+    private BigDecimal dDiemc;
 
-  @Column(name = "d_diemc")
-  private Double dDiemc;
+    @Column(name = "d_diemd", precision = 6, scale = 2)
+    private BigDecimal dDiemd;
 
-  @Column(name = "d_diemd")
-  private Double dDiemd;
+    @Column(name = "d_maquydoi", length = 45)
+    private String dMaquydoi;
 
-  @Column(name = "d_maquydoi", unique = true, nullable = false)
-  private String dMaquydoi;
-
-  @Column(name = "d_phanvi")
-  private String dPhanvi;
-
+    @Column(name = "d_phanvi", length = 45)
+    private String dPhanvi;
 }

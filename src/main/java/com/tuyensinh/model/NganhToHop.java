@@ -2,90 +2,87 @@ package com.tuyensinh.model;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
 
-@Data
-@Entity
-@NoArgsConstructor
+import java.math.BigDecimal;
+
 @AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@Setter
+@Entity
 @Table(name = "xt_nganh_tohop")
 public class NganhToHop {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", nullable = false)
+    private Integer id;
 
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Column(name = "id")
-  private Integer id;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "manganh", nullable = false, referencedColumnName = "manganh")
+    private Nganh nganh;
 
-  @ManyToOne
-  @ToString.Exclude
-  @EqualsAndHashCode.Exclude
-  @JoinColumn(name = "manganh", referencedColumnName = "manganh")
-  private Nganh nganh;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "matohop", nullable = false, referencedColumnName = "matohop")
+    private ToHopMon toHopMon;
 
-  @ManyToOne
-  @ToString.Exclude
-  @EqualsAndHashCode.Exclude
-  @JoinColumn(name = "matohop", referencedColumnName = "matohop")
-  private ToHopMon toHopMon;
+    @Column(name = "th_mon1", length = 10)
+    private String thMon1;
 
-  @Column(name = "th_mon1")
-  private String thMon1;
+    @Column(name = "hsmon1")
+    private Byte hsmon1;
 
-  @Column(name = "hsmon1")
-  private Integer hsmon1;
+    @Column(name = "th_mon2", length = 10)
+    private String thMon2;
 
-  @Column(name = "th_mon2")
-  private String thMon2;
+    @Column(name = "hsmon2")
+    private Byte hsmon2;
 
-  @Column(name = "hsmon2")
-  private Integer hsmon2;
+    @Column(name = "th_mon3", length = 10)
+    private String thMon3;
 
-  @Column(name = "th_mon3")
-  private String thMon3;
+    @Column(name = "hsmon3")
+    private Byte hsmon3;
 
-  @Column(name = "hsmon3")
-  private Integer hsmon3;
+    @Column(name = "tb_keys", length = 45)
+    private String tbKeys;
 
-  @Column(name = "tb_keys", unique = true, nullable = false)
-  private String tbKeys;
+    @Column(name = "N1")
+    private Boolean n1;
 
-  @Column(name = "N1")
-  private Integer n1;
+    @Column(name = "`TO`")
+    private Boolean to;
 
-  @Column(name = "TO")
-  private Integer to;
+    @Column(name = "LI")
+    private Boolean li;
 
-  @Column(name = "LI")
-  private Integer li;
+    @Column(name = "HO")
+    private Boolean ho;
 
-  @Column(name = "HO")
-  private Integer ho;
+    @Column(name = "SI")
+    private Boolean si;
 
-  @Column(name = "SI")
-  private Integer si;
+    @Column(name = "VA")
+    private Boolean va;
 
-  @Column(name = "VA")
-  private Integer va;
+    @Column(name = "SU")
+    private Boolean su;
 
-  @Column(name = "SU")
-  private Integer su;
+    @Column(name = "DI")
+    private Boolean di;
 
-  @Column(name = "DI")
-  private Integer di;
+    @Column(name = "TI")
+    private Boolean ti;
 
-  @Column(name = "TI")
-  private Integer ti;
+    @Column(name = "KHAC")
+    private Boolean khac;
 
-  @Column(name = "KHAC")
-  private Integer khac;
+    @Column(name = "KTPL")
+    private Boolean ktpl;
 
-  @Column(name = "KTPL")
-  private Integer ktpl;
-
-  @Column(name = "dolech")
-  private Double dolech;
-
+    @Column(name = "dolech", precision = 6, scale = 2)
+    private BigDecimal dolech;
 }

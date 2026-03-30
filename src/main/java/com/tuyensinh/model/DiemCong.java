@@ -2,57 +2,49 @@ package com.tuyensinh.model;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.Setter;
 
-@Data
-@Entity
-@NoArgsConstructor
+import java.math.BigDecimal;
+
 @AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@Setter
+@Entity
 @Table(name = "xt_diemcongxetuyen")
 public class DiemCong {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "iddiemcong", nullable = false)
+    private Integer id;
 
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Column(name = "iddiemcong")
-  private Integer iddiemcong;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "ts_cccd", nullable = false, referencedColumnName = "cccd")
+    private ThiSinh thiSinh;
 
-  @ManyToOne
-  @ToString.Exclude
-  @EqualsAndHashCode.Exclude
-  @JoinColumn(name = "ts_cccd", referencedColumnName = "cccd")
-  private ThiSinh thiSinh;
+    @Column(name = "manganh", length = 45)
+    private String manganh;
 
-  @ManyToOne
-  @ToString.Exclude
-  @EqualsAndHashCode.Exclude
-  @JoinColumn(name = "manganh", referencedColumnName = "manganh")
-  private Nganh nganh;
+    @Column(name = "matohop", length = 45)
+    private String matohop;
 
-  @ManyToOne
-  @ToString.Exclude
-  @EqualsAndHashCode.Exclude
-  @JoinColumn(name = "matohop", referencedColumnName = "matohop")
-  private ToHopMon toHopMon;
+    @Column(name = "phuongthuc", length = 10)
+    private String phuongthuc;
 
-  @Column(name = "phuongthuc")
-  private String phuongthuc;
+    @Column(name = "diemCC", precision = 4, scale = 2)
+    private BigDecimal diemCC;
 
-  @Column(name = "diemCC")
-  private Double diemCC;
+    @Column(name = "diemUtxt", precision = 4, scale = 2)
+    private BigDecimal diemUtxt;
 
-  @Column(name = "diemUtxt")
-  private Double diemUtxt;
+    @Column(name = "diemTong", precision = 4, scale = 2)
+    private BigDecimal diemTong;
 
-  @Column(name = "diemTong")
-  private Double diemTong;
+    @Column(name = "ghichu", length = 200)
+    private String ghichu;
 
-  @Column(name = "ghichu")
-  private String ghichu;
-
-  @Column(name = "dc_keys", unique = true, nullable = false)
-  private String dcKeys;
-
+    @Column(name = "dc_keys", length = 100)
+    private String dcKeys;
 }
