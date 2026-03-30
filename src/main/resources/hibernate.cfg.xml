@@ -29,21 +29,17 @@
         <!-- <property name="hibernate.hbm2ddl.auto">validate</property> -->
 
         <!-- Entity mappings -->
-    <mapping class="com.tuyen_sinh.model.User"/>
-    <mapping class="com.tuyen_sinh.model.NhomQuyen"/>
-    <mapping class="com.tuyen_sinh.model.QuyenChucNang"/>
-
-    <mapping class="com.tuyen_sinh.model.ThiSinh"/>
-    <mapping class="com.tuyen_sinh.model.ThiSinhAccount"/>
-
-    <mapping class="com.tuyen_sinh.model.Nganh"/>
-    <mapping class="com.tuyen_sinh.model.ToHopMon"/>
-    <mapping class="com.tuyen_sinh.model.NganhToHop"/>
-
-    <mapping class="com.tuyen_sinh.model.DiemThiXetTuyen"/>
-    <mapping class="com.tuyen_sinh.model.DiemCong"/>
-    <mapping class="com.tuyen_sinh.model.NguyenVong"/>
-
-    <mapping class="com.tuyen_sinh.model.BangQuyDoi"/>
+        <mapping class="com.tuyensinh.model.User"/>
+        <mapping class="com.tuyensinh.model.NhomQuyen"/>
+        <mapping class="com.tuyensinh.model.QuyenChucNang"/>
+        <mapping class="com.tuyensinh.model.ThiSinh"/>
+        <mapping class="com.tuyensinh.model.ThiSinhAccount"/>
+        <mapping class="com.tuyensinh.model.Nganh"/>
+        <mapping class="com.tuyensinh.model.ToHopMon"/>
+        <mapping class="com.tuyensinh.model.NganhToHop"/>
+        <mapping class="com.tuyensinh.model.DiemThiXetTuyen"/>
+        <mapping class="com.tuyensinh.model.DiemCong"/>
+        <mapping class="com.tuyensinh.model.NguyenVong"/>
+        <mapping class="com.tuyensinh.model.BangQuyDoi"/>
     </session-factory>
 </hibernate-configuration>
