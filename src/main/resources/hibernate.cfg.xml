@@ -22,11 +22,21 @@
 
         <!-- Hibernate settings -->
         <property name="hibernate.dialect">org.hibernate.dialect.MySQLDialect</property>
-        <property name="hibernate.show_sql">false</property>
         <property name="hibernate.format_sql">false</property>
-        <property name="hibernate.hbm2ddl.auto">update</property>
+        <property name="hibernate.hbm2ddl.auto">validate</property>
         <!-- sau khi check db <-> entity success thì sử dụng validate -->
         <!-- <property name="hibernate.hbm2ddl.auto">validate</property> -->
+
+        <!-- Caching configuration -->
+        <property name="hibernate.cache.use_second_level_cache">false</property>
+        <property name="hibernate.cache.use_query_cache">false</property>
+<!--        <property name="hibernate.cache.region.factory_class">org.hibernate.cache.jcache.JCacheRegionFactory</property>-->
+<!--        <property name="hibernate.javax.cache.provider">org.ehcache.jsr107.EhcacheCachingProvider</property>-->
+<!--        <property name="hibernate.javax.cache.uri">ehcache.xml</property>-->
+
+        <!-- Bật màn hình theo dõi (Statistics)-->
+        <property name="hibernate.show_sql">false</property>
+        <property name="hibernate.generate_statistics">false</property>
 
         <!-- Entity mappings -->
         <mapping class="com.tuyensinh.model.User"/>
