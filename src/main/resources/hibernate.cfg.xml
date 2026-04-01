@@ -7,7 +7,7 @@
         <!-- Database connection -->
         <property name="hibernate.connection.driver_class">com.mysql.cj.jdbc.Driver</property>
         <property name="hibernate.connection.url">
-            jdbc:mysql://localhost:3306/xettuyen2026?useSSL=false&amp;serverTimezone=UTC&amp;characterEncoding=UTF-8
+            jdbc:mysql://localhost:3306/xettuyen2026?rewriteBatchedStatements=true&amp;useSSL=false&amp;serverTimezone=UTC&amp;characterEncoding=UTF-8
         </property>
         <property name="hibernate.connection.username">root</property>
         <property name="hibernate.connection.password"></property>
@@ -23,7 +23,7 @@
         <!-- Hibernate settings -->
         <property name="hibernate.dialect">org.hibernate.dialect.MySQLDialect</property>
         <property name="hibernate.format_sql">false</property>
-        <property name="hibernate.hbm2ddl.auto">validate</property>
+<!--        <property name="hibernate.hbm2ddl.auto">validate</property>-->
         <!-- sau khi check db <-> entity success thì sử dụng validate -->
         <!-- <property name="hibernate.hbm2ddl.auto">validate</property> -->
 
@@ -37,6 +37,16 @@
         <!-- Bật màn hình theo dõi (Statistics)-->
         <property name="hibernate.show_sql">false</property>
         <property name="hibernate.generate_statistics">false</property>
+
+        <!-- Batch Processing -->
+        <property name="hibernate.jdbc.batch_size">500</property>
+
+        <property name="hibernate.order_inserts">true</property>
+        <property name="hibernate.order_updates">true</property>
+
+        <property name="hibernate.jdbc.batch_versioned_data">true</property>
+
+        <property name="hibernate.hbm2ddl.auto">update</property>
 
         <!-- Entity mappings -->
         <mapping class="com.tuyensinh.model.User"/>

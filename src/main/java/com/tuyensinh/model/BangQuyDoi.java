@@ -16,9 +16,9 @@ import java.math.BigDecimal;
 @Table(name = "xt_bangquydoi")
 public class BangQuyDoi {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "idqd", nullable = false)
-    private Integer id;
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "seq_gen")
+    @SequenceGenerator(name = "seq_gen", sequenceName = "bangquydoi_seq", allocationSize = 100)
+    private Long id;
 
     @Column(name = "d_phuongthuc", length = 45)
     private String dPhuongthuc;
