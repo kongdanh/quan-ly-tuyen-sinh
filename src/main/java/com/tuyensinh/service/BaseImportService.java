@@ -1,6 +1,7 @@
 package com.tuyensinh.service;
 
 import com.tuyensinh.dao.BangQuyDoiDAO;
+import com.tuyensinh.dao.GenericDAO;
 import com.tuyensinh.dto.BangQuyDoiImportDTO;
 import com.tuyensinh.mapper.BangQuyDoiMapper;
 import com.tuyensinh.model.BangQuyDoi;
@@ -68,7 +69,14 @@ public class BaseImportService<D,E> {
                 new File("Book.xlsx"),
                 BangQuyDoiImportDTO.class,
                 dto -> BangQuyDoiMapper.toEntity(dto),
-                entities -> dao.saveOrUpdateAll(entities),
+                entities -> dao.saveOrUpdateAll(entities)
+                        .thenRun(() -> {
+                            System.out.println("NGON LÀNH: data nằm hết trong db");
+                            dao.shutdown();
+                }).exceptionally(ex -> {
+                        System.err.println("LỎ RỒI: Lưu fail do: " + ex.getMessage());
+                        return null;
+                }),
                 dto -> {
                     if (dto.getPhuongthuc() == null) return "Trống phương thức";
                     if (dto.getTohop() == null) return "Trống tổ hợp";
