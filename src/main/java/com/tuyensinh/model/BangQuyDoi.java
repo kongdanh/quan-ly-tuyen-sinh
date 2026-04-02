@@ -18,7 +18,7 @@ public class BangQuyDoi {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "seq_gen")
     @SequenceGenerator(name = "seq_gen", sequenceName = "bangquydoi_seq", allocationSize = 100)
-    private Long id;
+    private Long idqd;
 
     @Column(name = "d_phuongthuc", length = 45)
     private String dPhuongthuc;
