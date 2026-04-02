@@ -4,6 +4,7 @@ import com.tuyensinh.util.HibernateUtil;
 import org.hibernate.Session;
 import org.hibernate.StatelessSession;
 import org.hibernate.Transaction;
+import org.hibernate.query.Query;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -64,12 +65,36 @@ public abstract class GenericDAO<T> {
         }, dbThreadPool);
     }
 
+    // get data vẫn dùng stateful session vì lazy loading, dirty checking, lấy từ kho cho những lần sau
     public CompletableFuture<T> findById(Object id){
         return CompletableFuture.supplyAsync(() -> {
             try(Session session = HibernateUtil.createSession(Session.class)){
                 return session.get(entityClass, (java.io.Serializable) id);
             }
         }, dbThreadPool);
+    }
+
+    /**
+     * Pagination
+     */
+    public CompletableFuture<List<T>> findPage(int pageIndex, int pageSize){
+        return CompletableFuture.supplyAsync(() -> {
+            try(Session session = HibernateUtil.createSession(Session.class)){
+                String HQL = "FROM "+ entityClass.getName();
+                Query<T> query = session.createQuery(HQL, entityClass);
+                query.setFirstResult((pageIndex-1)*pageSize);
+                query.setMaxResults(pageSize);
+                return query.list();
+            }
+        }, dbThreadPool);
+    }
+
+    public CompletableFuture<List<T>> findPage(int pageIndex){
+        return findPage(pageIndex, 20);
+    }
+
+    public CompletableFuture<List<T>> findPage(){
+        return findPage(1, 20);
     }
 
     public CompletableFuture<List<T>> findAll(){
