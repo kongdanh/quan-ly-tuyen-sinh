@@ -47,7 +47,8 @@ public class NganhToHop {
     @Column(name = "hsmon3")
     private Byte hsmon3;
 
-    @Column(name = "tb_keys", length = 45)
+    // manganh_matohop
+    @Column(name = "tb_keys", length = 45, unique = true)
     private String tbKeys;
 
     @Column(name = "N1")

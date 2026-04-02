@@ -41,7 +41,8 @@ public class BangQuyDoi {
     @Column(name = "d_diemd", precision = 6, scale = 2)
     private BigDecimal dDiemd;
 
-    @Column(name = "d_maquydoi", length = 45)
+    // d_phuongthuc_d_tohop_d_phanvi (Composite Unique Key)
+    @Column(name = "d_maquydoi", length = 45, unique = true)
     private String dMaquydoi;
 
     @Column(name = "d_phanvi", length = 45)

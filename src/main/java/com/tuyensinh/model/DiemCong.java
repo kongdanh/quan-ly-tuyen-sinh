@@ -45,6 +45,7 @@ public class DiemCong {
     @Column(name = "ghichu", length = 200)
     private String ghichu;
 
-    @Column(name = "dc_keys", length = 100)
+    // ts_cccd_manganh_matohop
+    @Column(name = "dc_keys", length = 100, unique = true)
     private String dcKeys;
 }
