@@ -1,4 +1,4 @@
-package com.tuyensinh.ui.panels;
+package com.tuyensinh.admin.ui.panels;
 
 public class QuyenChucNangPanel {
     
