@@ -12,18 +12,11 @@
         <property name="hibernate.connection.username">root</property>
         <property name="hibernate.connection.password"></property>
 
-        <!-- HikariCP connection pool -->
-        <property name="hibernate.connection.provider_class">
-            org.hibernate.hikaricp.internal.HikariCPConnectionProvider
-        </property>
-        <property name="hibernate.hikari.minimumIdle">2</property>
-        <property name="hibernate.hikari.maximumPoolSize">10</property>
-        <property name="hibernate.hikari.idleTimeout">30000</property>
-
         <!-- Hibernate settings -->
-        <property name="hibernate.dialect">org.hibernate.dialect.MySQLDialect</property>
-        <property name="hibernate.format_sql">false</property>
-<!--        <property name="hibernate.hbm2ddl.auto">validate</property>-->
+        <property name="hibernate.dialect">org.hibernate.dialect.MySQL8Dialect</property>
+        <property name="hibernate.show_sql">true</property>
+        <property name="hibernate.format_sql">true</property>
+        <property name="hibernate.hbm2ddl.auto">update</property>
         <!-- sau khi check db <-> entity success thì sử dụng validate -->
         <!-- <property name="hibernate.hbm2ddl.auto">validate</property> -->
 
@@ -49,17 +42,21 @@
         <property name="hibernate.hbm2ddl.auto">update</property>
 
         <!-- Entity mappings -->
-        <mapping class="com.tuyensinh.model.User"/>
-        <mapping class="com.tuyensinh.model.NhomQuyen"/>
-        <mapping class="com.tuyensinh.model.QuyenChucNang"/>
-        <mapping class="com.tuyensinh.model.ThiSinh"/>
-        <mapping class="com.tuyensinh.model.ThiSinhAccount"/>
-        <mapping class="com.tuyensinh.model.Nganh"/>
-        <mapping class="com.tuyensinh.model.ToHopMon"/>
-        <mapping class="com.tuyensinh.model.NganhToHop"/>
-        <mapping class="com.tuyensinh.model.DiemThiXetTuyen"/>
-        <mapping class="com.tuyensinh.model.DiemCong"/>
-        <mapping class="com.tuyensinh.model.NguyenVong"/>
-        <mapping class="com.tuyensinh.model.BangQuyDoi"/>
+    <mapping class="com.tuyensinh.model.User"/>
+    <mapping class="com.tuyensinh.model.NhomQuyen"/>
+    <mapping class="com.tuyensinh.model.QuyenChucNang"/>
+
+    <mapping class="com.tuyensinh.model.ThiSinh"/>
+    <mapping class="com.tuyensinh.model.ThiSinhAccount"/>
+
+    <mapping class="com.tuyensinh.model.Nganh"/>
+    <mapping class="com.tuyensinh.model.ToHopMon"/>
+    <mapping class="com.tuyensinh.model.NganhToHop"/>
+
+    <mapping class="com.tuyensinh.model.DiemThiXetTuyen"/>
+    <mapping class="com.tuyensinh.model.DiemCong"/>
+    <mapping class="com.tuyensinh.model.NguyenVong"/>
+
+    <mapping class="com.tuyensinh.model.BangQuyDoi"/>
     </session-factory>
 </hibernate-configuration>
