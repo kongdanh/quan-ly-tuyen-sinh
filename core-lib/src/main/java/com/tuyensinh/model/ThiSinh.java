@@ -1,17 +1,14 @@
 package com.tuyensinh.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
+import lombok.*;
 import java.time.LocalDate;
 
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
 @Setter
+@ToString(exclude = "account")
 @Entity
 @Table(name = "xt_thisinhxettuyen25")
 public class ThiSinh {
@@ -20,7 +17,7 @@ public class ThiSinh {
     @Column(name = "idthisinh", nullable = false)
     private Integer id;
 
-    @Column(name = "cccd", nullable = false, length = 20)
+    @Column(name = "cccd", nullable = false, length = 20, unique = true)
     private String cccd;
 
     @Column(name = "sobaodanh", length = 45)
@@ -32,7 +29,7 @@ public class ThiSinh {
     @Column(name = "ten", length = 100)
     private String ten;
 
-    @Column(name = "ngay_sinh", length = 45)
+    @Column(name = "ngay_sinh")
     private String ngaySinh;
 
     @Column(name = "dien_thoai", length = 20)
@@ -55,4 +52,12 @@ public class ThiSinh {
 
     @Column(name = "khu_vuc", length = 45)
     private String khuVuc;
+
+    @OneToOne(mappedBy = "thiSinh", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private ThiSinhAccount account;
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDate.now();
+    }
 }

@@ -1,50 +1,77 @@
 package com.tuyensinh.service;
 
-/**
- * AuthService — xác thực đăng nhập
- *
- * DEMO: dùng tài khoản cứng để chạy thử khi chưa có bảng users trong DB
- * TODO: sau khi có bảng users → thay doLogin() bằng truy vấn DB thật
- */
+import com.tuyensinh.dao.ThiSinhAccountDAO;
+import com.tuyensinh.dto.ThiSinhSessionDTO;
+import com.tuyensinh.model.ThiSinh;
+import com.tuyensinh.model.ThiSinhAccount;
+import com.tuyensinh.util.PasswordUtil;
+import java.util.Optional;
+
 public class AuthService {
 
     private static AuthService instance;
-    private String currentUsername;
-    private String currentRole; // ADMIN / USER
+    private final ThiSinhAccountDAO accountDAO = new ThiSinhAccountDAO();
 
     private AuthService() {}
 
-    public static AuthService getInstance() {
+    public static synchronized AuthService getInstance() {
         if (instance == null) instance = new AuthService();
         return instance;
     }
 
-    public boolean login(String username, String password) {
-        // ── DEMO accounts ──────────────────────────────────────
-        // Tài khoản admin: admin / admin123
-        // Tài khoản user:  user  / user123
-        // TODO: xóa phần này, thay bằng query bảng users
-        // ────────────────────────────────────────────────────────
-        if ("admin".equals(username) && "admin123".equals(password)) {
-            currentUsername = username;
-            currentRole = "ADMIN";
-            return true;
+    public ThiSinhSessionDTO loginThiSinh(String cccd, String password) {
+        if (cccd == null || password == null || cccd.isBlank()) {
+            return null;
         }
-        if ("user".equals(username) && "user123".equals(password)) {
-            currentUsername = username;
-            currentRole = "USER";
-            return true;
+
+        try {
+            // 1. Tìm Account (Hàm findByCccd trong DAO đã FETCH sẵn ThiSinh rồi)
+            Optional<ThiSinhAccount> accountOpt = accountDAO.findByCccd(cccd.trim());
+            if (accountOpt.isEmpty()) {
+                System.out.println("[AuthService] Không tìm thấy Account có CCCD: " + cccd);
+                return null;
+            }
+
+            ThiSinhAccount account = accountOpt.get();
+
+            // 2. Kiểm tra trạng thái
+            if (!"HOAT_DONG".equals(account.getTrangThai())) {
+                System.out.println("[AuthService] Tài khoản bị khóa!");
+                return null;
+            }
+            
+            // 3. Kiểm tra Mật khẩu
+            if (!PasswordUtil.verify(password, account.getPasswordHash())) {
+                System.out.println("[AuthService] Sai mật khẩu cho CCCD: " + cccd);
+                return null;
+            }
+
+            // 4. Lấy thông tin Thí sinh TRỰC TIẾP từ Object Account (Nhờ @OneToOne)
+            ThiSinh ts = account.getThiSinh();
+            
+            if (ts == null) {
+                System.out.println("[AuthService] Lỗi: Tài khoản mồ côi, không có thông tin thí sinh!");
+                return null;
+            }
+
+            // 5. Cập nhật thời gian đăng nhập cuối
+            accountDAO.updateLastLogin(account.getId());
+            System.out.println("[AuthService] Đăng nhập thành công: " + ts.getHo() + " " + ts.getTen());
+
+            // 6. Trả về Session DTO
+            return ThiSinhSessionDTO.builder()
+                    .idThiSinh(ts.getId())
+                    .cccd(ts.getCccd())
+                    .hoTen((ts.getHo() != null ? ts.getHo().trim() : "") + " " + (ts.getTen() != null ? ts.getTen().trim() : ""))
+                    .email(ts.getEmail())
+                    .gioiTinh(ts.getGioiTinh())
+                    .ngaySinh(ts.getNgaySinh())
+                    .build();
+
+        } catch (Exception e) {
+            System.err.println("[AuthService] Lỗi hệ thống khi đăng nhập: " + e.getMessage());
+            e.printStackTrace();
+            return null;
         }
-        return false;
     }
-
-    public void logout() {
-        currentUsername = null;
-        currentRole = null;
-    }
-
-    public boolean isLoggedIn()          { return currentUsername != null; }
-    public boolean isAdmin()             { return "ADMIN".equals(currentRole); }
-    public String  getCurrentUsername()  { return currentUsername; }
-    public String  getCurrentRole()      { return currentRole; }
 }
