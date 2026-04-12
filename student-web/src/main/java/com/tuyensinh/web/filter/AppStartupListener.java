@@ -1,31 +1,40 @@
 package com.tuyensinh.web.filter;
 
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
-import javax.servlet.annotation.WebListener;
+import com.tuyensinh.util.HibernateUtil;
+import jakarta.servlet.ServletContextEvent;
+import jakarta.servlet.ServletContextListener;
+import jakarta.servlet.annotation.WebListener;
 
 @WebListener
 public class AppStartupListener implements ServletContextListener {
 
     @Override
     public void contextInitialized(ServletContextEvent sce) {
+        // 1. Initialize Hibernate Connection Pool early
+        System.out.println("\n[System] Initializing Database Connection...");
+        try {
+            HibernateUtil.getSessionFactory();
+            System.out.println("[System] Database connected successfully!");
+        } catch (Exception e) {
+            System.err.println("[System] Database connection FAILED!");
+            e.printStackTrace();
+        }
 
-        // getContextPath() trả về đường dẫn gốc của ứng dụng web, ví dụ: "/student-web"
+        // 2. Display Server Info
         String contextPath = sce.getServletContext().getContextPath();
-        
-        // create full URL: http://localhost:8080/student-web
         String fullUrl = "http://localhost:8080" + contextPath;
 
-        // start -> path localhost:8080 -> welcome.jsp -> index.jsp -> servlet -> jsp
         System.out.println("\n=========================================================");
-        System.out.println(" SERVER STARTED! ");
-        System.out.println(" RUNNING ON: " + fullUrl);
+        System.out.println("   SERVER STARTED SUCCESSFULLY! ");
+        System.out.println("   ACCESS APP AT: " + fullUrl);
         System.out.println("=========================================================\n");
     }
 
     @Override
     public void contextDestroyed(ServletContextEvent sce) {
-        // Chạy khi tắt server
+        // Close Hibernate connections when server stops to prevent memory leaks
+        System.out.println("\n[System] Closing Database connections...");
+        HibernateUtil.shutdown();
         System.out.println(" SERVER STOPPED! ");
     }
 }
