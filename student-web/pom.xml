@@ -11,7 +11,9 @@
     </parent>
 
     <artifactId>student-web</artifactId>
-    <packaging>war</packaging> <dependencies>
+    <packaging>war</packaging>
+
+    <dependencies>
         <dependency>
             <groupId>com.tuyensinh</groupId>
             <artifactId>core-lib</artifactId>
@@ -19,10 +21,22 @@
         </dependency>
 
         <dependency>
-            <groupId>javax.servlet</groupId>
-            <artifactId>javax.servlet-api</artifactId>
-            <version>4.0.1</version>
-            <scope>provided</scope> </dependency>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+            <version>6.0.0</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>jakarta.servlet.jsp.jstl</groupId>
+            <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
+            <version>3.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish.web</groupId>
+            <artifactId>jakarta.servlet.jsp.jstl</artifactId>
+            <version>3.0.1</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -35,14 +49,16 @@
             </plugin>
             
             <plugin>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-maven-plugin</artifactId>
-                <version>10.0.15</version>
+                <groupId>org.eclipse.jetty.ee10</groupId>
+                <artifactId>jetty-ee10-maven-plugin</artifactId>
+                <version>12.0.10</version>
                 <configuration>
                     <webApp>
-                        <contextPath>/</contextPath> </webApp>
+                        <contextPath>/</contextPath>
+                    </webApp>
                     <httpConnector>
-                        <port>8080</port> </httpConnector>
+                        <port>8080</port>
+                    </httpConnector>
                 </configuration>
             </plugin>
         </plugins>

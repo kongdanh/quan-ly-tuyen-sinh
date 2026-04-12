@@ -1,0 +1,132 @@
+:root {
+    --primary-color: #1a73e8;
+    --error-color: #d93025;
+    --text-color: #3c4043;
+    --bg-color: #f0f2f5;
+}
+
+body {
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--bg-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+.login-container {
+    background-color: white;
+    padding: 35px 40px;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    width: 100%;
+    max-width: 380px;
+    text-align: center;
+}
+
+.logo-placeholder {
+    font-size: 45px;
+    margin-bottom: 8px;
+}
+
+h2 {
+    margin-bottom: 5px;
+    color: var(--primary-color);
+    font-size: 22px;
+}
+
+.subtitle {
+    color: #70757a;
+    margin-bottom: 25px;
+    font-size: 14px;
+}
+
+.alert {
+    background-color: #fce8e6;
+    color: var(--error-color);
+    padding: 10px 12px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    font-size: 13px;
+    border: 1px solid #fad2cf;
+    text-align: left;
+}
+
+.form-group {
+    margin-bottom: 18px;
+    text-align: left;
+}
+
+label {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--text-color);
+    font-weight: 500;
+    font-size: 13.5px;
+}
+
+input {
+    width: 100%;
+    padding: 11px 12px;
+    border: 1px solid #dadce0;
+    border-radius: 6px;
+    box-sizing: border-box;
+    font-size: 14.5px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(26,115,232,0.15);
+}
+
+.password-box {
+    position: relative;
+}
+
+.toggle-btn {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #5f6368;
+    padding: 5px;
+    font-size: 16px;
+}
+
+button[type="submit"] {
+    width: 100%;
+    padding: 12px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    margin-top: 5px;
+}
+
+button[type="submit"]:hover {
+    background-color: #1557b0;
+}
+
+/* Phần note nhỏ lại */
+.note-box {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #f1f3f4;
+    font-size: 12px; /* Chỉnh nhỏ lại */
+    color: #70757a;
+    line-height: 1.6;
+}
+
+.note-box strong {
+    color: #3c4043;
+}

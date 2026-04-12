@@ -1,0 +1,116 @@
+/* ==========================================================================
+   CSS DÀNH CHO CỔNG THÔNG TIN THÍ SINH (Thay thế Tailwind)
+   ========================================================================== */
+:root {
+    --primary: #2563eb;        /* Blue 600 */
+    --primary-hover: #1d4ed8;  /* Blue 700 */
+    --dark-blue: #1e3a5f;      /* SGU Brand Color */
+    --bg-gradient: linear-gradient(135deg, #eff6ff 0%, #eef2ff 100%);
+    --card-bg: #ffffff;
+    --border: #e5e7eb;
+    --text-main: #111827;
+    --text-muted: #6b7280;
+    --status-success: #15803d;
+    --status-success-bg: #dcfce7;
+}
+
+body {
+    margin: 0;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #f3f4f6; /* Nền xám nhạt giống React */
+    color: var(--text-main);
+    min-height: 100vh;
+}
+
+.navbar {
+    background: white;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 5%;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+.navbar-brand { display: flex; align-items: center; gap: 12px; width: 250px; }
+.logo-box { background: linear-gradient(to bottom right, var(--dark-blue), var(--primary)); padding: 8px; border-radius: 8px; color: white; display: flex; align-items: center; }
+.nav-links { display: flex; gap: 8px; flex: 1; justify-content: center; }
+.navbar-actions { width: 250px; display: flex; justify-content: flex-end; }
+.nav-item { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 500; color: #4b5563; transition: all 0.2s; }
+.nav-item:hover { background: #f3f4f6; color: var(--text-main); }
+.nav-item.active { background: #eff6ff; color: var(--primary); font-weight: 600; }
+
+/* --- BỐ CỤC CHUNG --- */
+.container { max-width: 960px; margin: 32px auto; padding: 0 20px; }
+.page-header { margin-bottom: 24px; }
+.page-title { font-size: 24px; color: var(--dark-blue); margin: 0 0 4px 0; }
+.page-subtitle { font-size: 14px; color: var(--text-muted); margin: 0; }
+
+/* --- CARD --- */
+.card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.card:hover { box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); transition: all 0.2s; }
+.card-header { font-size: 16px; font-weight: 600; margin: 0 0 16px 0; color: var(--text-main); }
+
+/* Khắc phục lỗi nền trắng bằng !important */
+.card.bg-blue-gradient { background: linear-gradient(to right, #2563eb, #1e3a5f) !important; color: white !important; border: none !important; }
+.card.bg-purple-gradient { background: linear-gradient(to bottom right, #3b82f6, #9333ea) !important; color: white !important; border: none !important; }
+.card.bg-green-gradient { background: linear-gradient(to bottom right, #22c55e, #059669) !important; color: white !important; border: none !important; }
+.card.bg-red-gradient { background: linear-gradient(to bottom right, #ef4444, #be123c) !important; color: white !important; border: none !important; }
+
+/* Dùng cho các text bên trong Card màu */
+.text-light-blue { color: #bfdbfe !important; }
+.text-white { color: white !important; }
+
+/* --- GRID & LAYOUT --- */
+.grid-2 { display: grid; grid-template-columns: repeat(1, 1fr); gap: 20px; }
+@media(min-width: 768px) { .grid-2 { grid-template-columns: repeat(2, 1fr); } }
+.grid-3 { display: grid; grid-template-columns: repeat(1, 1fr); gap: 24px; }
+@media(min-width: 768px) { .grid-3 { grid-template-columns: repeat(3, 1fr); } }
+
+/* --- BADGE (Trạng thái) --- */
+.badge { padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
+.badge-success { background: #dcfce3; color: #15803d; }
+.badge-warning { background: #fef3c7; color: #a16207; }
+.badge-info { background: #dbeafe; color: #1d4ed8; }
+.badge-error { background: #fee2e2; color: #b91c1c; }
+
+/* --- BUTTONS --- */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; border: 1px solid transparent; transition: 0.2s; text-decoration: none; }
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: var(--primary-hover); }
+.btn-outline { background: white; border-color: var(--border); color: #374151; }
+.btn-outline:hover { background: #f9fafb; border-color: #d1d5db; }
+.btn-danger-outline { color: #ef4444; border-color: #fca5a5; background: white; }
+.btn-danger-outline:hover { background: #fef2f2; }
+.w-full { width: 100%; box-sizing: border-box; }
+
+/* --- PROFILE & DETAILS --- */
+.profile-hero { display: flex; align-items: flex-start; gap: 24px; border-bottom: 1px solid var(--border); padding-bottom: 24px; margin-bottom: 24px; }
+.avatar-circle { width: 96px; height: 96px; background: linear-gradient(to bottom right, #3b82f6, #a855f7); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 40px; }
+.info-item label { font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.025em; }
+.info-item span { font-size: 15px; font-weight: 500; color: var(--text-main); }
+.doc-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 12px; }
+.doc-success { background: #f0fdf4; border-color: #bbf7d0; }
+.doc-warning { background: #fffbeb; border-color: #fef3c7; }
+
+/* --- TIỆN ÍCH KHÁC --- */
+.alert-box { padding: 16px; border-radius: 8px; margin-bottom: 12px; font-size: 14px;}
+.alert-red { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+.alert-blue { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e3a8a; }
+.alert-warning { background: #fffbeb; border: 1px solid #fef3c7; padding: 16px; border-radius: 8px; font-size: 13px; color: #92400e; }
+
+.progress-bg { background-color: #e5e7eb; border-radius: 999px; height: 8px; width: 100%; overflow: hidden; margin-top: 8px; }
+.progress-bar { height: 100%; border-radius: 999px; }
+.bg-blue-500 { background-color: #3b82f6; }
+.bg-green-500 { background-color: #22c55e; }
+.bg-orange-500 { background-color: #f97316; }
+.circle-num { width: 32px; height: 32px; background: #eff6ff; color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; flex-shrink: 0; }
+.timeline-item { display: flex; align-items: center; justify-content: space-between; padding: 16px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 12px; }
+/* --- ICON BOX (Dành cho Dashboard mới) --- */
+.icon-box { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; }
+.icon-blue { background: #eff6ff; color: #2563eb; }
+.icon-purple { background: #f5f3ff; color: #9333ea; }
+.icon-orange { background: #fff7ed; color: #ea580c; }
