@@ -3,6 +3,7 @@ package com.tuyensinh.admin.ui;
 import com.tuyensinh.service.AuthService;
 import com.tuyensinh.admin.ui.panels.DashboardPanel;
 import com.tuyensinh.admin.ui.panels.SidebarPanel;
+import com.tuyensinh.admin.util.AdminSession;
 import com.tuyensinh.util.Constants;
 
 import javax.swing.*;
@@ -144,7 +145,7 @@ public class MainFrame extends JFrame {
                 "Bạn có chắc chắn muốn đăng xuất?",
                 "Xác nhận", JOptionPane.YES_NO_OPTION);
         if (r == JOptionPane.YES_OPTION) {
-            AuthService.getInstance().logout();
+            AdminSession.getInstance().logout();
             dispose();
             new LoginForm().setVisible(true);
         }

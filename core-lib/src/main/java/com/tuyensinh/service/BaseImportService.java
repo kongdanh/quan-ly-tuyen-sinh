@@ -72,7 +72,7 @@ public class BaseImportService<D,E> {
                 entities -> dao.saveOrUpdateAll(entities)
                         .thenRun(() -> {
                             System.out.println("NGON LÀNH: data nằm hết trong db");
-                            dao.shutdown();
+                            // dao.shutdown();
                 }).exceptionally(ex -> {
                         System.err.println("LỎ RỒI: Lưu fail do: " + ex.getMessage());
                         return null;

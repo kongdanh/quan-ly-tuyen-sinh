@@ -3,6 +3,7 @@ package com.tuyensinh.admin.ui.panels;
 import com.tuyensinh.service.AuthService;
 import com.tuyensinh.admin.ui.components.HeaderPanel;
 import com.tuyensinh.admin.ui.components.RoundPanel;
+import com.tuyensinh.admin.util.AdminSession;
 import com.tuyensinh.util.Constants;
 
 import javax.swing.*;
@@ -30,7 +31,7 @@ public class DashboardPanel extends JPanel {
         JPanel body = new JPanel(new GridBagLayout());
         body.setOpaque(false);
 
-        if (AuthService.getInstance().isAdmin()) {
+        if (AdminSession.getInstance().getCurrentRole().equals("ADMIN")) {
             layoutAdmin(body);
         } else {
             layoutUser(body);
@@ -84,7 +85,7 @@ public class DashboardPanel extends JPanel {
 
         gc.gridy = 0;
         gc.insets = new Insets(0, 0, Constants.SECTION_GAP, 0);
-        JLabel welcome = new JLabel("Xin chào, " + AuthService.getInstance().getCurrentUsername());
+        JLabel welcome = new JLabel("Xin chào, " + AdminSession.getInstance().getCurrentUsername());
         welcome.setFont(resolveFont(Font.PLAIN, Constants.FONT_SIZE_LG));
         welcome.setForeground(c(Constants.DASH_TEXT_MUTED));
         body.add(welcome, gc);

@@ -3,6 +3,7 @@ package com.tuyensinh.admin.ui.panels;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.tuyensinh.service.AuthService;
 import com.tuyensinh.admin.ui.MainFrame;
+import com.tuyensinh.admin.util.AdminSession;
 import com.tuyensinh.util.Constants;
 
 import javax.swing.*;
@@ -181,7 +182,7 @@ public class SidebarPanel extends JPanel {
         account.setBorder(new EmptyBorder(10, 14, 10, 10));
 
         // Left: name + role
-        AuthService auth = AuthService.getInstance();
+        AdminSession auth = AdminSession.getInstance();
         JPanel info = new JPanel();
         info.setOpaque(false);
         info.setLayout(new BoxLayout(info, BoxLayout.Y_AXIS));

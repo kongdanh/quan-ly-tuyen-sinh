@@ -55,7 +55,7 @@ public class DiemCongDAO extends GenericDAO<DiemCong>{
                 System.out.println("Thành công: " + result);
             }
             System.out.println("Đang shutdown pool...");
-            dao.shutdown();
+            dao.shutdownPool();
             HibernateUtil.shutdown();
         });
         System.out.println("Hàm main continue chạy mà không đợi DB");

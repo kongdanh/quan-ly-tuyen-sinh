@@ -284,7 +284,7 @@ public class LoginForm extends JFrame {
             @Override
             protected Boolean doInBackground() throws Exception {
                 Thread.sleep(800);
-                return AuthService.getInstance().login(username, password);
+                return AuthService.getInstance().loginThiSinh(username, password) != null;
             }
 
             @Override

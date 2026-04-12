@@ -28,3 +28,9 @@ desktop.ini
 # ===== LOG =====
 *.log
 logs/
+
+# 
+# ===== OTHER =====
+*.webp
+*.png
+*.jpg
