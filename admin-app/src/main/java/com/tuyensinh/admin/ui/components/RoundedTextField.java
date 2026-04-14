@@ -1,6 +1,6 @@
 package com.tuyensinh.admin.ui.components;
 
-import com.tuyensinh.util.Constants;
+import com.tuyensinh.admin.util.UIConstants;
 
 import javax.swing.*;
 import java.awt.*;
@@ -24,22 +24,24 @@ public class RoundedTextField extends JTextField {
     }
 
     public RoundedTextField(String placeholder) {
-        this(placeholder, Constants.LOGIN_INPUT_RADIUS);
+        this(placeholder, UIConstants.LOGIN_INPUT_RADIUS);
     }
 
     public RoundedTextField(String placeholder, int arcSize) {
         this.placeholder = placeholder;
         this.arcSize = arcSize;
-        this.borderNormal = Color.decode(Constants.INPUT_BORDER);
-        this.borderFocus = Color.decode(Constants.INPUT_BORDER_FOCUS);
-        this.borderError = Color.decode(Constants.COLOR_DANGER);
+        this.borderNormal = Color.decode(UIConstants.INPUT_BORDER);
+        this.borderFocus = Color.decode(UIConstants.INPUT_BORDER_FOCUS);
+        this.borderError = Color.decode(UIConstants.COLOR_DANGER);
 
         setOpaque(false);
         setBackground(Color.WHITE);
-        setBorder(BorderFactory.createEmptyBorder(0, Constants.INPUT_PADDING_X + 2, 0, Constants.INPUT_PADDING_X));
-        setFont(resolveFont(Font.PLAIN, Constants.FONT_SIZE_MD));
-        setForeground(Color.decode(Constants.COLOR_TEXT));
-        setCaretColor(Color.decode(Constants.COLOR_NAVY));
+        setBorder(BorderFactory.createEmptyBorder(0, UIConstants.INPUT_PADDING_X + 2, 0, UIConstants.INPUT_PADDING_X));
+        
+        setFont(UIManager.getFont("defaultFont").deriveFont(Font.PLAIN, (float) UIConstants.FONT_SIZE_MD));
+        
+        setForeground(Color.decode(UIConstants.COLOR_TEXT));
+        setCaretColor(Color.decode(UIConstants.COLOR_NAVY));
 
         addFocusListener(new FocusAdapter() {
             @Override
@@ -60,7 +62,7 @@ public class RoundedTextField extends JTextField {
     public void setIconPainter(IconPainter painter) {
         this.iconPainter = painter;
         if (painter != null) {
-            setBorder(BorderFactory.createEmptyBorder(0, 40, 0, Constants.INPUT_PADDING_X));
+            setBorder(BorderFactory.createEmptyBorder(0, 40, 0, UIConstants.INPUT_PADDING_X));
         }
         repaint();
     }
@@ -89,13 +91,13 @@ public class RoundedTextField extends JTextField {
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
         if (iconPainter != null) {
-            Color iconColor = focused ? borderFocus : Color.decode(Constants.COLOR_TEXT_MUTED);
+            Color iconColor = focused ? borderFocus : Color.decode(UIConstants.COLOR_TEXT_MUTED);
             iconPainter.paint(g2d, 14, (getHeight() - 16) / 2, 16, iconColor);
         }
 
         if (getText().isEmpty() && placeholder != null) {
             g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-            g2d.setColor(Color.decode(Constants.COLOR_TEXT_MUTED));
+            g2d.setColor(Color.decode(UIConstants.COLOR_TEXT_MUTED));
             g2d.setFont(getFont());
             FontMetrics fm = g2d.getFontMetrics();
             g2d.drawString(placeholder, getInsets().left, (getHeight() - fm.getHeight()) / 2 + fm.getAscent());
@@ -120,13 +122,6 @@ public class RoundedTextField extends JTextField {
         }
         g2.draw(new RoundRectangle2D.Double(0.5, 0.5, getWidth() - 1, getHeight() - 1, arcSize, arcSize));
         g2.dispose();
-    }
-
-    public static Font resolveFont(int style, int size) {
-        Font f = new Font(Constants.FONT_FAMILY, style, size);
-        if (f.getFamily().equalsIgnoreCase(Constants.FONT_FAMILY))
-            return f;
-        return new Font("Segoe UI", style, size);
     }
 
     public static void paintUserIcon(Graphics2D g, int x, int y, int size, Color color) {

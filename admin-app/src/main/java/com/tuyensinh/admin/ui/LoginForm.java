@@ -6,12 +6,12 @@ import com.tuyensinh.admin.ui.components.RoundedButton;
 import com.tuyensinh.admin.ui.components.RoundedTextField;
 import com.tuyensinh.admin.ui.components.RoundedPasswordField;
 import com.tuyensinh.util.Constants;
+import com.tuyensinh.admin.util.UIConstants;
+import com.tuyensinh.admin.util.AdminSession;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-
-import static com.tuyensinh.admin.ui.components.RoundedTextField.resolveFont;
 
 public class LoginForm extends JFrame {
 
@@ -28,25 +28,22 @@ public class LoginForm extends JFrame {
     }
 
     private void initComponents() {
-        setSize(Constants.LOGIN_WIDTH, Constants.LOGIN_HEIGHT);
+        setSize(UIConstants.LOGIN_WIDTH, UIConstants.LOGIN_HEIGHT);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setResizable(false);
 
-        // Root panel with subtle border
         JPanel rootPanel = new JPanel(new BorderLayout());
         rootPanel.setBackground(Color.WHITE);
-        rootPanel.setBorder(BorderFactory.createLineBorder(Color.decode(Constants.COLOR_BORDER), 1));
+        rootPanel.setBorder(BorderFactory.createLineBorder(Color.decode(UIConstants.COLOR_BORDER), 1));
 
         rootPanel.add(createLeftPanel(), BorderLayout.WEST);
         rootPanel.add(createRightPanel(), BorderLayout.CENTER);
         setContentPane(rootPanel);
 
-        // ENTER triggers login
         getRootPane().setDefaultButton(btnLogin);
     }
 
-    // ======================== LEFT PANEL ========================
     private JPanel createLeftPanel() {
         JPanel left = new JPanel() {
             @Override
@@ -55,59 +52,53 @@ public class LoginForm extends JFrame {
                 Graphics2D g2 = (Graphics2D) g;
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 GradientPaint gp = new GradientPaint(0, 0,
-                        Color.decode(Constants.LOGIN_GRADIENT_TOP), 0, getHeight(),
-                        Color.decode(Constants.LOGIN_GRADIENT_BOTTOM));
+                        Color.decode(UIConstants.LOGIN_GRADIENT_TOP), 0, getHeight(),
+                        Color.decode(UIConstants.LOGIN_GRADIENT_BOTTOM));
                 g2.setPaint(gp);
                 g2.fillRect(0, 0, getWidth(), getHeight());
             }
         };
         left.setLayout(new GridBagLayout());
-        left.setPreferredSize(new Dimension(Constants.LOGIN_LEFT_WIDTH, 0));
+        left.setPreferredSize(new Dimension(UIConstants.LOGIN_LEFT_WIDTH, 0));
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.insets = new Insets(10, 0, 10, 0);
 
-        // SVG Logo
         gbc.gridy = 0;
         try {
             FlatSVGIcon icon = new FlatSVGIcon("assets/icon_login.svg",
-                    Constants.LOGIN_ICON_SIZE, Constants.LOGIN_ICON_SIZE);
+                    UIConstants.LOGIN_ICON_SIZE, UIConstants.LOGIN_ICON_SIZE);
             left.add(new JLabel(icon), gbc);
         } catch (Exception e) {
             JLabel fb = new JLabel("🎓");
-            fb.setFont(new Font("Segoe UI", Font.PLAIN, 80));
+            fb.setFont(UIManager.getFont("defaultFont").deriveFont(Font.PLAIN, 80f));
             fb.setForeground(Color.WHITE);
             left.add(fb, gbc);
         }
 
-        // University name
         gbc.gridy = 1;
-        JLabel lblUni = new JLabel(Constants.APP_UNIVERSITY);
-        lblUni.setFont(resolveFont(Font.BOLD, 32));
+        JLabel lblUni = new JLabel(Constants.APP_UNIVERSITY); // APP_UNIVERSITY nằm ở Constants
+        lblUni.setFont(UIManager.getFont("defaultFont").deriveFont(Font.BOLD, 32f));
         lblUni.setForeground(Color.WHITE);
         left.add(lblUni, gbc);
 
-        // Subtitle
         gbc.gridy = 2;
         JLabel lblSub = new JLabel("Hệ thống Quản lý Tuyển sinh");
-        lblSub.setFont(resolveFont(Font.PLAIN, 18));
+        lblSub.setFont(UIManager.getFont("defaultFont").deriveFont(Font.PLAIN, 18f));
         lblSub.setForeground(new Color(200, 220, 255));
         left.add(lblSub, gbc);
 
-        // Draggable
         attachDrag(left);
         return left;
     }
 
-    // ======================== RIGHT PANEL ========================
     private JPanel createRightPanel() {
         JPanel right = new JPanel(new BorderLayout());
         right.setBackground(Color.WHITE);
 
         right.add(createHeader(), BorderLayout.NORTH);
 
-        // Center the form vertically + horizontally
         JPanel wrapper = new JPanel(new GridBagLayout());
         wrapper.setBackground(Color.WHITE);
         wrapper.add(createFormPanel());
@@ -116,21 +107,18 @@ public class LoginForm extends JFrame {
         return right;
     }
 
-    // ======================== HEADER (minimize / close) ========================
     private JPanel createHeader() {
         JPanel header = new JPanel(new BorderLayout());
         header.setBackground(Color.WHITE);
-        header.setPreferredSize(new Dimension(0, Constants.LOGIN_HEADER_HEIGHT));
+        header.setPreferredSize(new Dimension(0, UIConstants.LOGIN_HEADER_HEIGHT));
 
         JPanel controls = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
         controls.setOpaque(false);
 
-        // Minimize → gray hover
         JButton btnMin = makeControlBtn("—", new Color(230, 230, 230));
         btnMin.addActionListener(e -> setState(Frame.ICONIFIED));
         controls.add(btnMin);
 
-        // Close → red hover
         JButton btnClose = makeControlBtn("X", new Color(220, 53, 69));
         btnClose.addActionListener(e -> {
             dispose();
@@ -145,14 +133,14 @@ public class LoginForm extends JFrame {
 
     private JButton makeControlBtn(String text, Color hoverBg) {
         JButton btn = new JButton(text);
-        btn.setFont(resolveFont(Font.PLAIN, 13));
-        btn.setPreferredSize(new Dimension(46, Constants.LOGIN_HEADER_HEIGHT));
+        btn.setFont(UIManager.getFont("defaultFont").deriveFont(Font.PLAIN, 13f));
+        btn.setPreferredSize(new Dimension(46, UIConstants.LOGIN_HEADER_HEIGHT));
         btn.setFocusPainted(false);
         btn.setBorderPainted(false);
         btn.setContentAreaFilled(true);
         btn.setOpaque(true);
         btn.setBackground(Color.WHITE);
-        btn.setForeground(Color.decode(Constants.COLOR_TEXT_MUTED));
+        btn.setForeground(Color.decode(UIConstants.COLOR_TEXT_MUTED));
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btn.setFocusable(false);
 
@@ -166,13 +154,12 @@ public class LoginForm extends JFrame {
             @Override
             public void mouseExited(MouseEvent e) {
                 btn.setBackground(Color.WHITE);
-                btn.setForeground(Color.decode(Constants.COLOR_TEXT_MUTED));
+                btn.setForeground(Color.decode(UIConstants.COLOR_TEXT_MUTED));
             }
         });
         return btn;
     }
 
-    // ======================== FORM PANEL ========================
     private JPanel createFormPanel() {
         JPanel form = new JPanel(new GridBagLayout());
         form.setBackground(Color.WHITE);
@@ -182,53 +169,46 @@ public class LoginForm extends JFrame {
         g.fill = GridBagConstraints.HORIZONTAL;
         g.anchor = GridBagConstraints.WEST;
 
-        // Title
         g.gridy = 0;
-        g.insets = new Insets(0, 0, Constants.SECTION_GAP * 2, 0);
+        g.insets = new Insets(0, 0, UIConstants.SECTION_GAP * 2, 0);
         JLabel lblTitle = new JLabel("Đăng nhập");
-        lblTitle.setFont(resolveFont(Font.BOLD, Constants.LOGIN_TITLE_FONT_SIZE));
-        lblTitle.setForeground(Color.decode(Constants.COLOR_TEXT));
+        lblTitle.setFont(UIManager.getFont("defaultFont").deriveFont(Font.BOLD, (float) UIConstants.LOGIN_TITLE_FONT_SIZE));
+        lblTitle.setForeground(Color.decode(UIConstants.COLOR_TEXT));
         form.add(lblTitle, g);
 
-        // Username label
         g.gridy = 1;
         g.insets = new Insets(0, 0, 6, 0);
         form.add(makeLabel("Tên đăng nhập"), g);
 
-        // Username field
         g.gridy = 2;
-        g.insets = new Insets(0, 0, Constants.FORM_GAP, 0);
+        g.insets = new Insets(0, 0, UIConstants.FORM_GAP, 0);
         txtUsername = new RoundedTextField("Nhập tên đăng nhập");
-        txtUsername.setPreferredSize(new Dimension(Constants.LOGIN_FORM_WIDTH, Constants.LOGIN_INPUT_HEIGHT));
+        txtUsername.setPreferredSize(new Dimension(UIConstants.LOGIN_FORM_WIDTH, UIConstants.LOGIN_INPUT_HEIGHT));
         form.add(txtUsername, g);
 
-        // Password label
         g.gridy = 3;
         g.insets = new Insets(0, 0, 6, 0);
         form.add(makeLabel("Mật khẩu"), g);
 
-        // Password field
         g.gridy = 4;
-        g.insets = new Insets(0, 0, Constants.SECTION_GAP + 10, 0);
+        g.insets = new Insets(0, 0, UIConstants.SECTION_GAP + 10, 0);
         txtPassword = new RoundedPasswordField("Nhập mật khẩu");
-        txtPassword.setPreferredSize(new Dimension(Constants.LOGIN_FORM_WIDTH, Constants.LOGIN_INPUT_HEIGHT));
+        txtPassword.setPreferredSize(new Dimension(UIConstants.LOGIN_FORM_WIDTH, UIConstants.LOGIN_INPUT_HEIGHT));
         form.add(txtPassword, g);
 
-        // Login button
         g.gridy = 5;
         g.insets = new Insets(0, 0, 10, 0);
         btnLogin = new RoundedButton("Đăng nhập");
-        btnLogin.setPreferredSize(new Dimension(Constants.LOGIN_FORM_WIDTH, Constants.LOGIN_BTN_HEIGHT));
+        btnLogin.setPreferredSize(new Dimension(UIConstants.LOGIN_FORM_WIDTH, UIConstants.LOGIN_BTN_HEIGHT));
         btnLogin.addActionListener(e -> doLogin());
         form.add(btnLogin, g);
 
-        // Status
         g.gridy = 6;
         g.insets = new Insets(0, 0, 0, 0);
         g.anchor = GridBagConstraints.CENTER;
         lblStatus = new JLabel(" ");
-        lblStatus.setFont(resolveFont(Font.PLAIN, Constants.FONT_SIZE_SM));
-        lblStatus.setForeground(Color.decode(Constants.COLOR_DANGER));
+        lblStatus.setFont(UIManager.getFont("defaultFont").deriveFont(Font.PLAIN, (float) UIConstants.FONT_SIZE_SM));
+        lblStatus.setForeground(Color.decode(UIConstants.COLOR_DANGER));
         lblStatus.setHorizontalAlignment(SwingConstants.CENTER);
         form.add(lblStatus, g);
 
@@ -237,12 +217,11 @@ public class LoginForm extends JFrame {
 
     private JLabel makeLabel(String text) {
         JLabel l = new JLabel(text);
-        l.setFont(resolveFont(Font.BOLD, Constants.FONT_SIZE_MD));
-        l.setForeground(Color.decode(Constants.COLOR_TEXT));
+        l.setFont(UIManager.getFont("defaultFont").deriveFont(Font.BOLD, (float) UIConstants.FONT_SIZE_MD));
+        l.setForeground(Color.decode(UIConstants.COLOR_TEXT));
         return l;
     }
 
-    // ======================== DRAG SUPPORT ========================
     private void attachDrag(JComponent comp) {
         comp.addMouseListener(new MouseAdapter() {
             @Override
@@ -259,7 +238,6 @@ public class LoginForm extends JFrame {
         });
     }
 
-    // ======================== LOGIN LOGIC ========================
     private void doLogin() {
         String username = txtUsername.getText().trim();
         String password = new String(txtPassword.getPassword());
@@ -280,17 +258,30 @@ public class LoginForm extends JFrame {
         btnLogin.setText("Đang xác thực...");
         lblStatus.setText(" ");
 
-        SwingWorker<Boolean, Void> worker = new SwingWorker<>() {
+        SwingWorker<com.tuyensinh.model.User, Void> worker = new SwingWorker<>() {
             @Override
-            protected Boolean doInBackground() throws Exception {
+            protected com.tuyensinh.model.User doInBackground() throws Exception {
                 Thread.sleep(800);
-                return AuthService.getInstance().loginThiSinh(username, password) != null;
+                return AuthService.getInstance().loginAdmin(username, password);
             }
 
             @Override
             protected void done() {
                 try {
-                    if (get()) {
+                    com.tuyensinh.model.User loggedInUser = get();
+                    
+                    if (loggedInUser != null) {
+                        com.tuyensinh.dao.QuyenChucNangDAO quyenDAO = new com.tuyensinh.dao.QuyenChucNangDAO();
+                        java.util.List<String> listQuyen = quyenDAO.getMaChucNangCoXem(loggedInUser.getNhomQuyen().getId());
+                        
+                        java.util.Set<String> setQuyen = new java.util.HashSet<>(listQuyen);
+
+                        AdminSession.getInstance().login(
+                                loggedInUser.getUsername(), 
+                                loggedInUser.getNhomQuyen().getMaNhom(), 
+                                setQuyen
+                        );
+
                         dispose();
                         new MainFrame().setVisible(true);
                     } else {
@@ -301,6 +292,7 @@ public class LoginForm extends JFrame {
                         btnLogin.setText("Đăng nhập");
                     }
                 } catch (Exception e) {
+                    e.printStackTrace(); 
                     lblStatus.setText("Lỗi kết nối hệ thống!");
                     btnLogin.setEnabled(true);
                     btnLogin.setText("Đăng nhập");
