@@ -1,212 +1,237 @@
 package com.tuyensinh.admin.ui.panels;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.tuyensinh.service.AuthService;
 import com.tuyensinh.admin.ui.MainFrame;
 import com.tuyensinh.admin.util.AdminSession;
-import com.tuyensinh.util.Constants;
+import com.tuyensinh.util.Constants;       
+import com.tuyensinh.admin.util.UIConstants; 
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.RoundRectangle2D;
+import java.util.ArrayList;
+import java.util.List;
 
-import static com.tuyensinh.admin.ui.components.RoundedTextField.resolveFont;
-
-/**
- * Sidebar: Top (logo) → Center (menu) → Bottom (account + logout).
- * All colors reference Constants.DASH_*.
- */
 public class SidebarPanel extends JPanel {
 
-    private static final String[][] MENU = {
-            {"Dashboard",          "icon_dashboard.svg"},
-            {"Ngành tuyển sinh",   "icon_nganh.svg"},
-            {"Tổ hợp môn",        "icon_tohop.svg"},
-            {"Quản lý thí sinh",  "icon_user.svg"},
-            {"Điểm thi",          "icon_diem.svg"},
-            {"Điểm cộng",         "icon_diemcong.svg"},
-            {"Nguyện vọng",       "icon_nguyenvongxt.svg"},
-            {"Thống kê",          "icon_thongke.svg"},
+    private static class MenuDef {
+        String title, icon, permissionCode;
+        MenuDef(String t, String i, String p) { title = t; icon = i; permissionCode = p; }
+    }
+
+    private static final MenuDef[] ALL_MENUS = {
+            new MenuDef("Dashboard",          "icon_dashboard.svg",   null), 
+            new MenuDef("Ngành tuyển sinh",   "icon_nganh.svg",       Constants.QUYEN_NGANH),
+            new MenuDef("Tổ hợp môn",         "icon_tohop.svg",       Constants.QUYEN_TOHOP),
+            new MenuDef("Ngành - Tổ hợp",     "icon_nganh_tohop.svg", Constants.QUYEN_NGANH_TOHOP),
+            new MenuDef("Quản lý thí sinh",   "icon_user.svg",        Constants.QUYEN_THI_SINH),
+            new MenuDef("Điểm thi",           "icon_diem.svg",        Constants.QUYEN_DIEM_THI),
+            new MenuDef("Điểm cộng",          "icon_diemcong.svg",    Constants.QUYEN_DIEM_CONG),
+            new MenuDef("Nguyện vọng",        "icon_nguyenvongxt.svg",Constants.QUYEN_NGUYEN_VONG),
+            new MenuDef("Bảng quy đổi",       "icon_bangquydoi.svg",  Constants.QUYEN_BANG_QUY_DOI),
+            new MenuDef("Thống kê",           "icon_thongke.svg",     Constants.QUYEN_THONG_KE),
+            new MenuDef("Người dùng",         "icon_user.svg",        Constants.QUYEN_PHAN_QUYEN),
+            new MenuDef("Nhóm quyền",         "icon_phanquyen.svg",   Constants.QUYEN_PHAN_QUYEN),
+            new MenuDef("Quyền chức năng",    "icon_phanquyen.svg",   Constants.QUYEN_PHAN_QUYEN)
     };
 
+    private final List<JPanel> menuItems = new ArrayList<>();
     private int selectedIndex = 0;
-    private final Color sidebarBg;
+    private final MainFrame mainFrame;
 
     public SidebarPanel(MainFrame frame) {
-        sidebarBg = Color.decode(Constants.DASH_SIDEBAR_BG);
-        setBackground(sidebarBg);
-        setPreferredSize(new Dimension(Constants.SIDEBAR_WIDTH, 0));
+        this.mainFrame = frame;
+        setBackground(Color.decode(UIConstants.DASH_SIDEBAR_BG));
+        
+        Dimension fixedSize = new Dimension(UIConstants.SIDEBAR_WIDTH, UIConstants.WINDOW_HEIGHT);
+        setPreferredSize(fixedSize);
+        setMinimumSize(new Dimension(UIConstants.SIDEBAR_WIDTH, 0));
+        setMaximumSize(fixedSize);
         setLayout(new BorderLayout());
 
         add(buildTop(), BorderLayout.NORTH);
-        add(buildCenter(), BorderLayout.CENTER);
+        add(buildCenterScroll(), BorderLayout.CENTER);
         add(buildBottom(frame), BorderLayout.SOUTH);
     }
 
-    // ──────── TOP: logo ────────
-
     private JPanel buildTop() {
-        JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT, Constants.DASH_SIDEBAR_PAD, 0));
+        JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT, UIConstants.DASH_SIDEBAR_PAD, 0));
         top.setOpaque(false);
-        top.setBorder(new EmptyBorder(22, 0, 18, 0));
-        top.setPreferredSize(new Dimension(Constants.SIDEBAR_WIDTH, 64));
+        top.setBorder(new EmptyBorder(14, 0, 10, 0));
+        top.setPreferredSize(new Dimension(UIConstants.SIDEBAR_WIDTH, 54));
 
-        try {
-            top.add(new JLabel(new FlatSVGIcon("assets/icon_login.svg", 22, 22)));
-        } catch (Exception ignored) {}
+        try { top.add(new JLabel(new FlatSVGIcon("assets/icon_login.svg", 22, 22))); } catch (Exception ignored) {}
 
         JLabel lbl = new JLabel(Constants.APP_TITLE_SHORT);
-        lbl.setFont(resolveFont(Font.BOLD, 15));
+        lbl.setFont(UIManager.getFont("defaultFont").deriveFont(Font.BOLD, 16f));
         lbl.setForeground(Color.WHITE);
         top.add(lbl);
         return top;
     }
 
-    // ──────── CENTER: menu items ────────
-
-    private JPanel buildCenter() {
+    private JScrollPane buildCenterScroll() {
         JPanel center = new JPanel();
         center.setLayout(new BoxLayout(center, BoxLayout.Y_AXIS));
         center.setOpaque(false);
-        center.setBorder(new EmptyBorder(8, 0, 0, 0));
+        center.setBorder(new EmptyBorder(4, 0, 0, 0));
 
-        // Section label
-        JLabel menuLabel = new JLabel("  MENU");
-        menuLabel.setFont(resolveFont(Font.BOLD, Constants.SIDEBAR_LABEL_FONT_SIZE));
-        menuLabel.setForeground(new Color(255, 255, 255, 80));
-        menuLabel.setBorder(new EmptyBorder(0, Constants.DASH_SIDEBAR_PAD, 8, 0));
-        menuLabel.setAlignmentX(LEFT_ALIGNMENT);
+        JLabel menuLabel = new JLabel("  MENU QUẢN TRỊ");
+        menuLabel.setFont(UIManager.getFont("defaultFont").deriveFont(Font.BOLD, 11f)); 
+        menuLabel.setForeground(new Color(255, 255, 255, 100));
+        menuLabel.setBorder(new EmptyBorder(0, UIConstants.DASH_SIDEBAR_PAD, 8, 0));
+        menuLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         center.add(menuLabel);
 
-        for (int i = 0; i < MENU.length; i++) {
-            center.add(menuItem(i));
-            center.add(Box.createVerticalStrut(2));
+        AdminSession session = AdminSession.getInstance();
+        int currentIndex = 0;
+
+        for (MenuDef def : ALL_MENUS) {
+            if (session.hasPermission(def.permissionCode)) {
+                JPanel item = createMenuItem(def.title, def.icon, currentIndex);
+                menuItems.add(item);
+                center.add(item);
+                center.add(Box.createVerticalStrut(6)); 
+                currentIndex++;
+            }
         }
-        return center;
+
+        JScrollPane scrollPane = new JScrollPane(center);
+        scrollPane.setOpaque(false);
+        scrollPane.getViewport().setOpaque(false);
+        scrollPane.setBorder(null);
+        scrollPane.getVerticalScrollBar().setPreferredSize(new Dimension(0, 0));
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+
+        return scrollPane;
     }
 
-    private JPanel menuItem(int index) {
-        boolean active = index == selectedIndex;
-        String text = MENU[index][0];
-        String iconFile = MENU[index][1];
+    private JPanel createMenuItem(String text, String iconFile, int index) {
+        Color activeBg  = new Color(37, 99, 235, 60);
+        Color hoverBg   = new Color(255, 255, 255, 15);
+        Color activeBar = Color.decode(UIConstants.DASH_ACTIVE_BAR);
 
-        Color activeBg  = withAlpha(Color.decode(Constants.DASH_PRIMARY), 80);
-        Color hoverBg   = new Color(255, 255, 255, 14);
-        Color activeBar = Color.decode(Constants.DASH_ACTIVE_BAR);
-        Color textNormal = new Color(255, 255, 255, 150);
-        Color textHover  = new Color(255, 255, 255, 210);
-
-        return new JPanel(null) {
+        JPanel pnl = new JPanel(null) {
             boolean hovered = false;
-
             {
                 setOpaque(false);
-                setPreferredSize(new Dimension(Constants.SIDEBAR_WIDTH, Constants.DASH_MENU_ITEM_HEIGHT));
-                setMaximumSize(new Dimension(Constants.SIDEBAR_WIDTH, Constants.DASH_MENU_ITEM_HEIGHT));
+                Dimension itemSize = new Dimension(UIConstants.SIDEBAR_WIDTH, 38);
+                setPreferredSize(itemSize);
+                setMinimumSize(itemSize);
+                setMaximumSize(itemSize);
+                setAlignmentX(Component.LEFT_ALIGNMENT); 
                 setCursor(new Cursor(Cursor.HAND_CURSOR));
+                
                 addMouseListener(new MouseAdapter() {
                     @Override public void mouseEntered(MouseEvent e) { hovered = true; repaint(); }
                     @Override public void mouseExited(MouseEvent e)  { hovered = false; repaint(); }
+                    @Override public void mouseClicked(MouseEvent e) {
+                        selectedIndex = index;
+                        mainFrame.switchPanel(text); 
+                        for (JPanel p : menuItems) p.repaint(); 
+                    }
                 });
             }
 
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
+                
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+                g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
 
                 int w = getWidth(), h = getHeight();
-                int inset = 8;
+                int inset = 12;
 
-                if (active) {
+                if (index == selectedIndex) {
                     g2.setColor(activeBg);
-                    g2.fill(new RoundRectangle2D.Double(inset, 2, w - inset * 2, h - 4, 8, 8));
+                    g2.fill(new RoundRectangle2D.Double(inset, 0, w - inset * 2, h, 8, 8));
                     g2.setColor(activeBar);
-                    g2.fill(new RoundRectangle2D.Double(0, 8, 3, h - 16, 3, 3));
+                    g2.fill(new RoundRectangle2D.Double(0, 8, 4, h - 16, 4, 4));
                 } else if (hovered) {
                     g2.setColor(hoverBg);
-                    g2.fill(new RoundRectangle2D.Double(inset, 2, w - inset * 2, h - 4, 8, 8));
+                    g2.fill(new RoundRectangle2D.Double(inset, 0, w - inset * 2, h, 8, 8));
                 }
 
-                // Icon
-                int iconX = 26, iconY = (h - 16) / 2;
-                try {
-                    new FlatSVGIcon("assets/" + iconFile, 16, 16).paintIcon(this, g2, iconX, iconY);
-                } catch (Exception ignored) {}
+                try { new FlatSVGIcon("assets/" + iconFile, 16, 16).paintIcon(this, g2, 28, (h - 16) / 2); } catch (Exception ignored) {}
 
-                // Text
-                g2.setFont(resolveFont(active ? Font.BOLD : Font.PLAIN, Constants.SIDEBAR_ITEM_FONT_SIZE));
-                g2.setColor(active ? Color.WHITE : (hovered ? textHover : textNormal));
+                int fontStyle = index == selectedIndex ? Font.BOLD : Font.BOLD;
+                g2.setFont(UIManager.getFont("defaultFont").deriveFont(fontStyle, 14f));
+                
+                g2.setColor(index == selectedIndex ? Color.WHITE : new Color(255, 255, 255, 230));
+                
                 FontMetrics fm = g2.getFontMetrics();
-                g2.drawString(text, 52, (h + fm.getAscent() - fm.getDescent()) / 2);
+                String drawText = text;
+                int maxTextWidth = w - 56 - inset; 
+                if (fm.stringWidth(drawText) > maxTextWidth) {
+                    while (drawText.length() > 0 && fm.stringWidth(drawText + "...") > maxTextWidth) {
+                        drawText = drawText.substring(0, drawText.length() - 1);
+                    }
+                    drawText += "...";
+                }
+                g2.drawString(drawText, 56, (h + fm.getAscent() - fm.getDescent()) / 2);
                 g2.dispose();
             }
         };
+        return pnl;
     }
-
-    // ──────── BOTTOM: account + logout ────────
 
     private JPanel buildBottom(MainFrame frame) {
         JPanel bottom = new JPanel();
         bottom.setLayout(new BoxLayout(bottom, BoxLayout.Y_AXIS));
         bottom.setOpaque(false);
-        bottom.setBorder(new EmptyBorder(0, Constants.DASH_SIDEBAR_PAD, Constants.DASH_SIDEBAR_PAD, Constants.DASH_SIDEBAR_PAD));
+        bottom.setBorder(new EmptyBorder(0, UIConstants.DASH_SIDEBAR_PAD, 12, UIConstants.DASH_SIDEBAR_PAD));
 
-        // Separator
         JSeparator sep = new JSeparator();
-        sep.setMaximumSize(new Dimension(Constants.SIDEBAR_WIDTH - 40, 1));
+        sep.setMaximumSize(new Dimension(UIConstants.SIDEBAR_WIDTH - 40, 1));
         sep.setForeground(new Color(255, 255, 255, 20));
         bottom.add(sep);
-        bottom.add(Box.createVerticalStrut(14));
+        bottom.add(Box.createVerticalStrut(10));
 
-        // Account panel (single row: user info | logout)
         JPanel account = new JPanel(null) {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(Color.decode(Constants.DASH_SIDEBAR_ACCOUNT_BG));
-                g2.fill(new RoundRectangle2D.Double(0, 0, getWidth(), getHeight(),
-                        Constants.DASH_CARD_RADIUS, Constants.DASH_CARD_RADIUS));
+                g2.setColor(Color.decode(UIConstants.DASH_SIDEBAR_ACCOUNT_BG));
+                g2.fill(new RoundRectangle2D.Double(0, 0, getWidth(), getHeight(), UIConstants.DASH_CARD_RADIUS, UIConstants.DASH_CARD_RADIUS));
                 g2.dispose();
             }
         };
         account.setOpaque(false);
-        account.setPreferredSize(new Dimension(Constants.SIDEBAR_WIDTH - 40, 56));
-        account.setMaximumSize(new Dimension(Constants.SIDEBAR_WIDTH - 40, 56));
-        account.setAlignmentX(LEFT_ALIGNMENT);
+        Dimension accSize = new Dimension(UIConstants.SIDEBAR_WIDTH - 40, 50);
+        account.setPreferredSize(accSize);
+        account.setMinimumSize(accSize);
+        account.setMaximumSize(accSize);
+        account.setAlignmentX(Component.LEFT_ALIGNMENT);
         account.setLayout(new BorderLayout(8, 0));
-        account.setBorder(new EmptyBorder(10, 14, 10, 10));
+        account.setBorder(new EmptyBorder(8, 12, 8, 8));
 
-        // Left: name + role
         AdminSession auth = AdminSession.getInstance();
         JPanel info = new JPanel();
         info.setOpaque(false);
         info.setLayout(new BoxLayout(info, BoxLayout.Y_AXIS));
 
         JLabel lblName = new JLabel(auth.getCurrentUsername());
-        lblName.setFont(resolveFont(Font.BOLD, Constants.FONT_SIZE_BASE));
+        lblName.setFont(UIManager.getFont("defaultFont").deriveFont(Font.BOLD, 13f));
         lblName.setForeground(Color.WHITE);
-        lblName.setAlignmentX(LEFT_ALIGNMENT);
+        lblName.setAlignmentX(Component.LEFT_ALIGNMENT);
         info.add(lblName);
 
         JLabel lblRole = new JLabel(auth.getCurrentRole());
-        lblRole.setFont(resolveFont(Font.PLAIN, Constants.FONT_SIZE_XS));
-        lblRole.setForeground(Color.decode(Constants.DASH_TEXT_MUTED));
-        lblRole.setAlignmentX(LEFT_ALIGNMENT);
+        lblRole.setFont(UIManager.getFont("defaultFont").deriveFont(Font.PLAIN, 11f));
+        lblRole.setForeground(Color.decode(UIConstants.DASH_TEXT_MUTED));
+        lblRole.setAlignmentX(Component.LEFT_ALIGNMENT);
         info.add(lblRole);
 
         account.add(info, BorderLayout.CENTER);
 
-        // Right: logout icon button
         JPanel logoutBtn = new JPanel(null) {
             boolean hovered = false;
             {
                 setOpaque(false);
-                setPreferredSize(new Dimension(32, 32));
+                setPreferredSize(new Dimension(30, 30));
                 setCursor(new Cursor(Cursor.HAND_CURSOR));
                 addMouseListener(new MouseAdapter() {
                     @Override public void mouseEntered(MouseEvent e) { hovered = true; repaint(); }
@@ -222,10 +247,7 @@ public class SidebarPanel extends JPanel {
                     g2.setColor(new Color(255, 255, 255, 15));
                     g2.fill(new RoundRectangle2D.Double(0, 0, getWidth(), getHeight(), 8, 8));
                 }
-                try {
-                    new FlatSVGIcon("assets/icon_logout.svg", 16, 16)
-                            .paintIcon(this, g2, (getWidth() - 16) / 2, (getHeight() - 16) / 2);
-                } catch (Exception ignored) {}
+                try { new FlatSVGIcon("assets/icon_logout.svg", 14, 14).paintIcon(this, g2, (getWidth() - 14) / 2, (getHeight() - 14) / 2); } catch (Exception ignored) {}
                 g2.dispose();
             }
         };
@@ -237,11 +259,5 @@ public class SidebarPanel extends JPanel {
 
         bottom.add(account);
         return bottom;
-    }
-
-    // ──────── Helpers ────────
-
-    private static Color withAlpha(Color c, int alpha) {
-        return new Color(c.getRed(), c.getGreen(), c.getBlue(), alpha);
     }
 }

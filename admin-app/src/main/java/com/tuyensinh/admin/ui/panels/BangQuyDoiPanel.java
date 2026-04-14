@@ -1,5 +1,20 @@
 package com.tuyensinh.admin.ui.panels;
 
-public class BangQuyDoiPanel {
-    
+import com.tuyensinh.admin.util.UIConstants;
+import javax.swing.*;
+import java.awt.*;
+
+public class BangQuyDoiPanel  extends JPanel {
+
+    public BangQuyDoiPanel() {
+        setOpaque(false);
+        setLayout(new GridBagLayout());
+
+        JLabel lblTitle = new JLabel("ĐÂY LÀ TRANG BẢNG QUY ĐỔI");
+        
+        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        lblTitle.setForeground(Color.decode(UIConstants.DASH_TEXT_MUTED));
+
+        add(lblTitle);
+    }
 }
