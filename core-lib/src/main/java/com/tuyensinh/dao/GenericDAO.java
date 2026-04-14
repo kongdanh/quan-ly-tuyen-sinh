@@ -8,6 +8,7 @@ import org.hibernate.query.Query;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -137,5 +138,119 @@ public abstract class GenericDAO<T> {
         if (!dbThreadPool.isShutdown()) {
             dbThreadPool.shutdown();
         }
+    }
+
+    /**
+     * Tìm kiếm kết hợp nhiều trường và nhiều bộ lọc (Async)
+     * @param keyword Từ khóa tìm kiếm (dùng LIKE)
+     * @param searchFields Danh sách cột để tìm kiếm từ khóa
+     * @param filters Danh sách các bộ lọc chính xác (VD: "gioiTinh" -> "Nam")
+     */
+    public CompletableFuture<List<T>> findPageWithFilters(String keyword, List<String> searchFields, Map<String, Object> filters, int pageIndex, int pageSize) {
+        return CompletableFuture.supplyAsync(() -> {
+            try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+                StringBuilder hql = new StringBuilder("FROM " + entityClass.getSimpleName() + " e WHERE 1=1 ");
+                
+                boolean hasSearch = keyword != null && !keyword.trim().isEmpty() && searchFields != null && !searchFields.isEmpty();
+                boolean hasFilters = filters != null && !filters.isEmpty();
+
+                // 1. Gắn điều kiện Tìm kiếm
+                if (hasSearch) {
+                    hql.append(" AND (");
+                    for (int i = 0; i < searchFields.size(); i++) {
+                        hql.append("e.").append(searchFields.get(i)).append(" LIKE :kw");
+                        if (i < searchFields.size() - 1) hql.append(" OR ");
+                    }
+                    hql.append(") ");
+                }
+
+                // 2. Gắn điều kiện Lọc (Filter)
+                if (hasFilters) {
+                    for (String key : filters.keySet()) {
+                        hql.append(" AND e.").append(key).append(" = :").append(key);
+                    }
+                }
+
+                Query<T> query = session.createQuery(hql.toString(), entityClass);
+
+                // 3. Truyền giá trị vào tham số
+                if (hasSearch) {
+                    query.setParameter("kw", "%" + keyword.trim() + "%");
+                }
+                if (hasFilters) {
+                    for (Map.Entry<String, Object> entry : filters.entrySet()) {
+                        query.setParameter(entry.getKey(), entry.getValue());
+                    }
+                }
+                
+                query.setFirstResult((pageIndex - 1) * pageSize);
+                query.setMaxResults(pageSize);
+                return query.list();
+            }
+        }, dbThreadPool);
+    }
+
+    /**
+     * Đếm tổng số bản ghi khớp với từ khóa tìm kiếm và bộ lọc (Async)
+     */
+    public CompletableFuture<Long> countWithFiltersAsync(String keyword, List<String> searchFields, Map<String, Object> filters) {
+        return CompletableFuture.supplyAsync(() -> {
+            try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+                StringBuilder hql = new StringBuilder("SELECT count(e) FROM " + entityClass.getSimpleName() + " e WHERE 1=1 ");
+                
+                boolean hasSearch = keyword != null && !keyword.trim().isEmpty() && searchFields != null && !searchFields.isEmpty();
+                boolean hasFilters = filters != null && !filters.isEmpty();
+
+                if (hasSearch) {
+                    hql.append(" AND (");
+                    for (int i = 0; i < searchFields.size(); i++) {
+                        hql.append("e.").append(searchFields.get(i)).append(" LIKE :kw");
+                        if (i < searchFields.size() - 1) hql.append(" OR ");
+                    }
+                    hql.append(") ");
+                }
+
+                if (hasFilters) {
+                    for (String key : filters.keySet()) {
+                        hql.append(" AND e.").append(key).append(" = :").append(key);
+                    }
+                }
+
+                Query<Long> query = session.createQuery(hql.toString(), Long.class);
+
+                if (hasSearch) {
+                    query.setParameter("kw", "%" + keyword.trim() + "%");
+                }
+                if (hasFilters) {
+                    for (Map.Entry<String, Object> entry : filters.entrySet()) {
+                        query.setParameter(entry.getKey(), entry.getValue());
+                    }
+                }
+                
+                return query.uniqueResult();
+            }
+        }, dbThreadPool);
+    }
+
+    /**
+     * Xóa thực thể theo ID (Async)
+     */
+    public CompletableFuture<Boolean> deleteByIdAsync(Serializable id) {
+        return CompletableFuture.supplyAsync(() -> {
+            Transaction tx = null;
+            try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+                tx = session.beginTransaction();
+                T entity = session.get(entityClass, id);
+                if (entity != null) {
+                    session.remove(entity);
+                    tx.commit();
+                    return true;
+                }
+                return false;
+            } catch (Exception e) {
+                if (tx != null) tx.rollback();
+                throw new RuntimeException("Lỗi khi xóa ID " + id + ": " + e.getMessage());
+            }
+        }, dbThreadPool);
     }
 }

@@ -3,6 +3,7 @@ package com.tuyensinh.util;
 import com.tuyensinh.annotation.ExcelColumn;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.ss.usermodel.DataFormatter;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -13,9 +14,9 @@ import java.util.*;
 
 public class ExcelReaderUtil {
 
-    /**
-     * Đọc file Excel và map vào DTO
-     */
+    // Khởi tạo DataFormatter dùng chung để đọc mọi định dạng (chống lỗi .0 và E10)
+    private static final DataFormatter dataFormatter = new DataFormatter();
+
     public static <T> List<T> readExcel(File file, Class<T> dtoClass) throws Exception {
         List<T> result = new ArrayList<>();
 
@@ -44,13 +45,9 @@ public class ExcelReaderUtil {
                 result.add(dto);
             }
         }
-
         return result;
     }
 
-    /**
-     * Xây dựng map từ header Excel sang field DTO
-     */
     private static <T> Map<String, Integer> buildHeaderMap(Row headerRow, Class<T> dtoClass) {
         Map<String, Integer> headerMap = new HashMap<>();
 
@@ -59,20 +56,17 @@ public class ExcelReaderUtil {
             headerMap.put(headerValue, cell.getColumnIndex());
         }
 
-        // Map với annotation
         Map<String, Integer> fieldIndexMap = new HashMap<>();
         for (Field field : dtoClass.getDeclaredFields()) {
             if (field.isAnnotationPresent(ExcelColumn.class)) {
                 ExcelColumn annotation = field.getAnnotation(ExcelColumn.class);
 
-                // Thử tên chính
                 String normalizedMain = normalize(annotation.value());
                 if (headerMap.containsKey(normalizedMain)) {
                     fieldIndexMap.put(field.getName(), headerMap.get(normalizedMain));
                     continue;
                 }
 
-                // Thử các alias
                 for (String alias : annotation.aliases()) {
                     String normalizedAlias = normalize(alias);
                     if (headerMap.containsKey(normalizedAlias)) {
@@ -82,13 +76,9 @@ public class ExcelReaderUtil {
                 }
             }
         }
-
         return fieldIndexMap;
     }
 
-    /**
-     * Map một row Excel sang DTO
-     */
     private static <T> T mapRowToDTO(Row row, Map<String, Integer> headerMap, Class<T> dtoClass) throws Exception {
         T dto = dtoClass.getDeclaredConstructor().newInstance();
 
@@ -104,7 +94,6 @@ public class ExcelReaderUtil {
             Object value = getCellValueAsType(cell, field.getType());
             field.set(dto, value);
         }
-
         return dto;
     }
 
@@ -115,27 +104,9 @@ public class ExcelReaderUtil {
         if (cell == null) {
             return "";
         }
-
-        switch (cell.getCellType()) {
-            case STRING:
-                return cell.getStringCellValue();
-            case NUMERIC:
-                if (DateUtil.isCellDateFormatted(cell)) {
-                    return cell.getDateCellValue().toString();
-                }
-                return String.valueOf(cell.getNumericCellValue());
-            case BOOLEAN:
-                return String.valueOf(cell.getBooleanCellValue());
-            case FORMULA:
-                return cell.getCellFormula();
-            default:
-                return "";
-        }
+        return dataFormatter.formatCellValue(cell).trim();
     }
 
-    /**
-     * Lấy giá trị cell theo kiểu dữ liệu
-     */
     private static Object getCellValueAsType(Cell cell, Class<?> type) {
         if (cell == null) {
             return null;
@@ -157,23 +128,17 @@ public class ExcelReaderUtil {
         } else if (type == Boolean.class || type == boolean.class) {
             return Boolean.parseBoolean(value);
         }
-
         return value;
     }
 
-    /**
-     * Chuẩn hóa chuỗi (bỏ dấu, lowercase, trim)
-     */
     private static String normalize(String input) {
         if (input == null) {
             return "";
         }
-
         String normalized = Normalizer.normalize(input, Normalizer.Form.NFD);
-        normalized = normalized.replaceAll("\\p{M}", ""); // Bỏ dấu
+        normalized = normalized.replaceAll("\\p{M}", ""); 
         normalized = normalized.toLowerCase().trim();
-        normalized = normalized.replaceAll("\\s+", ""); // Bỏ khoảng trắng
-
+        normalized = normalized.replaceAll("\\s+", ""); 
         return normalized;
     }
 
@@ -184,7 +149,6 @@ public class ExcelReaderUtil {
         if (row == null) {
             return true;
         }
-
         for (Cell cell : row) {
             if (cell != null && cell.getCellType() != CellType.BLANK) {
                 String value = getCellValue(cell).trim();
@@ -193,7 +157,6 @@ public class ExcelReaderUtil {
                 }
             }
         }
-
         return true;
     }
 }

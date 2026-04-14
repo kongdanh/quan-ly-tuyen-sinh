@@ -4,6 +4,9 @@ import com.tuyensinh.dao.ThiSinhAccountDAO;
 import com.tuyensinh.dto.ThiSinhSessionDTO;
 import com.tuyensinh.model.ThiSinh;
 import com.tuyensinh.model.ThiSinhAccount;
+import com.tuyensinh.model.User;
+import com.tuyensinh.dao.UserDAO;
+
 import com.tuyensinh.util.PasswordUtil;
 import java.util.Optional;
 
@@ -11,6 +14,7 @@ public class AuthService {
 
     private static AuthService instance;
     private final ThiSinhAccountDAO accountDAO = new ThiSinhAccountDAO();
+    private final UserDAO userDAO = new UserDAO();
 
     private AuthService() {}
 
@@ -25,7 +29,7 @@ public class AuthService {
         }
 
         try {
-            // 1. Tìm Account (Hàm findByCccd trong DAO đã FETCH sẵn ThiSinh rồi)
+            // 1. Tìm Account (Hàm findByCccd trong DAO)
             Optional<ThiSinhAccount> accountOpt = accountDAO.findByCccd(cccd.trim());
             if (accountOpt.isEmpty()) {
                 System.out.println("[AuthService] Không tìm thấy Account có CCCD: " + cccd);
@@ -46,7 +50,7 @@ public class AuthService {
                 return null;
             }
 
-            // 4. Lấy thông tin Thí sinh TRỰC TIẾP từ Object Account (Nhờ @OneToOne)
+            // 4. Lấy thông tin Thí sinh
             ThiSinh ts = account.getThiSinh();
             
             if (ts == null) {
@@ -70,6 +74,43 @@ public class AuthService {
 
         } catch (Exception e) {
             System.err.println("[AuthService] Lỗi hệ thống khi đăng nhập: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public User loginAdmin(String username, String password) {
+        if (username == null || password == null || username.isBlank()) {
+            return null;
+        }
+
+        try {
+            // 1. Tìm User theo username
+            java.util.Optional<com.tuyensinh.model.User> userOpt = userDAO.findByUsername(username.trim());
+            if (userOpt.isEmpty()) {
+                System.out.println("[AuthService] Không tìm thấy Admin/GV: " + username);
+                return null;
+            }
+
+            User adminUser = userOpt.get();
+
+            // 2. Kiểm tra trạng thái
+            if (!"HOAT_DONG".equals(adminUser.getTrangThai())) {
+                System.out.println("[AuthService] Tài khoản Admin/GV bị khóa!");
+                return null;
+            }
+
+            // 3. Kiểm tra mật khẩu (Dùng BCrypt)
+            if (!com.tuyensinh.util.PasswordUtil.verify(password, adminUser.getPasswordHash())) {
+                System.out.println("[AuthService] Sai mật khẩu Admin!");
+                return null;
+            }
+
+            System.out.println("[AuthService] Admin/GV đăng nhập thành công: " + adminUser.getHoTen());
+            return adminUser;
+
+        } catch (Exception e) {
+            System.err.println("[AuthService] Lỗi hệ thống khi đăng nhập Admin: " + e.getMessage());
             e.printStackTrace();
             return null;
         }

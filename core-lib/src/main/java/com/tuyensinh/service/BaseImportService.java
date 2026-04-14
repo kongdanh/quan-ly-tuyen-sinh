@@ -1,10 +1,5 @@
 package com.tuyensinh.service;
 
-import com.tuyensinh.dao.BangQuyDoiDAO;
-import com.tuyensinh.dao.GenericDAO;
-import com.tuyensinh.dto.BangQuyDoiImportDTO;
-import com.tuyensinh.mapper.BangQuyDoiMapper;
-import com.tuyensinh.model.BangQuyDoi;
 import com.tuyensinh.util.ExcelReaderUtil;
 
 import java.io.File;
@@ -13,10 +8,10 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-public class BaseImportService<D,E> {
+public class BaseImportService<D, E> {
 
     /**
-     * Import dữ liệu từ file Excel
+     * Import dữ liệu từ file Excel (ALL-OR-NOTHING)
      */
     public List<String> importFromExcel(File file, Class<D> dtoClass,
                                         Function<D, E> mapper,
@@ -28,70 +23,36 @@ public class BaseImportService<D,E> {
             // Đọc file Excel
             List<D> dtoList = ExcelReaderUtil.readExcel(file, dtoClass);
 
-            // Validate và lưu
-            int rowNumber = 2; // bắt đầu từ row 2 (row 1 là header)
+            int rowNumber = 2;
             List<E> entities = new ArrayList<>();
+
             for (D dto : dtoList) {
                 try {
-                    // Validate
+                    // Validate Logic
                     String validationError = validateFunction.apply(dto);
                     if (validationError != null) {
                         errors.add("Dòng " + rowNumber + ": " + validationError);
-                        rowNumber++;
-                        continue;
+                    } else {
+                        // Convert sang entity
+                        E entity = mapper.apply(dto);
+                        entities.add(entity);
                     }
-
-                    // Convert sang entity
-                    E entity = mapper.apply(dto);
-
-                    entities.add(entity);
                 } catch (Exception e) {
-                    errors.add("Dòng " + rowNumber + ": " + e.getMessage());
+                    errors.add("Dòng " + rowNumber + ": Lỗi định dạng dữ liệu - " + e.getMessage());
                 }
                 rowNumber++;
             }
-            // Lưu vào DB
+
+            if (!errors.isEmpty()) {
+                return errors;
+            }
+
             saveConsumer.accept(entities);
+
         } catch (Exception e) {
-            errors.add("Lỗi đọc file: " + e.getMessage());
+            errors.add("Lỗi hệ thống: " + e.getMessage());
         }
 
         return errors;
-    }
-
-    public static void main(String[] args) {
-        System.out.println("Current Folder: " + new File(".").getAbsolutePath());
-        BaseImportService<BangQuyDoiImportDTO, BangQuyDoi> service = new BaseImportService<>();
-        BangQuyDoiDAO dao = new BangQuyDoiDAO();
-
-        long startTime = System.currentTimeMillis();
-        List<String> errors = service.importFromExcel(
-                new File("Book.xlsx"),
-                BangQuyDoiImportDTO.class,
-                dto -> BangQuyDoiMapper.toEntity(dto),
-                entities -> dao.saveOrUpdateAll(entities)
-                        .thenRun(() -> {
-                            System.out.println("NGON LÀNH: data nằm hết trong db");
-                            // dao.shutdown();
-                }).exceptionally(ex -> {
-                        System.err.println("LỎ RỒI: Lưu fail do: " + ex.getMessage());
-                        return null;
-                }),
-                dto -> {
-                    if (dto.getPhuongthuc() == null) return "Trống phương thức";
-                    if (dto.getTohop() == null) return "Trống tổ hợp";
-                    return null;
-                    }
-                );
-        long endTime = System.currentTimeMillis();
-        long duration = endTime - startTime;
-        System.out.println("Tổng thời gian thực thi: " + duration + " ms");
-        System.out.println("Trung bình: " + (duration / 3000.0) + " ms/dòng");
-        if (errors.isEmpty()) {
-            System.out.println("Import thành công!");
-        } else {
-            System.out.println("Có lỗi:");
-            errors.forEach(System.out::println);
-        }
     }
 }

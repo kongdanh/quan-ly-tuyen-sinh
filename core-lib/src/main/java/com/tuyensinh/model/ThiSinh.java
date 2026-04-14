@@ -8,7 +8,7 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @Getter
 @Setter
-@ToString(exclude = "account")
+@ToString(exclude = {"account", "diemThiXetTuyen"}) 
 @Entity
 @Table(name = "xt_thisinhxettuyen25")
 public class ThiSinh {
@@ -55,6 +55,9 @@ public class ThiSinh {
 
     @OneToOne(mappedBy = "thiSinh", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private ThiSinhAccount account;
+    
+    @OneToOne(mappedBy = "thiSinh", cascade = CascadeType.ALL, orphanRemoval = true)
+    private DiemThiXetTuyen diemThiXetTuyen;
 
     @PreUpdate
     protected void onUpdate() {

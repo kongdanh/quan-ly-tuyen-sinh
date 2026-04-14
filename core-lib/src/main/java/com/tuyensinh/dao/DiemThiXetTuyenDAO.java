@@ -4,6 +4,7 @@ import com.tuyensinh.model.DiemThiXetTuyen;
 import com.tuyensinh.util.HibernateUtil;
 import org.hibernate.Session;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 public class DiemThiXetTuyenDAO extends GenericDAO<DiemThiXetTuyen> {
 
@@ -20,4 +21,9 @@ public class DiemThiXetTuyenDAO extends GenericDAO<DiemThiXetTuyen> {
             return Optional.ofNullable(diem);
         }
     }
+
+    public CompletableFuture<Optional<DiemThiXetTuyen>> findByCccdAsync(String cccd) {
+        return CompletableFuture.supplyAsync(() -> findByCccd(cccd));
+    }
+
 }
