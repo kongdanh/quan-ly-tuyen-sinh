@@ -1,23 +1,28 @@
 package com.tuyensinh.admin.ui.panels;
 
 import com.tuyensinh.admin.ui.base.BaseTablePanel;
-import com.tuyensinh.admin.ui.components.*;
+import com.tuyensinh.admin.ui.components.RoundedButton;
+import com.tuyensinh.admin.ui.dialog.DanhSachYeuCauDialog;
 import com.tuyensinh.admin.ui.dialog.ThiSinhFormDialog;
+import com.tuyensinh.admin.util.UIConstants;
 import com.tuyensinh.model.ThiSinh;
 import com.tuyensinh.service.ImportService;
 import com.tuyensinh.service.ThiSinhService;
 
 import javax.swing.*;
+import java.awt.*;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 public class ThiSinhPanel extends BaseTablePanel<ThiSinh> {
 
-    private final ThiSinhService thiSinhService = new ThiSinhService();
-    private String currentGenderFilter = "";
+    private final ThiSinhService    thiSinhService = new ThiSinhService();
+
+    private RoundedButton btnYeuCauSua;
+    private Timer         timerYeuCau;
 
     public ThiSinhPanel() {
         super("Quản lý thí sinh", "Danh sách hồ sơ đăng ký xét tuyển từ hệ thống");
@@ -62,26 +67,28 @@ public class ThiSinhPanel extends BaseTablePanel<ThiSinh> {
             ts.getDienThoai(),
             ts.getNgaySinh(),
             ts.getGioiTinh(),
-            "" // placeholder cột Thao tác
+            ""
         };
     }
 
     // ----------------------------------------------------------------
-    // QUERY — delegate sang ThiSinhService
+    // QUERY
     // ----------------------------------------------------------------
 
     @Override
-    protected CompletableFuture<List<ThiSinh>> fetchPage(String keyword, Map<String, Object> filters, int page, int pageSize) {
+    protected CompletableFuture<List<ThiSinh>> fetchPage(
+            String keyword, Map<String, Object> filters, int page, int pageSize) {
         return thiSinhService.findPageWithFilters(keyword, getSearchFields(), filters, page, pageSize);
     }
 
     @Override
-    protected CompletableFuture<Long> fetchCount(String keyword, Map<String, Object> filters) {
+    protected CompletableFuture<Long> fetchCount(
+            String keyword, Map<String, Object> filters) {
         return thiSinhService.countWithFiltersAsync(keyword, getSearchFields(), filters);
     }
 
     // ----------------------------------------------------------------
-    // CRUD DIALOGS
+    // CRUD
     // ----------------------------------------------------------------
 
     @Override
@@ -128,22 +135,56 @@ public class ThiSinhPanel extends BaseTablePanel<ThiSinh> {
     }
 
     // ----------------------------------------------------------------
-    // EXTRAS — import Excel + filter giới tính
+    // EXTRAS
     // ----------------------------------------------------------------
 
     @Override
     protected void setupExtras() {
+        // Filter giới tính
         toolbar.addDynamicFilterCategory(
-            "Theo Giới Tính", 6, Arrays.asList("Tất cả", "Nam", "Nữ"),
-            (col, val) -> applyFilter("gioiTinh", val)
+            "Theo Giới Tính", 6,
+            Arrays.asList("Tất cả", "Nam", "Nữ"),
+            (col, val) -> applyFilter("gioiTinh", "Tất cả".equals(val) ? "" : val)
         );
 
+        // Filter khu vực
         toolbar.addDynamicFilterCategory(
-            "Khu Vực", 7, Arrays.asList("Tất cả", "1", "2","2NT", "3"),
-            (col, val) -> applyFilter("khuVuc", val)
+            "Khu Vực", 7,
+            Arrays.asList("Tất cả", "1", "2", "2NT", "3"),
+            (col, val) -> applyFilter("khuVuc", "Tất cả".equals(val) ? "" : val)
         );
 
+        // Import Excel
         toolbar.getBtnImport().addActionListener(e -> handleImportExcel());
+
+        // btn cập nhật thông tin thí sinh ADMIN
+        btnYeuCauSua = new RoundedButton("Yêu cầu sửa (0)");
+        btnYeuCauSua.setBackground(Color.decode(UIConstants.COLOR_BG));
+        btnYeuCauSua.setForeground(Color.decode(UIConstants.COLOR_TEXT_MUTED));
+        btnYeuCauSua.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        
+        btnYeuCauSua.addActionListener(e -> {
+            new DanhSachYeuCauDialog(getParentFrame()).setVisible(true);
+            loadTableData();
+            checkYeuCauCount();
+        });
+
+        // add btn
+        Container actionPanel = toolbar.getBtnImport().getParent();
+        if (actionPanel != null) {
+            actionPanel.add(Box.createHorizontalStrut(10));
+            actionPanel.add(btnYeuCauSua);
+            
+            actionPanel.revalidate();
+            actionPanel.repaint();
+        } else {
+            // Backup trong trường hợp không lấy được parent
+            toolbar.add(btnYeuCauSua);
+            toolbar.revalidate();
+        }
+
+        // polling
+        startYeuCauPolling();
     }
 
     // ----------------------------------------------------------------
@@ -163,6 +204,7 @@ public class ThiSinhPanel extends BaseTablePanel<ThiSinh> {
             protected List<String> doInBackground() throws Exception {
                 return new ImportService().importThiSinh(file);
             }
+
             @Override
             protected void done() {
                 toolbar.getBtnImport().setEnabled(true);
@@ -181,5 +223,34 @@ public class ThiSinhPanel extends BaseTablePanel<ThiSinh> {
                 }
             }
         }.execute();
+    }
+
+    private void checkYeuCauCount() {
+        com.tuyensinh.service.YeuCauCapNhatService.getInstance().demYeuCauChoDuyet().thenAccept(countLong -> {
+            SwingUtilities.invokeLater(() -> {
+                int count = countLong != null ? countLong.intValue() : 0; 
+                
+                if (count > 0) {
+                    btnYeuCauSua.setText("Yêu cầu sửa (" + count + ")");
+                    btnYeuCauSua.setBackground(Color.decode(com.tuyensinh.admin.util.UIConstants.COLOR_DANGER)); 
+                    btnYeuCauSua.setForeground(Color.WHITE);
+                } else {
+                    btnYeuCauSua.setText("Yêu cầu sửa (0)");
+                    btnYeuCauSua.setBackground(Color.decode(com.tuyensinh.admin.util.UIConstants.COLOR_BG)); 
+                    btnYeuCauSua.setForeground(Color.decode(com.tuyensinh.admin.util.UIConstants.COLOR_TEXT_MUTED));
+                }
+            });
+        }).exceptionally(ex -> {
+            System.err.println("Lỗi gọi Service đếm yêu cầu: " + ex.getMessage());
+            return null;
+        });
+    }
+
+    /** Polling mỗi 30 giây kiểm tra yêu cầu mới */
+    private void startYeuCauPolling() {
+        checkYeuCauCount();
+        timerYeuCau = new Timer(30_000, e -> checkYeuCauCount());
+        timerYeuCau.setRepeats(true);
+        timerYeuCau.start();
     }
 }

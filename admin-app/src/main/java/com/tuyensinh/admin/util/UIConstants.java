@@ -196,7 +196,7 @@ public class UIConstants {
     // ================================================================
     // 24. DASHBOARD UI
     // ================================================================
-    public static final String DASH_PRIMARY = "#1E3A8A";
+    public static final String DASH_PRIMARY = "#1e3a8a";
     public static final String DASH_SIDEBAR_BG = "#111827";
     public static final String DASH_SIDEBAR_ACCOUNT_BG = "#1F2937";
     public static final String DASH_CONTENT_BG = "#F3F4F6";

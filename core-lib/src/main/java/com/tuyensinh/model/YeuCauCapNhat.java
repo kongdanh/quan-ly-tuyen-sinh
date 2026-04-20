@@ -41,4 +41,10 @@ public class YeuCauCapNhat {
 
     @Column(name = "ngay_tao", insertable = false, updatable = false)
     private LocalDateTime ngayTao;
+
+    @Column(name = "note", length = 255)
+    private String note;
+
+    @Column(name = "is_read")
+    private Boolean isRead = false;
 }
