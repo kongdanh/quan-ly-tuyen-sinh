@@ -2,8 +2,8 @@ package com.tuyensinh.admin.ui.dialog;
 
 import com.tuyensinh.admin.ui.base.BaseFormDialog;
 import com.tuyensinh.admin.ui.components.RoundedTextField;
-import com.tuyensinh.dao.ThiSinhDAO;
 import com.tuyensinh.model.ThiSinh;
+import com.tuyensinh.service.ThiSinhService;
 
 import javax.swing.*;
 import java.awt.*;
@@ -21,7 +21,7 @@ public class ThiSinhFormDialog extends BaseFormDialog<ThiSinh> {
     private RoundedTextField txtDoiTuong;
     private RoundedTextField txtKhuVuc;
 
-    private final ThiSinhDAO thiSinhDAO = new ThiSinhDAO();
+    private final ThiSinhService thiSinhService = new ThiSinhService();
 
     public ThiSinhFormDialog(Frame parent, ThiSinh entity, boolean isAddNew) {
         super(parent, "Hồ sơ Thí sinh", entity, isAddNew, 420, 630);
@@ -115,7 +115,7 @@ public class ThiSinhFormDialog extends BaseFormDialog<ThiSinh> {
 
     @Override
     protected void persist(ThiSinh ts) {
-        if (isAddNew) thiSinhDAO.save(ts);
-        else          thiSinhDAO.update(ts);
+        if (isAddNew) thiSinhService.save(ts);
+        else          thiSinhService.update(ts);
     }
 }

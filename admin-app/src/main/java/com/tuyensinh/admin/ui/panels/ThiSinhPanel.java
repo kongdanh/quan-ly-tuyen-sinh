@@ -3,9 +3,9 @@ package com.tuyensinh.admin.ui.panels;
 import com.tuyensinh.admin.ui.base.BaseTablePanel;
 import com.tuyensinh.admin.ui.components.*;
 import com.tuyensinh.admin.ui.dialog.ThiSinhFormDialog;
-import com.tuyensinh.dao.ThiSinhDAO;
 import com.tuyensinh.model.ThiSinh;
 import com.tuyensinh.service.ImportService;
+import com.tuyensinh.service.ThiSinhService;
 
 import javax.swing.*;
 import java.io.File;
@@ -16,7 +16,7 @@ import java.util.Map;
 
 public class ThiSinhPanel extends BaseTablePanel<ThiSinh> {
 
-    private final ThiSinhDAO thiSinhDAO = new ThiSinhDAO();
+    private final ThiSinhService thiSinhService = new ThiSinhService();
     private String currentGenderFilter = "";
 
     public ThiSinhPanel() {
@@ -67,17 +67,17 @@ public class ThiSinhPanel extends BaseTablePanel<ThiSinh> {
     }
 
     // ----------------------------------------------------------------
-    // QUERY — delegate sang DAO
+    // QUERY — delegate sang ThiSinhService
     // ----------------------------------------------------------------
 
     @Override
     protected CompletableFuture<List<ThiSinh>> fetchPage(String keyword, Map<String, Object> filters, int page, int pageSize) {
-        return thiSinhDAO.findPageWithFilters(keyword, getSearchFields(), filters, page, pageSize);
+        return thiSinhService.findPageWithFilters(keyword, getSearchFields(), filters, page, pageSize);
     }
 
     @Override
     protected CompletableFuture<Long> fetchCount(String keyword, Map<String, Object> filters) {
-        return thiSinhDAO.countWithFiltersAsync(keyword, getSearchFields(), filters);
+        return thiSinhService.countWithFiltersAsync(keyword, getSearchFields(), filters);
     }
 
     // ----------------------------------------------------------------
@@ -97,7 +97,7 @@ public class ThiSinhPanel extends BaseTablePanel<ThiSinh> {
     @Override
     protected void showEditDialog(int tableRow) {
         int id = getIdFromRow(tableRow);
-        thiSinhDAO.findByIdAsync(id).thenAccept(ts ->
+        thiSinhService.findByIdAsync(id).thenAccept(ts ->
             SwingUtilities.invokeLater(() -> {
                 ThiSinhFormDialog dialog = new ThiSinhFormDialog(getParentFrame(), ts, false);
                 dialog.setVisible(true);
@@ -115,7 +115,7 @@ public class ThiSinhPanel extends BaseTablePanel<ThiSinh> {
         if (!confirmDelete(name)) return;
 
         int id = getIdFromRow(tableRow);
-        thiSinhDAO.deleteByIdAsync(id).thenAccept(success ->
+        thiSinhService.deleteByIdAsync(id).thenAccept(success ->
             SwingUtilities.invokeLater(() -> {
                 if (success) {
                     loadTableData();

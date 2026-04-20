@@ -5,6 +5,7 @@ import com.tuyensinh.dto.ThiSinhSessionDTO;
 import com.tuyensinh.model.*;
 import com.tuyensinh.service.DiemService;
 import com.tuyensinh.service.NguyenVongService;
+import com.tuyensinh.service.ThiSinhService;
 import com.tuyensinh.service.NguyenVongService.SaveResult;
 import com.tuyensinh.web.util.WebConstants;
 
@@ -26,7 +27,7 @@ import java.util.List;
 public class ThiSinhController extends HttpServlet {
 
     // Dependencies
-    private final ThiSinhDAO         tsDAO       = new ThiSinhDAO();
+    private final ThiSinhService     thiSinhService = new ThiSinhService();
     private final DiemThiXetTuyenDAO diemDAO     = new DiemThiXetTuyenDAO();
     private final NguyenVongDAO      nvDAO       = new NguyenVongDAO();
     private final NganhDAO           nganhDAO    = new NganhDAO();
@@ -45,7 +46,7 @@ public class ThiSinhController extends HttpServlet {
 
         // Attribute public
         req.setAttribute("user",     user);
-        req.setAttribute("thongTin", tsDAO.findByCccd(user.getCccd()).orElse(null));
+        req.setAttribute("thongTin", thiSinhService.findByCccd(user.getCccd()).orElse(null));
 
         switch (getPath(req)) {
             case "/dashboard" -> handleDashboard(req, resp, user.getCccd());
@@ -88,7 +89,7 @@ public class ThiSinhController extends HttpServlet {
 
         // KIỂM TRA MẬT KHẨU MẶC ĐỊNH
         boolean isDefaultPassword = false;
-        ThiSinh thongTin = tsDAO.findByCccd(cccd).orElse(null);
+        ThiSinh thongTin = thiSinhService.findByCccd(cccd).orElse(null);
         
         ThiSinhAccount acc = accDAO.findByCccd(cccd).orElse(null); 
         

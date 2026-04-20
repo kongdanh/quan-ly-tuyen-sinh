@@ -20,6 +20,12 @@ public class HibernateUtil {
             return new Configuration().configure().buildSessionFactory();
         } catch (HibernateException ex) {
             System.err.println("Khởi tạo SessionFactory thất bại: " + ex);
+            Throwable root = ex;
+            while (root.getCause() != null) root = root.getCause();
+            String msg = root.getMessage();
+            if (msg != null && msg.contains("Communications link failure")) {
+                System.err.println("Gợi ý: kiểm tra MySQL đang chạy, cổng 3306, database xettuyen2026 tồn tại, và user/mật khẩu trong hibernate.cfg.xml.");
+            }
             throw new RuntimeException(ex);
         }
     }

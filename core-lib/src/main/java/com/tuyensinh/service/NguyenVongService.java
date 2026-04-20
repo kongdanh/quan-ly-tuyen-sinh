@@ -14,7 +14,7 @@ public class NguyenVongService {
     private final NguyenVongDAO  nvDAO       = new NguyenVongDAO();
     private final NganhToHopDAO  ntDAO       = new NganhToHopDAO();
     private final NganhDAO       nganhDAO    = new NganhDAO();
-    private final ThiSinhDAO     tsDAO       = new ThiSinhDAO();
+    private final ThiSinhService thiSinhService = new ThiSinhService();
     private final DiemService    diemService = new DiemService();
 
     // PUBLIC API
@@ -117,7 +117,7 @@ public class NguyenVongService {
         if (current.size() >= MAX_NGUYEN_VONG) return SaveResult.MAX_REACHED;
 
         int thuTu = current.size() + 1;
-        ThiSinh ts = tsDAO.findByCccd(cccd).orElse(null);
+        ThiSinh ts = thiSinhService.findByCccd(cccd).orElse(null);
 
         NguyenVong nv = new NguyenVong();
         nv.setThiSinh(ts);
