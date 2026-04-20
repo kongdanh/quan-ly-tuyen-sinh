@@ -2,8 +2,11 @@ package com.tuyensinh.dao;
 
 import com.tuyensinh.model.Nganh;
 import com.tuyensinh.util.HibernateUtil;
+
 import org.hibernate.Session;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 public class NganhDAO extends GenericDAO<Nganh> {
@@ -30,4 +33,19 @@ public class NganhDAO extends GenericDAO<Nganh> {
             return Optional.empty();
         }
     }
+
+    public List<Nganh> getAll() {
+        List<Nganh> list = new ArrayList<>();
+
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            String hql = "FROM Nganh";
+            list = session.createQuery(hql, Nganh.class).getResultList();
+        } catch (Exception e) {
+            System.err.println("Lỗi khi lấy danh sách ngành: " + e.getMessage());
+        }
+
+        return list;
+    }
+
+
 }

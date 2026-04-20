@@ -62,4 +62,9 @@ public class Nganh {
 
     @Column(name = "sl_thpt", length = 45)
     private String slThpt;
+
+    @Override
+    public String toString() {
+    return manganh + " - " + tennganh;
+    }
 }
