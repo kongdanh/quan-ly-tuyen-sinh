@@ -1,7 +1,10 @@
 package com.tuyensinh.dao;
 
+import java.util.List;
+
 import com.tuyensinh.model.Nganh;
 import com.tuyensinh.util.HibernateUtil;
+
 import org.hibernate.Session;
 
 import java.util.Optional;
@@ -11,6 +14,12 @@ public class NganhDAO extends GenericDAO<Nganh> {
     public NganhDAO() {
         super(Nganh.class);
     }
+
+    public List<Nganh> findAll() {
+        return super.findAllSync();
+    }
+
+    
 
     /**
      * Tìm kiếm Ngành học dựa vào Mã ngành (Ví dụ: "7480201")

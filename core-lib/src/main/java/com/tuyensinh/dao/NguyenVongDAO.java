@@ -19,4 +19,17 @@ public class NguyenVongDAO extends GenericDAO<NguyenVong> {
                     .list();
         }
     }
+
+    public List<Object[]> countByNganh() {
+    try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+
+        String hql = """
+            SELECT nv.nganh.manganh, COUNT(nv.id)
+            FROM NguyenVong nv
+            GROUP BY nv.nganh.manganh
+        """;
+
+        return session.createQuery(hql, Object[].class).list();
+    }
+}
 }
