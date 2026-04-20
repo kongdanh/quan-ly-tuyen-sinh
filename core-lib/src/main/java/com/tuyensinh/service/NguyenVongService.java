@@ -28,8 +28,7 @@ public class NguyenVongService {
      * @param diem     Điểm thi của thí sinh
      * @return SaveResult: OK, NOT_QUALIFIED, MAX_REACHED, FORBIDDEN
      */
-    public SaveResult saveWish(String cccd, String manganh, Integer idnv, DiemThiXetTuyen diem) {
-        // 1. Tìm tổ hợp tối ưu cho ngành đã chọn
+    public SaveResult saveWish(String cccd, String manganh, Integer idnv, DiemThiXetTuyen diem) {        // 1. Tìm tổ hợp tối ưu cho ngành đã chọn
         Map<String, Double> scoreMap = diemService.buildScoreMap(diem);
         List<NganhToHop> listChoPhep = ntDAO.findByMaNganh(manganh);
 
@@ -146,6 +145,11 @@ public class NguyenVongService {
     /** Tạo key duy nhất cho nguyện vọng */
     private String buildKey(String cccd, String manganh, int thuTu) {
         return cccd + "_" + manganh + "_" + thuTu;
+    }
+
+    public java.util.List<com.tuyensinh.model.NguyenVong> findByCccd(String cccd) {
+        if (cccd == null || cccd.isBlank()) return java.util.Collections.emptyList();
+        return new NguyenVongDAO().findByCccd(cccd);
     }
 
     // ENUM KẾT QUẢ

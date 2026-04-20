@@ -48,15 +48,46 @@
         </div>
     </c:if>
 
+    <c:if test="${not empty yeuCau and (yeuCau.trangThai == 'PENDING' or empty yeuCau.isRead or yeuCau.isRead == false)}">
+        <div style="margin-bottom: 24px; padding: 16px 20px; border-radius: 8px;
+            <c:choose>
+                <c:when test="${yeuCau.trangThai == 'PENDING'}">background-color: #fffbeb; border: 1px solid #fde68a; color: #92400e;</c:when>
+                <c:when test="${yeuCau.trangThai == 'ACCEPTED'}">background-color: #f0fdf4; border: 1px solid #bbf7d0; color: #166534;</c:when>
+                <c:when test="${yeuCau.trangThai == 'REJECTED'}">background-color: #fef2f2; border: 1px solid #fecaca; color: #991b1b;</c:when>
+            </c:choose>
+            <h4 style="margin: 0 0 8px 0; font-size: 16px;">
+                <c:choose>
+                    <c:when test="${yeuCau.trangThai == 'PENDING'}">⏳ Yêu cầu cập nhật hồ sơ đang chờ duyệt</c:when>
+                    <c:when test="${yeuCau.trangThai == 'ACCEPTED'}">✅ Yêu cầu cập nhật hồ sơ đã được duyệt!</c:when>
+                    <c:when test="${yeuCau.trangThai == 'REJECTED'}">❌ Yêu cầu cập nhật hồ sơ bị từ chối</c:when>
+                </c:choose>
+            </h4>
+            <p style="margin: 0; font-size: 14px; line-height: 1.5;">
+                Thời gian gửi: <strong>${yeuCau.ngayTao}</strong>
+                <c:if test="${not empty yeuCau.note}">
+                    <br><span style="display: inline-block; margin-top: 8px;"><b>Phản hồi từ Ban Tuyển sinh:</b> <i>${yeuCau.note}</i></span>
+                </c:if>
+            </p>
+        </div>
+    </c:if>
+
     <div class="card">
         <div class="profile-header">
             <div class="avatar-circle">👤</div>
             <div style="flex: 1;">
                 <h2 style="margin: 0 0 4px 0; font-size: 20px; color: #111827;">${thongTin.ho} ${thongTin.ten}</h2>
                 <p style="margin: 0 0 10px 0; font-size: 13px; color: #6b7280;">Mã số: TS2026${thongTin.id}</p>
-                <span class="badge badge-success" style="background: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0;">✓ Hồ sơ đang chờ duyệt</span>
+                <span class="badge badge-success" style="background: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0;">✓ Hồ sơ hợp lệ</span>
             </div>
-            <button type="button" class="btn btn-outline" onclick="document.getElementById('editModal').style.display='flex'">Yêu cầu chỉnh sửa</button>
+            
+            <c:choose>
+                <c:when test="${not empty yeuCau and yeuCau.trangThai == 'PENDING'}">
+                    <button type="button" class="btn btn-outline" style="opacity: 0.5; cursor: not-allowed;" title="Bạn đang có yêu cầu chờ duyệt" disabled>Đang chờ duyệt...</button>
+                </c:when>
+                <c:otherwise>
+                    <button type="button" class="btn btn-outline" onclick="document.getElementById('editModal').style.display='flex'">Yêu cầu chỉnh sửa</button>
+                </c:otherwise>
+            </c:choose>
         </div>
 
         <h3 style="font-size: 16px; margin: 0 0 16px 0; color: #111827;">Thông tin chi tiết</h3>
@@ -73,82 +104,45 @@
             <div class="info-item"><label>Đối tượng ưu tiên</label><span>ĐT <c:out value="${thongTin.doiTuong}" default="Không"/></span></div>
         </div>
     </div>
-        <div class="card">
-
+    
+    <div class="card">
         <h3 class="card-header">📁 Hồ sơ đính kèm</h3>
-
         
-
         <div class="doc-item doc-success">
-
             <div style="display: flex; gap: 12px; align-items: center;">
-
                 <span style="color: #16a34a; font-size: 18px;">✓</span>
-
                 <span style="font-size: 14px;">CCCD (scan 2 mặt)</span>
-
             </div>
-
             <span class="badge badge-success">Đã nộp</span>
-
         </div>
-
         
-
         <div class="doc-item doc-success">
-
             <div style="display: flex; gap: 12px; align-items: center;">
-
                 <span style="color: #16a34a; font-size: 18px;">✓</span>
-
                 <span style="font-size: 14px;">Bằng tốt nghiệp THPT</span>
-
             </div>
-
             <span class="badge badge-success">Đã nộp</span>
-
         </div>
-
-
 
         <div class="doc-item doc-warning">
-
             <div style="display: flex; gap: 12px; align-items: center;">
-
                 <span style="color: #ca8a04; font-size: 18px;">⊗</span>
-
                 <span style="font-size: 14px;">Giấy khai sinh</span>
-
             </div>
-
             <span class="badge badge-warning">Chưa nộp</span>
-
         </div>
-
-
 
         <div class="doc-item doc-success">
-
             <div style="display: flex; gap: 12px; align-items: center;">
-
                 <span style="color: #16a34a; font-size: 18px;">✓</span>
-
                 <span style="font-size: 14px;">Ảnh 3x4</span>
-
             </div>
-
             <span class="badge badge-success">Đã nộp</span>
-
         </div>
-
         
-
         <div class="alert-warning" style="margin-top: 16px;">
-
             💡 <strong>Lưu ý:</strong> Vui lòng nộp đầy đủ hồ sơ trước ngày 20/03/2026. Hồ sơ thiếu sẽ không được xét tuyển.
-
         </div>
-
     </div>
 </main>
 
@@ -215,7 +209,6 @@
         var group = document.getElementById("minhChungGroup");
         var fileInput = document.getElementById("fileMinhChung");
         
-        // Nếu chọn KV1, KV2, KV2-NT HOẶC Đối tượng khác "Không" -> Hiển thị ô Upload
         if (kv !== "3" || (dt !== "Không" && dt !== "")) {
             group.style.display = "block";
             fileInput.required = true;
@@ -225,7 +218,6 @@
         }
     }
     
-    // check status
     window.onload = function() {
         toggleMinhChung();
     };

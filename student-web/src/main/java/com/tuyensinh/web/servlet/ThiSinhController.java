@@ -1,12 +1,14 @@
 package com.tuyensinh.web.servlet;
 
-import com.tuyensinh.dao.*;
 import com.tuyensinh.dto.ThiSinhSessionDTO;
 import com.tuyensinh.model.*;
 import com.tuyensinh.service.DiemService;
 import com.tuyensinh.service.NguyenVongService;
-import com.tuyensinh.service.ThiSinhService;
 import com.tuyensinh.service.NguyenVongService.SaveResult;
+import com.tuyensinh.service.ThiSinhAccountService;
+import com.tuyensinh.service.ThiSinhService;
+import com.tuyensinh.service.NganhService;
+import com.tuyensinh.service.YeuCauCapNhatService;
 import com.tuyensinh.web.util.WebConstants;
 
 import jakarta.servlet.ServletException;
@@ -26,15 +28,12 @@ import java.util.List;
 @WebServlet("/thisinh/*")
 public class ThiSinhController extends HttpServlet {
 
-    // Dependencies
-    private final ThiSinhService     thiSinhService = new ThiSinhService();
-    private final DiemThiXetTuyenDAO diemDAO     = new DiemThiXetTuyenDAO();
-    private final NguyenVongDAO      nvDAO       = new NguyenVongDAO();
-    private final NganhDAO           nganhDAO    = new NganhDAO();
-    private final YeuCauCapNhatDAO   ycDAO       = new YeuCauCapNhatDAO();
-    private final DiemService        diemService = new DiemService();
-    private final NguyenVongService  nvService   = new NguyenVongService();
-    private final ThiSinhAccountDAO accDAO = new ThiSinhAccountDAO();
+    private final ThiSinhService           thiSinhService = new ThiSinhService();
+    private final DiemService              diemService    = new DiemService();
+    private final NguyenVongService        nvService      = new NguyenVongService();
+    private final NganhService             nganhService   = new NganhService();
+    private final YeuCauCapNhatService     ycService      = YeuCauCapNhatService.getInstance();
+    private final ThiSinhAccountService    accService     = new ThiSinhAccountService();
 
     // GET
     @Override
@@ -44,14 +43,20 @@ public class ThiSinhController extends HttpServlet {
         ThiSinhSessionDTO user = getUser(req);
         if (user == null) { redirectLogin(req, resp); return; }
 
-        // Attribute public
         req.setAttribute("user",     user);
         req.setAttribute("thongTin", thiSinhService.findByCccd(user.getCccd()).orElse(null));
+        
+        // NẠP THÔNG BÁO CHO NAVBAR
+        List<YeuCauCapNhat> notifs = ycService.layDanhSachThongBao(user.getCccd());
+        long unreadCount = notifs.stream().filter(n -> Boolean.FALSE.equals(n.getIsRead())).count();
+        
+        req.setAttribute("notifications", notifs);
+        req.setAttribute("unreadCount", unreadCount);
 
         switch (getPath(req)) {
             case "/dashboard" -> handleDashboard(req, resp, user.getCccd());
             case "/scores"    -> handleScores(req, resp, user.getCccd());
-            case "/profile"   -> forward(req, resp, "/WEB-INF/views/profile.jsp");
+            case "/profile"   -> handleProfile(req, resp, user.getCccd());
             case "/wishes"    -> handleWishes(req, resp, user.getCccd());
             case "/results"   -> handleResults(req, resp, user.getCccd());
             default           -> resp.sendRedirect(req.getContextPath() + "/thisinh/dashboard");
@@ -69,12 +74,16 @@ public class ThiSinhController extends HttpServlet {
         if (user == null) { redirectLogin(req, resp); return; }
 
         switch (getPath(req)) {
-            case "/profile/update" -> handleProfileUpdate(req, resp, user);
-            case "/wishes/save"    -> handleWishSave(req, resp, user);
-            case "/wishes/delete"  -> handleWishDelete(req, resp, user);
-            case "/wishes/reorder" -> handleWishReorder(req, resp, user);
-            case "/change-password"-> handleChangePassword(req, resp, user);
-            default                -> resp.sendRedirect(req.getContextPath() + "/thisinh/dashboard");
+            case "/profile/update"     -> handleProfileUpdate(req, resp, user);
+            case "/wishes/save"        -> handleWishSave(req, resp, user);
+            case "/wishes/delete"      -> handleWishDelete(req, resp, user);
+            case "/wishes/reorder"     -> handleWishReorder(req, resp, user);
+            case "/change-password"    -> handleChangePassword(req, resp, user);
+            case "/notifications/read" -> {
+                ycService.danhDauDaDoc(user.getCccd());
+                resp.setStatus(HttpServletResponse.SC_OK); 
+            }
+            default                    -> resp.sendRedirect(req.getContextPath() + "/thisinh/dashboard");
         }
     }
 
@@ -82,16 +91,15 @@ public class ThiSinhController extends HttpServlet {
 
     private void handleDashboard(HttpServletRequest req, HttpServletResponse resp, String cccd)
             throws ServletException, IOException {
-        DiemThiXetTuyen diem = diemDAO.findByCccd(cccd).orElse(null);
+        DiemThiXetTuyen diem = diemService.findByCccd(cccd).orElse(null);
         req.setAttribute("diem",     diem);
         req.setAttribute("maxToHop", diemService.tinhMaxToHop(diem));
-        req.setAttribute("wishes",   nvDAO.findByCccd(cccd));
+        req.setAttribute("wishes",   nvService.findByCccd(cccd));
 
         // KIỂM TRA MẬT KHẨU MẶC ĐỊNH
         boolean isDefaultPassword = false;
         ThiSinh thongTin = thiSinhService.findByCccd(cccd).orElse(null);
-        
-        ThiSinhAccount acc = accDAO.findByCccd(cccd).orElse(null); 
+        ThiSinhAccount acc = accService.findByCccd(cccd).orElse(null); 
         
         if (thongTin != null && acc != null) {
             if (org.mindrot.jbcrypt.BCrypt.checkpw(thongTin.getNgaySinh(), acc.getPasswordHash())) {
@@ -105,26 +113,44 @@ public class ThiSinhController extends HttpServlet {
 
     private void handleScores(HttpServletRequest req, HttpServletResponse resp, String cccd)
             throws ServletException, IOException {
-        DiemThiXetTuyen diem     = diemDAO.findByCccd(cccd).orElse(null);
-        var             listToHop = diemService.tinhListToHop(diem);
-        req.setAttribute("diem",      diem);
+        DiemThiXetTuyen diem = diemService.findByCccd(cccd).orElse(null);
+        
+        @SuppressWarnings("unchecked")
+        List<java.util.Map<String, Object>> listToHop = 
+            (List<java.util.Map<String, Object>>) diemService.tinhListToHop(diem);
+
+        req.setAttribute("diem", diem);
         req.setAttribute("listToHop", listToHop);
-        req.setAttribute("maxToHop",  listToHop.stream()
-            .max(java.util.Comparator.comparingDouble(m -> (Double) m.get("total")))
-            .orElse(null));
+        
+        // CHECK NULL ĐỂ TRÁNH VĂNG APP NẾU THÍ SINH CHƯA CÓ ĐIỂM
+        if (listToHop != null && !listToHop.isEmpty()) {
+            req.setAttribute("maxToHop", listToHop.stream()
+                .max(java.util.Comparator.comparingDouble(m -> (Double) m.get("total")))
+                .orElse(null));
+        } else {
+            req.setAttribute("maxToHop", null);
+        }
+        
         forward(req, resp, "/WEB-INF/views/scores.jsp");
+    }
+
+    private void handleProfile(HttpServletRequest req, HttpServletResponse resp, String cccd)
+            throws ServletException, IOException {
+        YeuCauCapNhat yeuCau = ycService.layYeuCauMoiNhat(cccd);
+        req.setAttribute("yeuCau", yeuCau);
+        forward(req, resp, "/WEB-INF/views/profile.jsp");
     }
 
     private void handleWishes(HttpServletRequest req, HttpServletResponse resp, String cccd)
             throws ServletException, IOException {
-        req.setAttribute("wishes",    nvDAO.findByCccd(cccd));
-        req.setAttribute("listNganh", nganhDAO.findAllSync());
+        req.setAttribute("wishes",    nvService.findByCccd(cccd));
+        req.setAttribute("listNganh", nganhService.findAllSync());
         forward(req, resp, "/WEB-INF/views/wishes.jsp");
     }
 
     private void handleResults(HttpServletRequest req, HttpServletResponse resp, String cccd)
             throws ServletException, IOException {
-        List<NguyenVong> wishes = nvDAO.findByCccd(cccd);
+        List<NguyenVong> wishes = nvService.findByCccd(cccd);
 
         NguyenVong trungTuyen = wishes.stream()
             .filter(nv -> "TRUNG_TUYEN".equalsIgnoreCase(nv.getNvKetqua())
@@ -159,7 +185,8 @@ public class ThiSinhController extends HttpServlet {
             .trangThai("PENDING")
             .build();
 
-        ycDAO.save(yc);
+        // GỌI SERVICE LƯU
+        ycService.save(yc); 
         resp.sendRedirect(req.getContextPath() + "/thisinh/profile?success=true");
     }
 
@@ -172,7 +199,7 @@ public class ThiSinhController extends HttpServlet {
         Integer idnv    = (idnvStr != null && !idnvStr.isBlank())
                           ? Integer.parseInt(idnvStr) : null;
 
-        DiemThiXetTuyen diem   = diemDAO.findByCccd(user.getCccd()).orElse(null);
+        DiemThiXetTuyen diem   = diemService.findByCccd(user.getCccd()).orElse(null);
         SaveResult      result = nvService.saveWish(user.getCccd(), manganh, idnv, diem);
 
         String redirect = switch (result) {
@@ -207,6 +234,32 @@ public class ThiSinhController extends HttpServlet {
         }
         nvService.reorderByIds(idsParam.split(","), user.getCccd());
         resp.setStatus(HttpServletResponse.SC_OK);
+    }
+
+    private void handleChangePassword(HttpServletRequest req, HttpServletResponse resp, ThiSinhSessionDTO user) throws IOException {
+        String oldPass = req.getParameter("oldPassword");
+        String newPass = req.getParameter("newPassword");
+        String confirm = req.getParameter("confirmPassword");
+
+        if (newPass == null || !newPass.equals(confirm)) {
+            resp.sendRedirect(req.getContextPath() + "/thisinh/dashboard?error=pwd_mismatch");
+            return;
+        }
+
+        ThiSinhAccount acc = accService.findByCccd(user.getCccd()).orElse(null);
+        
+        if (acc != null) {
+            if (org.mindrot.jbcrypt.BCrypt.checkpw(oldPass, acc.getPasswordHash())) {
+                String hashedNewPass = org.mindrot.jbcrypt.BCrypt.hashpw(newPass, org.mindrot.jbcrypt.BCrypt.gensalt(12));
+                acc.setPasswordHash(hashedNewPass);
+                accService.update(acc);
+                resp.sendRedirect(req.getContextPath() + "/thisinh/dashboard?success=pwd_changed");
+            } else {
+                resp.sendRedirect(req.getContextPath() + "/thisinh/dashboard?error=wrong_old_pwd");
+            }
+        } else {
+            resp.sendRedirect(req.getContextPath() + "/thisinh/dashboard?error=acc_not_found");
+        }
     }
 
     // PRIVATE UTILITIES
@@ -256,34 +309,4 @@ public class ThiSinhController extends HttpServlet {
             throws IOException {
         resp.sendRedirect(req.getContextPath() + WebConstants.LOGIN_PAGE);
     }
-
-    // change pwd
-    private void handleChangePassword(HttpServletRequest req, HttpServletResponse resp, ThiSinhSessionDTO user) throws IOException {
-        String oldPass = req.getParameter("oldPassword");
-        String newPass = req.getParameter("newPassword");
-        String confirm = req.getParameter("confirmPassword");
-
-        if (newPass == null || !newPass.equals(confirm)) {
-            resp.sendRedirect(req.getContextPath() + "/thisinh/dashboard?error=pwd_mismatch");
-            return;
-        }
-
-        ThiSinhAccount acc = accDAO.findByCccd(user.getCccd()).orElse(null);
-        
-        if (acc != null) {
-            // Kiểm tra mật khẩu cũ có đúng không
-            if (org.mindrot.jbcrypt.BCrypt.checkpw(oldPass, acc.getPasswordHash())) {
-                // Hash mật khẩu mới và lưu DB
-                String hashedNewPass = org.mindrot.jbcrypt.BCrypt.hashpw(newPass, org.mindrot.jbcrypt.BCrypt.gensalt(12));
-                acc.setPasswordHash(hashedNewPass);
-                accDAO.update(acc);
-                resp.sendRedirect(req.getContextPath() + "/thisinh/dashboard?success=pwd_changed");
-            } else {
-                resp.sendRedirect(req.getContextPath() + "/thisinh/dashboard?error=wrong_old_pwd");
-            }
-        } else {
-            resp.sendRedirect(req.getContextPath() + "/thisinh/dashboard?error=acc_not_found");
-        }
-    }
-
 }

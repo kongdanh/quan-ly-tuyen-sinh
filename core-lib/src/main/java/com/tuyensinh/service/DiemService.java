@@ -113,4 +113,10 @@ public class DiemService {
     private void putIfPositive(Map<String, Double> m, String key, Number val) {
         if (val != null && val.doubleValue() > 0) m.put(key, val.doubleValue());
     }
+
+    public java.util.Optional<com.tuyensinh.model.DiemThiXetTuyen> findByCccd(String cccd) {
+        if (cccd == null || cccd.isBlank()) return java.util.Optional.empty();
+        return new com.tuyensinh.dao.DiemThiXetTuyenDAO().findByCccd(cccd);
+    }
+
 }
