@@ -1,17 +1,27 @@
 package com.tuyensinh.admin.ui.panels;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.tuyensinh.admin.ui.components.CustomTable;
 import com.tuyensinh.admin.ui.components.HeaderPanel;
 import com.tuyensinh.admin.ui.components.StatCard;
 import com.tuyensinh.admin.util.AdminSession;
 import com.tuyensinh.admin.util.UIConstants;
+import com.tuyensinh.model.NhatKyHoatDong;
+import com.tuyensinh.service.NhatKyHoatDongService;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.geom.RoundRectangle2D;
+import java.time.format.DateTimeFormatter;
 
 public class DashboardPanel extends JPanel {
+
+    private CustomTable logTable;
+    private DefaultTableModel logTableModel;
+    
+    private final NhatKyHoatDongService logService = new NhatKyHoatDongService();
 
     public DashboardPanel() {
         setOpaque(false);
@@ -37,6 +47,7 @@ public class DashboardPanel extends JPanel {
 
         // ==========================================
         // 3. GRID 3 THẺ THỐNG KÊ (STAT CARDS)
+        // để làm thống kê xong chèn vô hoặc chèn số lượng thí sinh, gv để đỡ trống dashboard
         // ==========================================
         JPanel cardsGrid = new JPanel(new GridLayout(1, 3, UIConstants.SECTION_GAP, 0));
         cardsGrid.setOpaque(false);
@@ -44,6 +55,7 @@ public class DashboardPanel extends JPanel {
         cardsGrid.setMaximumSize(new Dimension(Integer.MAX_VALUE, 140)); 
 
         // Dữ liệu giả lập cho biểu đồ (Mock data)
+        // như trên
         int[] dataHoso = {12, 19, 15, 25, 32, 45, 62};
         int[] dataDiem = {0, 0, 5, 12, 18, 20, 20}; 
         int[] dataTrungTuyen = {0, 0, 0, 0, 0, 5, 15};
@@ -55,14 +67,81 @@ public class DashboardPanel extends JPanel {
         content.add(cardsGrid);
         content.add(Box.createVerticalStrut(UIConstants.SECTION_GAP * 2));
 
-        // 4. Bảng Tiến độ (Giữ nguyên code cũ)
-        JPanel progressPanel = createProgressPanel();
-        content.add(progressPanel);
+        // ==========================================
+        // 4. BẢNG NHẬT KÝ HOẠT ĐỘNG (THAY THẾ BẢNG TIẾN ĐỘ)
+        // ==========================================
+        JPanel activityPanel = createActivityLogPanel();
+        content.add(activityPanel);
 
         add(content, BorderLayout.CENTER);
+
+        loadActivityLogs();
     }
 
-    // Hàm tạo 1 thẻ Tóm tắt (Card)
+    // Hàm tạo Bảng Nhật ký hoạt động
+    private JPanel createActivityLogPanel() {
+        JPanel p = new JPanel(new BorderLayout(0, 16)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(Color.WHITE);
+                g2.fill(new RoundRectangle2D.Double(0, 0, getWidth(), getHeight(), UIConstants.DASH_CARD_RADIUS, UIConstants.DASH_CARD_RADIUS));
+                
+                g2.setColor(Color.decode(UIConstants.COLOR_BORDER));
+                g2.draw(new RoundRectangle2D.Double(0, 0, getWidth() - 1, getHeight() - 1, UIConstants.DASH_CARD_RADIUS, UIConstants.DASH_CARD_RADIUS));
+                g2.dispose();
+            }
+        };
+        p.setOpaque(false);
+        p.setAlignmentX(Component.LEFT_ALIGNMENT);
+        p.setBorder(new EmptyBorder(20, 24, 24, 24));
+
+        JLabel title = new JLabel("Nhật ký hoạt động hệ thống");
+        title.setFont(UIManager.getFont("defaultFont").deriveFont(Font.BOLD, (float) UIConstants.FONT_SIZE_MD));
+        title.setForeground(Color.decode(UIConstants.DASH_TEXT_DARK));
+        p.add(title, BorderLayout.NORTH);
+
+        // Khởi tạo bảng
+        String[] columns = {"Thời gian", "Username", "Hành động", "Trạng thái"};
+        logTableModel = new DefaultTableModel(columns, 0) {
+            @Override public boolean isCellEditable(int row, int col) { return false; }
+        };
+        logTable = new CustomTable();
+        logTable.setModel(logTableModel);
+        
+        logTable.getColumnModel().getColumn(0).setPreferredWidth(140); // Thời gian
+        logTable.getColumnModel().getColumn(1).setPreferredWidth(120); // Username
+        logTable.getColumnModel().getColumn(2).setPreferredWidth(300); // Hành động
+        logTable.getColumnModel().getColumn(3).setPreferredWidth(100); // Trạng thái
+
+        JScrollPane scroll = new JScrollPane(logTable);
+        scroll.setBorder(BorderFactory.createLineBorder(Color.decode(UIConstants.COLOR_BORDER)));
+        scroll.getViewport().setBackground(Color.WHITE);
+        p.add(scroll, BorderLayout.CENTER);
+
+        return p;
+    }
+
+    // Tải dữ liệu từ database lên bảng
+    private void loadActivityLogs() {
+        logService.getLatestLogs(20).thenAccept(logs -> {
+            SwingUtilities.invokeLater(() -> {
+                logTableModel.setRowCount(0);
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+                
+                for (NhatKyHoatDong log : logs) {
+                    logTableModel.addRow(new Object[]{
+                        log.getThoiGian() != null ? log.getThoiGian().format(formatter) : "",
+                        log.getUsername() != null ? log.getUsername() : "Hệ thống",
+                        log.getHanhDong(),
+                        log.getTrangThai()
+                    });
+                }
+            });
+        });
+    }
+
     private JPanel createSummaryCard(String title, String desc, String icon, String colorHex) {
         JPanel card = new JPanel(new GridBagLayout()) {
             @Override
@@ -72,7 +151,6 @@ public class DashboardPanel extends JPanel {
                 g2.setColor(Color.WHITE);
                 g2.fill(new RoundRectangle2D.Double(0, 0, getWidth(), getHeight(), UIConstants.DASH_CARD_RADIUS, UIConstants.DASH_CARD_RADIUS));
                 
-                // Vẽ viền xám mờ
                 g2.setColor(Color.decode(UIConstants.COLOR_BORDER));
                 g2.draw(new RoundRectangle2D.Double(0, 0, getWidth() - 1, getHeight() - 1, UIConstants.DASH_CARD_RADIUS, UIConstants.DASH_CARD_RADIUS));
                 g2.dispose();
@@ -98,7 +176,6 @@ public class DashboardPanel extends JPanel {
         lblTitle.setForeground(Color.decode(colorHex));
         card.add(lblTitle, g);
 
-        // Mô tả
         g.gridy = 2;
         g.insets = new Insets(0, 0, 0, 0);
         JLabel lblDesc = new JLabel(desc);
@@ -107,81 +184,5 @@ public class DashboardPanel extends JPanel {
         card.add(lblDesc, g);
 
         return card;
-    }
-
-    // Hàm tạo Bảng Tiến độ giả lập
-    private JPanel createProgressPanel() {
-        JPanel p = new JPanel(null) {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(Color.WHITE);
-                g2.fill(new RoundRectangle2D.Double(0, 0, getWidth(), getHeight(), UIConstants.DASH_CARD_RADIUS, UIConstants.DASH_CARD_RADIUS));
-                g2.dispose();
-            }
-        };
-        p.setOpaque(false);
-        p.setAlignmentX(Component.LEFT_ALIGNMENT);
-        p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
-        p.setBorder(new EmptyBorder(20, 24, 24, 24));
-        
-        // Để nó giãn rộng ra hết cỡ nhưng giới hạn chiều cao
-        p.setMaximumSize(new Dimension(Integer.MAX_VALUE, 200));
-
-        JLabel title = new JLabel("Tiến độ công việc");
-        title.setFont(UIManager.getFont("defaultFont").deriveFont(Font.BOLD, (float) UIConstants.FONT_SIZE_MD));
-        title.setForeground(Color.decode(UIConstants.DASH_TEXT_DARK));
-        title.setBorder(new EmptyBorder(0, 0, 16, 0));
-        p.add(title);
-
-        p.add(createProgressBar("Nhập liệu thí sinh", 78, UIConstants.DASH_ACCENT_SUCCESS));
-        p.add(Box.createVerticalStrut(12));
-        p.add(createProgressBar("Nhập điểm thi", 45, "#F59E0B")); // Màu Amber/Vàng
-        p.add(Box.createVerticalStrut(12));
-        p.add(createProgressBar("Xét nguyện vọng", 20, UIConstants.DASH_ACCENT_ROSE));
-
-        return p;
-    }
-
-    private JPanel createProgressBar(String label, int percent, String colorHex) {
-        JPanel row = new JPanel(new BorderLayout(16, 0));
-        row.setOpaque(false);
-        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 24));
-
-        JLabel lbl = new JLabel(label);
-        lbl.setFont(UIManager.getFont("defaultFont").deriveFont(Font.BOLD, (float) UIConstants.FONT_SIZE_BASE));
-        lbl.setForeground(Color.decode(UIConstants.DASH_TEXT_DARK));
-        lbl.setPreferredSize(new Dimension(140, 20));
-        row.add(lbl, BorderLayout.WEST);
-
-        JPanel barContainer = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                
-                // Vẽ nền bar xám nhạt
-                g2.setColor(Color.decode(UIConstants.DASH_GRID_LINE));
-                g2.fillRoundRect(0, 4, getWidth(), 12, 12, 12);
-                
-                // Vẽ phần trăm hoàn thành
-                g2.setColor(Color.decode(colorHex));
-                int fillWidth = (int) (getWidth() * (percent / 100.0));
-                g2.fillRoundRect(0, 4, fillWidth, 12, 12, 12);
-                
-                g2.dispose();
-            }
-        };
-        barContainer.setOpaque(false);
-        row.add(barContainer, BorderLayout.CENTER);
-
-        JLabel lblPct = new JLabel(percent + "%");
-        lblPct.setFont(UIManager.getFont("defaultFont").deriveFont(Font.BOLD, (float) UIConstants.FONT_SIZE_SM));
-        lblPct.setForeground(Color.decode(UIConstants.DASH_TEXT_DARK));
-        lblPct.setPreferredSize(new Dimension(30, 20));
-        row.add(lblPct, BorderLayout.EAST);
-
-        return row;
     }
 }

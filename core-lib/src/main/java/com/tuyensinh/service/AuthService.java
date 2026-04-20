@@ -6,6 +6,7 @@ import com.tuyensinh.model.ThiSinh;
 import com.tuyensinh.model.ThiSinhAccount;
 import com.tuyensinh.model.User;
 import com.tuyensinh.dao.UserDAO;
+import com.tuyensinh.util.SystemLogger;
 
 import com.tuyensinh.util.PasswordUtil;
 import java.util.Optional;
@@ -33,6 +34,7 @@ public class AuthService {
             Optional<ThiSinhAccount> accountOpt = accountDAO.findByCccd(cccd.trim());
             if (accountOpt.isEmpty()) {
                 System.out.println("[AuthService] Không tìm thấy Account có CCCD: " + cccd);
+                SystemLogger.log(null, null, "Đăng nhập thất bại (Không tìm thấy tài khoản)", false);
                 return null;
             }
 
@@ -41,6 +43,7 @@ public class AuthService {
             // 2. Kiểm tra trạng thái
             if (!"HOAT_DONG".equals(account.getTrangThai())) {
                 System.out.println("[AuthService] Tài khoản bị khóa!");
+                SystemLogger.log(null, null, "Đăng nhập thất bại (Tài khoản bị khóa)", false);
                 return null;
             }
             
@@ -97,16 +100,19 @@ public class AuthService {
             // 2. Kiểm tra trạng thái
             if (!"HOAT_DONG".equals(adminUser.getTrangThai())) {
                 System.out.println("[AuthService] Tài khoản Admin/GV bị khóa!");
+                com.tuyensinh.util.SystemLogger.log(adminUser.getId(), adminUser.getUsername(), "Đăng nhập thất bại (Tài khoản bị khóa)", false);
                 return null;
             }
 
             // 3. Kiểm tra mật khẩu (Dùng BCrypt)
             if (!com.tuyensinh.util.PasswordUtil.verify(password, adminUser.getPasswordHash())) {
                 System.out.println("[AuthService] Sai mật khẩu Admin!");
+                com.tuyensinh.util.SystemLogger.log(adminUser.getId(), adminUser.getUsername(), "Đăng nhập thất bại (Sai mật khẩu)", false);
                 return null;
             }
 
             System.out.println("[AuthService] Admin/GV đăng nhập thành công: " + adminUser.getHoTen());
+            com.tuyensinh.util.SystemLogger.log(adminUser.getId(), adminUser.getUsername(), "Đăng nhập hệ thống (Admin)", true);
             return adminUser;
 
         } catch (Exception e) {
