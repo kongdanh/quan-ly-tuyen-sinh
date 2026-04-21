@@ -21,6 +21,10 @@ public class DiemThiXetTuyen {
     @Column(name = "iddiemthi", nullable = false)
     private Integer id;
 
+    // Read-only mirror of FK column to keep UI stable even when relation data is missing.
+    @Column(name = "cccd", length = 20, insertable = false, updatable = false)
+    private String cccd;
+
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "cccd", nullable = false, referencedColumnName = "cccd")
     private ThiSinh thiSinh;
