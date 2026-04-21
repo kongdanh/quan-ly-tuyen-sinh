@@ -7417,7 +7417,7 @@ INSERT INTO `xt_users` (`id`, `username`, `password_hash`, `ho_ten`, `email`, `b
 (3, 'gv_khtoan', '$2a$12$REPLACE_WITH_BCRYPT_HASH_user123', 'Lê Thị Lan', 'gv.khtoan@sgu.edu.vn', 'Khoa Kinh tế', 2, 'HOAT_DONG', '2026-04-09 03:16:39'),
 (4, 'gv_phapluat', '$2a$12$REPLACE_WITH_BCRYPT_HASH_user123', 'Phạm Văn Đức', 'gv.luat@sgu.edu.vn', 'Khoa Luật', 2, 'HOAT_DONG', '2026-04-09 03:16:39'),
 (5, 'gv_ngoaingu', '$2a$12$REPLACE_WITH_BCRYPT_HASH_user123', 'Hoàng Thị Mai', 'gv.ngoaingu@sgu.edu.vn', 'Khoa Ngoại ngữ', 2, 'BI_KHOA', '2026-04-09 03:16:39'),
-(6, 'admin2', '$2a$12$REPLACE_WITH_BCRYPT_HASH_admin123', 'Vũ Thanh Tùng', 'admin2@sgu.edu.vn', 'Phòng Đào tạo', 1, 'HOAT_DONG', '2026-04-09 03:16:39'),
+(6, 'admin2', '$2a$12$Pu9zWzcBtVqVd.CVNdeDQe6w//TNCIuRvM0oMy/qsNLBgF7WGL9xS', 'Vũ Thanh Tùng', 'admin2@sgu.edu.vn', 'Phòng Đào tạo', 1, 'HOAT_DONG', '2026-04-09 03:16:39'),
 (7, 'hd_xettuyen', '$2a$12$REPLACE_WITH_BCRYPT_HASH_user123', 'Ngô Thị Hương', 'hd.xt@sgu.edu.vn', 'Phòng Đào tạo', 3, 'HOAT_DONG', '2026-04-09 03:16:39');
 
 -- --------------------------------------------------------
