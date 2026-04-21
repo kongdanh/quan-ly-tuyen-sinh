@@ -1,5 +1,10 @@
 package com.tuyensinh.dao;
 
-public class ToHopMonDAO {
-    
+import com.tuyensinh.model.ToHopMon;
+
+public class ToHopMonDAO extends GenericDAO<ToHopMon> {
+
+    public ToHopMonDAO() {
+        super(ToHopMon.class);
+    }
 }

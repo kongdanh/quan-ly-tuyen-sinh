@@ -32,4 +32,9 @@ public class ToHopMon {
 
     @Column(name = "tentohop", length = 100)
     private String tentohop;
+
+    @Override
+    public String toString() {
+    return matohop + " - (" + mon1 + " , " +mon2 + " , " + mon3 + ")" ;
+    }
 }
