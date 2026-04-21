@@ -22,7 +22,7 @@ public class RoundedButton extends JButton {
         
         setFont(UIManager.getFont("defaultFont").deriveFont(Font.BOLD, (float) UIConstants.BTN_FONT_SIZE));
         setForeground(Color.decode(UIConstants.BTN_PRIMARY_TEXT));
-
+        setPreferredSize(new Dimension(130, 38));
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
