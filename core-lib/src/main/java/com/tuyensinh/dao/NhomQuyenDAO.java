@@ -1,5 +1,9 @@
 package com.tuyensinh.dao;
 
-public class NhomQuyenDAO {
-    
+import com.tuyensinh.model.NhomQuyen;
+
+public class NhomQuyenDAO extends GenericDAO<NhomQuyen> {
+    public NhomQuyenDAO() {
+        super(NhomQuyen.class);
+    }
 }

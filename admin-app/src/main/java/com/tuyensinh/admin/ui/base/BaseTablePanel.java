@@ -1,8 +1,8 @@
-// admin-app/src/main/java/com/tuyensinh/admin/ui/base/BaseTablePanel.java
 package com.tuyensinh.admin.ui.base;
 
 import com.tuyensinh.admin.ui.components.*;
 import com.tuyensinh.admin.util.UIConstants;
+import com.tuyensinh.admin.util.AdminSession;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -15,10 +15,10 @@ import java.util.Map;
 /**
  * Abstract base cho tất cả panel có bảng dữ liệu + search + pagination.
  * Subclass chỉ cần implement các method abstract để cung cấp:
- *   - Tên cột
- *   - Dữ liệu mỗi dòng
- *   - Query DAO
- *   - Form dialog
+ * - Mã chức năng (để tự động phân quyền)
+ * - Tên cột, Dữ liệu mỗi dòng
+ * - Query DAO
+ * - Form dialog
  */
 public abstract class BaseTablePanel<T> extends JPanel {
 
@@ -84,6 +84,9 @@ public abstract class BaseTablePanel<T> extends JPanel {
     // ABSTRACT
     // ================================================================
 
+    /** Khai báo mã chức năng để BaseTable tự động phân quyền (VD: Constants.QUYEN_THI_SINH) */
+    protected abstract String getModuleCode();
+
     /** Tên cột của bảng, cột cuối thường là "Thao tác" */
     protected abstract String[] getColumnNames();
 
@@ -128,7 +131,7 @@ public abstract class BaseTablePanel<T> extends JPanel {
     // CORE LOGIC
     // ================================================================
 
-    /** Setup bảng, gắn Action cell vào cột cuối */
+    /** Setup bảng, gắn Action cell vào cột cuối kèm kiểm tra quyền */
     private void setupTable() {
         tableModel = new DefaultTableModel(getColumnNames(), 0) {
             @Override
@@ -144,9 +147,19 @@ public abstract class BaseTablePanel<T> extends JPanel {
 
         int actionCol = getActionColumnIndex();
         if (actionCol >= 0) {
+            // Kiểm tra quyền Sửa/Xóa từ AdminSession
+            boolean canEdit = AdminSession.getInstance().canEdit(getModuleCode());
+            boolean canDelete = AdminSession.getInstance().canDelete(getModuleCode());
+
             TableActionCell.TableActionEvent event = new TableActionCell.TableActionEvent() {
-                @Override public void onEdit(int row)   { showEditDialog(row); }
-                @Override public void onDelete(int row) { deleteRecord(row); }
+                @Override public void onEdit(int row) { 
+                    if (canEdit) showEditDialog(row); 
+                    else showError("Bạn không có quyền Chỉnh sửa dữ liệu này!");
+                }
+                @Override public void onDelete(int row) { 
+                    if (canDelete) deleteRecord(row); 
+                    else showError("Bạn không có quyền Xóa dữ liệu này!");
+                }
             };
             table.getColumnModel().getColumn(actionCol)
                  .setCellRenderer(new TableActionCell.Renderer());
@@ -160,7 +173,7 @@ public abstract class BaseTablePanel<T> extends JPanel {
     /** Override để tùy chỉnh độ rộng cột */
     protected void configureColumns() {}
 
-    /** Setup toolbar: search + nút thêm. Subclass gọi super() rồi thêm nếu cần */
+    /** Setup toolbar: search + nút thêm. Có kiểm tra quyền Thêm */
     protected void setupToolbarActions() {
         toolbar.addRealtimeSearchListener(() -> {
             currentSearchKeyword = toolbar.getSearchField().getText().trim();
@@ -168,15 +181,19 @@ public abstract class BaseTablePanel<T> extends JPanel {
             loadTableData();
         });
 
-        // Bọc trong try-catch hoặc kiểm tra null cho an toàn
         if (toolbar.getBtnAdd() != null) {
-            toolbar.getBtnAdd().addActionListener(e -> showAddDialog());
+            // Kiểm tra quyền Thêm từ AdminSession
+            boolean canAdd = AdminSession.getInstance().canAdd(getModuleCode());
+            toolbar.getBtnAdd().setVisible(canAdd);
+
+            if (canAdd) {
+                toolbar.getBtnAdd().addActionListener(e -> showAddDialog());
+            }
         }
     }
 
     /**
      * Load data từ DB vào bảng — dùng CompletableFuture để không block EDT.
-     * Tất cả panel gọi method này, không cần viết lại.
      */
     protected void loadTableData() {
         paginationPanel.setEnabled(false);
