@@ -7,7 +7,6 @@ import com.tuyensinh.admin.ui.components.RoundedTextField;
 import com.tuyensinh.admin.ui.components.RoundedPasswordField;
 import com.tuyensinh.util.Constants;
 import com.tuyensinh.admin.util.UIConstants;
-import com.tuyensinh.admin.util.AdminSession;
 
 import javax.swing.*;
 import java.awt.*;
@@ -271,15 +270,14 @@ public class LoginForm extends JFrame {
                     com.tuyensinh.model.User loggedInUser = get();
                     
                     if (loggedInUser != null) {
-                        com.tuyensinh.dao.QuyenChucNangDAO quyenDAO = new com.tuyensinh.dao.QuyenChucNangDAO();
-                        java.util.List<String> listQuyen = quyenDAO.getMaChucNangCoXem(loggedInUser.getNhomQuyen().getId());
                         
-                        java.util.Set<String> setQuyen = new java.util.HashSet<>(listQuyen);
+                        com.tuyensinh.service.QuyenChucNangService qcnService = new com.tuyensinh.service.QuyenChucNangService();
+                        java.util.List<com.tuyensinh.model.QuyenChucNang> listQuyen = qcnService.findByNhomQuyenId(loggedInUser.getNhomQuyen().getId());
 
-                        AdminSession.getInstance().login(
+                        com.tuyensinh.admin.util.AdminSession.getInstance().login(
                                 loggedInUser.getUsername(), 
-                                loggedInUser.getNhomQuyen().getMaNhom(), 
-                                setQuyen
+                                loggedInUser.getNhomQuyen().getTenNhom(), 
+                                listQuyen
                         );
 
                         dispose();

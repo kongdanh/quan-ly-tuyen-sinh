@@ -1,17 +1,21 @@
 package com.tuyensinh.admin.util;
 
-import com.tuyensinh.util.Constants;
-import java.util.HashSet;
-import java.util.Set;
+import com.tuyensinh.model.QuyenChucNang;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class AdminSession {
     private static AdminSession instance;
     private String currentUsername;
     private String currentRole;
-    private Set<String> allowedModules;
+    
+    // Lưu trữ toàn bộ object quyền để check cả Xem/Thêm/Sửa/Xóa
+    private final Map<String, QuyenChucNang> permissionsMap;
 
     private AdminSession() {
-        allowedModules = new HashSet<>();
+        permissionsMap = new HashMap<>();
     }
 
     public static synchronized AdminSession getInstance() {
@@ -19,25 +23,52 @@ public class AdminSession {
         return instance;
     }
 
-    // Tạm thời truyền danh sách rỗng, ở bước sau kết nối DB ta sẽ truyền Set quyền thật vào đây
-    public void login(String username, String role, Set<String> permissions) {
+    public void login(String username, String role, List<QuyenChucNang> permissions) {
         this.currentUsername = username;
         this.currentRole = role;
-        this.allowedModules = permissions != null ? permissions : new HashSet<>();
+        this.permissionsMap.clear();
+        
+        if (permissions != null) {
+            for (QuyenChucNang q : permissions) {
+                permissionsMap.put(q.getMaChucNang(), q);
+            }
+        }
     }
 
     public void logout() {
         currentUsername = null;
         currentRole = null;
-        allowedModules.clear();
+        permissionsMap.clear();
     }
 
     public boolean hasPermission(String moduleCode) {
         if (moduleCode == null) return true;
         
-        if (Constants.NHOM_ADMIN.equals(currentRole)) return true;
+        if ("ADMIN".equals(currentRole)) return true; 
         
-        return allowedModules.contains(moduleCode);
+        return canView(moduleCode);
+    }
+
+    // --- CÁC HÀM KIỂM TRA QUYỀN CHI TIẾT DÀNH CHO BASE TABLE PANEL ---
+
+    public boolean canView(String module) {
+        if ("ADMIN".equals(currentRole)) return true;
+        return permissionsMap.containsKey(module) && permissionsMap.get(module).getCoXem();
+    }
+
+    public boolean canAdd(String module) {
+        if ("ADMIN".equals(currentRole)) return true;
+        return permissionsMap.containsKey(module) && permissionsMap.get(module).getCoThem();
+    }
+
+    public boolean canEdit(String module) {
+        if ("ADMIN".equals(currentRole)) return true;
+        return permissionsMap.containsKey(module) && permissionsMap.get(module).getCoSua();
+    }
+
+    public boolean canDelete(String module) {
+        if ("ADMIN".equals(currentRole)) return true;
+        return permissionsMap.containsKey(module) && permissionsMap.get(module).getCoXoa();
     }
 
     public String getCurrentUsername() { return currentUsername != null ? currentUsername : "Khách"; }
