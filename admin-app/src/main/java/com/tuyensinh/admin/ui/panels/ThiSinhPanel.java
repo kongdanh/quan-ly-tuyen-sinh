@@ -253,4 +253,10 @@ public class ThiSinhPanel extends BaseTablePanel<ThiSinh> {
         timerYeuCau.setRepeats(true);
         timerYeuCau.start();
     }
+
+    @Override
+    protected String getModuleCode() {
+        return com.tuyensinh.util.Constants.QUYEN_PHAN_QUYEN; 
+    }
+
 }

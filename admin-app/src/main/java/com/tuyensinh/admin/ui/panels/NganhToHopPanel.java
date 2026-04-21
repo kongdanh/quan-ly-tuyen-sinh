@@ -7,7 +7,6 @@ import com.tuyensinh.model.NganhToHop;
 import com.tuyensinh.model.ToHopMon;
 import com.tuyensinh.service.NganhService;
 import com.tuyensinh.service.NganhToHopService;
-import com.tuyensinh.service.NganhService;
 import com.tuyensinh.service.ToHopMonService;
 
 import javax.swing.*;
@@ -210,6 +209,11 @@ public class NganhToHopPanel extends BaseTablePanel<NganhToHop> {
                 }
             }
         );
+    }
+
+    @Override
+    protected String getModuleCode() {
+        return com.tuyensinh.util.Constants.QUYEN_PHAN_QUYEN; 
     }
 
         

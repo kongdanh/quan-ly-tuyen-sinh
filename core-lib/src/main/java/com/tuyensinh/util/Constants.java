@@ -31,6 +31,7 @@ public class Constants {
     public static final String QUYEN_BANG_QUY_DOI = "BANG_QUY_DOI";
     public static final String QUYEN_THONG_KE = "THONG_KE";
     public static final String QUYEN_PHAN_QUYEN = "PHAN_QUYEN";
+    public static final String QUYEN_CAU_HINH     = "QL_CAU_HINH";
 
     // 14. TRẠNG THÁI TÀI KHOẢN
     public static final String ACCOUNT_ACTIVE = "HOAT_DONG";

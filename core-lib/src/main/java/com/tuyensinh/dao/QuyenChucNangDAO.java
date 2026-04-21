@@ -22,4 +22,22 @@ public class QuyenChucNangDAO extends GenericDAO<QuyenChucNang> {
             return java.util.Collections.emptyList();
         }
     }
+
+    /**
+     * Lấy toàn bộ chi tiết phân quyền
+     */
+    public List<QuyenChucNang> findByNhomQuyenId(Integer idNhom) {
+        if (idNhom == null) return java.util.Collections.emptyList();
+        
+        try (org.hibernate.Session session = com.tuyensinh.util.HibernateUtil.getSessionFactory().openSession()) {
+            String hql = "FROM QuyenChucNang q WHERE q.nhomQuyen.id = :idNhom";
+            return session.createQuery(hql, QuyenChucNang.class)
+                    .setParameter("idNhom", idNhom)
+                    .list();
+        } catch (Exception e) {
+            System.err.println("[QuyenChucNangDAO] Lỗi findByNhomQuyenId: " + e.getMessage());
+            return java.util.Collections.emptyList();
+        }
+    }
+
 }
