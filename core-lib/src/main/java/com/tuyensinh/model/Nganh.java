@@ -5,7 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.ColumnDefault;
 
 import java.math.BigDecimal;
 
@@ -16,6 +15,7 @@ import java.math.BigDecimal;
 @Entity
 @Table(name = "xt_nganh")
 public class Nganh {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "idnganh", nullable = false)
@@ -63,8 +63,12 @@ public class Nganh {
     @Column(name = "sl_thpt", length = 45)
     private String slThpt;
 
+    /** Tổng số thí sinh đã đăng ký — ánh xạ cột sl_dadangky (thêm mới) */
+    @Column(name = "sl_dadangky", nullable = false)
+    private Integer slDadangky = 0;
+
     @Override
     public String toString() {
-    return manganh + " - " + tennganh;
+        return manganh + " - " + tennganh;
     }
 }
