@@ -35,7 +35,6 @@ public class Main {
         }
 
         SwingUtilities.invokeLater(() -> {
-            
             try {
                 HibernateUtil.getSessionFactory();
             } catch (Exception e) {
