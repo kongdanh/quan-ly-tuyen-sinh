@@ -47,6 +47,7 @@ public class MainFrame extends JFrame {
         contentPanel.add(new UserPanel(), "Người dùng");
         contentPanel.add(new NhomQuyenPanel(), "Nhóm quyền");
         contentPanel.add(new QuyenChucNangPanel(), "Quyền chức năng");
+        contentPanel.add(new CauHinhPanel(), "Cấu hình hệ thống");
 
         JPanel right = new JPanel(new BorderLayout());
         right.setOpaque(false);

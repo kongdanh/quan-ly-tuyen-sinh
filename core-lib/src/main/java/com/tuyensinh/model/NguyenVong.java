@@ -5,7 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.ColumnDefault;
 
 import java.math.BigDecimal;
 
@@ -21,11 +20,19 @@ public class NguyenVong {
     @Column(name = "idnv", nullable = false)
     private Integer id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "nn_cccd", nullable = false, referencedColumnName = "cccd")
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "id_ho_so")
+    private HoSoTuyenSinh hoSoTuyenSinh;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "nn_cccd", referencedColumnName = "cccd")
     private ThiSinh thiSinh;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "id_dot")
+    private DotTuyenSinh dotTuyenSinh;
+
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "nv_manganh", nullable = false, referencedColumnName = "manganh")
     private Nganh nganh;
 

@@ -34,8 +34,8 @@ public class SidebarPanel extends JPanel {
             new MenuDef("Thống kê",           "icon_thongke.svg",     Constants.QUYEN_THONG_KE),
             new MenuDef("Người dùng",         "icon_user.svg",        Constants.QUYEN_PHAN_QUYEN),
             new MenuDef("Nhóm quyền",         "icon_phanquyen.svg",   Constants.QUYEN_PHAN_QUYEN),
-            new MenuDef("Quyền chức năng",    "icon_phanquyen.svg",   Constants.QUYEN_PHAN_QUYEN)
-    };
+            new MenuDef("Cấu hình hệ thống",   "icon_cauhinh.svg",     Constants.QUYEN_CAU_HINH)
+        };
 
     private final List<JPanel> menuItems = new ArrayList<>();
     private int selectedIndex = 0;
