@@ -5077,62 +5077,126 @@ CREATE TABLE `xt_nganh` (
   `sl_xtt` int(11) DEFAULT NULL,
   `sl_dgnl` int(11) DEFAULT NULL,
   `sl_vsat` int(11) DEFAULT NULL,
-  `sl_thpt` varchar(45) DEFAULT NULL
+  `sl_thpt` varchar(45) DEFAULT NULL,
+  `sl_dadangky`      INT           NOT NULL DEFAULT 0
+                     COMMENT 'Tổng số thí sinh đã đăng ký (= sl_xtt + sl_dgnl + sl_vsat + sl_thpt)'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `xt_nganh`
 --
 
-INSERT INTO `xt_nganh` (`idnganh`, `manganh`, `tennganh`, `n_tohopgoc`, `n_chitieu`, `n_diemsan`, `n_diemtrungtuyen`, `n_tuyenthang`, `n_dgnl`, `n_thpt`, `n_vsat`, `sl_xtt`, `sl_dgnl`, `sl_vsat`, `sl_thpt`) VALUES
-(1, '7140114', 'Quản lý giáo dục', 'D01', 40, 17.00, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(2, '7140201', 'Giáo dục Mầm non', 'M01', 200, 20.00, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(3, '7140202', 'Giáo dục Tiểu học', 'C01', 200, 21.00, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(4, '7140205', 'Giáo dục chính trị', 'C01', 10, 23.00, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(5, '7140209', 'Sư phạm Toán học', 'A00', 40, 24.50, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(6, '7140211', 'Sư phạm Vật lý', 'A00', 10, 24.00, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(7, '7140212', 'Sư phạm Hoá học', 'A00', 10, 24.00, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(8, '7140213', 'Sư phạm Sinh học', 'B00', 10, 23.00, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(9, '7140217', 'Sư phạm Ngữ văn', 'C00', 50, 24.00, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(10, '7140218', 'Sư phạm Lịch sử', 'C00', 10, 25.00, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(11, '7140219', 'Sư phạm Địa lý', 'C00', 10, 25.00, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(12, '7140221', 'Sư phạm Âm nhạc', 'M01', 75, 18.00, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(13, '7140222', 'Sư phạm Mỹ thuật', 'M01', 75, 18.00, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(14, '7140231', 'Sư phạm Tiếng Anh', 'D01', 120, 24.00, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(15, '7140247', 'Sư phạm Khoa học tự nhiên', 'A00', 60, 22.00, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(16, '7140249', 'Sư phạm Lịch sử - Địa lý', 'C00', 40, 19.00, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(17, '7220201', 'Ngôn ngữ Anh', 'D01', 253, 22.00, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(18, '7220201CLC', 'Ngôn ngữ Anh (Chương trình đào tạo CLC)', 'D01', 100, 22.00, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(19, '7229010', 'Lịch sử', 'C00', 30, 17.00, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(20, '7310401', 'Tâm lý học', 'C00', 100, 18.00, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(21, '7310501', 'Địa lý học', 'C00', 30, 17.00, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(22, '7310601', 'Quốc tế học', 'D01', 80, 21.00, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(23, '7310630', 'Việt Nam học', 'C00', 140, 21.00, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(24, '7320201', 'Thông tin - Thư viện', 'D01', 30, 17.00, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(25, '7340101', 'Quản trị kinh doanh', 'D01', 360, 18.50, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(26, '7340101CLC', 'Quản trị kinh doanh (Chương trình đào tạo CLC)', 'D01', 100, 18.50, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(27, '7340120', 'Kinh doanh quốc tế', 'D01', 200, 18.50, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(28, '7340201', 'Tài chính - Ngân hàng', 'D01', 500, 18.50, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(29, '7340301', 'Kế toán', 'D01', 380, 18.50, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(30, '7340301CLC', 'Kế toán (Chương trình đào tạo CLC)', 'D01', 50, 18.50, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(31, '7340302', 'Kiểm toán', 'D01', 60, 18.50, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(32, '7340406', 'Quản trị văn phòng', 'D01', 70, 17.00, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(33, '7380101', 'Luật', 'D01', 210, 17.00, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(34, '7440301', 'Khoa học môi trường', 'A00', 30, 18.00, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(35, '7460108', 'Khoa học dữ liệu', 'A00', 80, 21.00, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(36, '7460112', 'Toán ứng dụng', 'A00', 90, 22.00, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(37, '7480103', 'Kỹ thuật phần mềm', 'A00', 110, 21.00, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(38, '7480107', 'Trí tuệ nhân tạo', 'A00', 80, 22.00, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(39, '7480201', 'Công nghệ thông tin', 'A00', 400, 21.00, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(40, '7480201CLC', 'Công nghệ thông tin (Chương trình đào tạo CLC)', 'A00', 350, 21.00, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(41, '7510301', 'Công nghệ kỹ thuật điện, điện tử', 'A00', 45, 18.00, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(42, '7510302', 'Công nghệ kỹ thuật điện tử - viễn thông', 'A00', 45, 18.00, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(43, '7510406', 'Công nghệ kỹ thuật môi trường', 'A00', 30, 18.00, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(44, '7520201', 'Kỹ thuật điện', 'A00', 30, 18.00, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(45, '7520207', 'Kỹ thuật điện tử - viễn thông (Thiết kế vi mạch)', 'A00', 90, 19.00, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(46, '7810101', 'Du lịch', 'D01', 120, 20.50, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL),
-(47, '7810202', 'Quản trị nhà hàng và dịch vụ ăn uống', 'D01', 60, 18.00, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL);
+INSERT INTO `xt_nganh` (`manganh`,`tennganh`,`n_tohopgoc`,`n_chitieu`,`n_diemsan`,`n_dgnl`,`n_thpt`,`n_vsat`) VALUES
+  ('7140114','Quản lý giáo dục','D01',40,17.0,'Y','Y','Y'),
+  ('7140201','Giáo dục Mầm non','M01',200,20.0,'Y','Y','Y'),
+  ('7140202','Giáo dục Tiểu học','C01',200,21.0,'Y','Y','Y'),
+  ('7140205','Giáo dục chính trị','C01',10,23.0,'Y','Y','Y'),
+  ('7140209','Sư phạm Toán học','A00',40,24.5,'Y','Y','Y'),
+  ('7140211','Sư phạm Vật lý','A00',10,24.0,'Y','Y','Y'),
+  ('7140212','Sư phạm Hoá học','A00',10,24.0,'Y','Y','Y'),
+  ('7140213','Sư phạm Sinh học','B00',10,23.0,'Y','Y','Y'),
+  ('7140217','Sư phạm Ngữ văn','C00',50,24.0,'Y','Y','Y'),
+  ('7140218','Sư phạm Lịch sử','C00',10,25.0,'Y','Y','Y'),
+  ('7140219','Sư phạm Địa lý','C00',10,25.0,'Y','Y','Y'),
+  ('7140221','Sư phạm Âm nhạc','M01',75,18.0,'Y','Y','Y'),
+  ('7140222','Sư phạm Mỹ thuật','M01',75,18.0,'Y','Y','Y'),
+  ('7140231','Sư phạm Tiếng Anh','D01',120,24.0,'Y','Y','Y'),
+  ('7140247','Sư phạm Khoa học tự nhiên','A00',60,22.0,'Y','Y','Y'),
+  ('7140249','Sư phạm Lịch sử - Địa lý','C00',40,19.0,'Y','Y','Y'),
+  ('7220201','Ngôn ngữ Anh','D01',253,22.0,'Y','Y','Y'),
+  ('7220201CLC','Ngôn ngữ Anh (Chương trình đào tạo CLC)','D01',100,22.0,'Y','Y','Y'),
+  ('7229010','Lịch sử','C00',30,17.0,'Y','Y','Y'),
+  ('7310401','Tâm lý học','C00',100,18.0,'Y','Y','Y'),
+  ('7310501','Địa lý học','C00',30,17.0,'Y','Y','Y'),
+  ('7310601','Quốc tế học','D01',80,21.0,'Y','Y','Y'),
+  ('7310630','Việt Nam học','C00',140,21.0,'Y','Y','Y'),
+  ('7320201','Thông tin - Thư viện','D01',30,17.0,'Y','Y','Y'),
+  ('7340101','Quản trị kinh doanh','D01',360,18.5,'Y','Y','Y'),
+  ('7340101CLC','Quản trị kinh doanh (Chương trình đào tạo CLC)','D01',100,18.5,'Y','Y','Y'),
+  ('7340120','Kinh doanh quốc tế','D01',200,18.5,'Y','Y','Y'),
+  ('7340201','Tài chính - Ngân hàng','D01',500,18.5,'Y','Y','Y'),
+  ('7340301','Kế toán','D01',380,18.5,'Y','Y','Y'),
+  ('7340301CLC','Kế toán (Chương trình đào tạo CLC)','D01',50,18.5,'Y','Y','Y'),
+  ('7340302','Kiểm toán','D01',60,18.5,'Y','Y','Y'),
+  ('7340406','Quản trị văn phòng','D01',70,17.0,'Y','Y','Y'),
+  ('7380101','Luật','D01',210,17.0,'Y','Y','Y'),
+  ('7440301','Khoa học môi trường','A00',30,18.0,'Y','Y','Y'),
+  ('7460108','Khoa học dữ liệu','A00',80,21.0,'Y','Y','Y'),
+  ('7460112','Toán ứng dụng','A00',90,22.0,'Y','Y','Y'),
+  ('7480103','Kỹ thuật phần mềm','A00',110,21.0,'Y','Y','Y'),
+  ('7480107','Trí tuệ nhân tạo','A00',80,22.0,'Y','Y','Y'),
+  ('7480201','Công nghệ thông tin','A00',400,21.0,'Y','Y','Y'),
+  ('7480201CLC','Công nghệ thông tin (Chương trình đào tạo CLC)','A00',350,21.0,'Y','Y','Y'),
+  ('7510301','Công nghệ kỹ thuật điện, điện tử','A00',45,18.0,'Y','Y','Y'),
+  ('7510302','Công nghệ kỹ thuật điện tử - viễn thông','A00',45,18.0,'Y','Y','Y'),
+  ('7510406','Công nghệ kỹ thuật môi trường','A00',30,18.0,'Y','Y','Y'),
+  ('7520201','Kỹ thuật điện','A00',30,18.0,'Y','Y','Y'),
+  ('7520207','Kỹ thuật điện tử - viễn thông (Thiết kế vi mạch)','A00',90,19.0,'Y','Y','Y'),
+  ('7810101','Du lịch','D01',120,20.5,'Y','Y','Y'),
+  ('7810202','Quản trị nhà hàng và dịch vụ ăn uống','D01',60,18.0,'Y','Y','Y');
 
+-- ============================================================
+-- SEED sl_dadangky — số thí sinh đã đăng ký theo từng ngành
+-- Số liệu mô phỏng dựa trên chỉ tiêu & mức độ cạnh tranh
+-- ============================================================
+UPDATE `xt_nganh` SET `sl_dadangky` = CASE `manganh`
+    -- Sư phạm
+    WHEN '7140114'    THEN 28   -- Quản lý giáo dục        (40  → 70%)
+    WHEN '7140201'    THEN 178  -- Giáo dục Mầm non        (200 → 89%)
+    WHEN '7140202'    THEN 182  -- Giáo dục Tiểu học       (200 → 91%)
+    WHEN '7140205'    THEN 7    -- Giáo dục chính trị      (10  → 70%)
+    WHEN '7140209'    THEN 38   -- Sư phạm Toán học        (40  → 95%)
+    WHEN '7140211'    THEN 6    -- Sư phạm Vật lý          (10  → 60%)
+    WHEN '7140212'    THEN 7    -- Sư phạm Hoá học         (10  → 70%)
+    WHEN '7140213'    THEN 6    -- Sư phạm Sinh học        (10  → 60%)
+    WHEN '7140217'    THEN 44   -- Sư phạm Ngữ văn         (50  → 88%)
+    WHEN '7140218'    THEN 8    -- Sư phạm Lịch sử         (10  → 80%)
+    WHEN '7140219'    THEN 7    -- Sư phạm Địa lý          (10  → 70%)
+    WHEN '7140221'    THEN 58   -- Sư phạm Âm nhạc         (75  → 77%)
+    WHEN '7140222'    THEN 52   -- Sư phạm Mỹ thuật        (75  → 69%)
+    WHEN '7140231'    THEN 115  -- Sư phạm Tiếng Anh       (120 → 96%)
+    WHEN '7140247'    THEN 48   -- Sư phạm KHTN             (60  → 80%)
+    WHEN '7140249'    THEN 25   -- Sư phạm LS - ĐL         (40  → 63%)
+    -- Ngôn ngữ / Xã hội
+    WHEN '7220201'    THEN 224  -- Ngôn ngữ Anh            (253 → 89%)
+    WHEN '7220201CLC' THEN 87   -- Ngôn ngữ Anh CLC        (100 → 87%)
+    WHEN '7229010'    THEN 15   -- Lịch sử                 (30  → 50%)
+    WHEN '7310401'    THEN 72   -- Tâm lý học              (100 → 72%)
+    WHEN '7310501'    THEN 13   -- Địa lý học              (30  → 43%)
+    WHEN '7310601'    THEN 58   -- Quốc tế học             (80  → 73%)
+    WHEN '7310630'    THEN 102  -- Việt Nam học            (140 → 73%)
+    WHEN '7320201'    THEN 14   -- Thông tin - Thư viện    (30  → 47%)
+    -- Kinh tế / Kinh doanh
+    WHEN '7340101'    THEN 318  -- Quản trị kinh doanh     (360 → 88%)
+    WHEN '7340101CLC' THEN 89   -- QTKD CLC                (100 → 89%)
+    WHEN '7340120'    THEN 174  -- Kinh doanh quốc tế      (200 → 87%)
+    WHEN '7340201'    THEN 445  -- Tài chính - Ngân hàng   (500 → 89%)
+    WHEN '7340301'    THEN 361  -- Kế toán                 (380 → 95%)
+    WHEN '7340301CLC' THEN 46   -- Kế toán CLC             (50  → 92%)
+    WHEN '7340302'    THEN 51   -- Kiểm toán               (60  → 85%)
+    WHEN '7340406'    THEN 42   -- Quản trị văn phòng      (70  → 60%)
+    -- Luật
+    WHEN '7380101'    THEN 168  -- Luật                    (210 → 80%)
+    -- Môi trường
+    WHEN '7440301'    THEN 13   -- Khoa học môi trường     (30  → 43%)
+    -- CNTT / Kỹ thuật
+    WHEN '7460108'    THEN 72   -- Khoa học dữ liệu        (80  → 90%)
+    WHEN '7460112'    THEN 68   -- Toán ứng dụng           (90  → 76%)
+    WHEN '7480103'    THEN 105  -- Kỹ thuật phần mềm       (110 → 95%)
+    WHEN '7480107'    THEN 78   -- Trí tuệ nhân tạo        (80  → 98%)
+    WHEN '7480201'    THEN 392  -- CNTT                    (400 → 98%)
+    WHEN '7480201CLC' THEN 340  -- CNTT CLC                (350 → 97%)
+    -- Kỹ thuật điện
+    WHEN '7510301'    THEN 28   -- KT điện, điện tử        (45  → 62%)
+    WHEN '7510302'    THEN 27   -- KT điện tử - viễn thông (45  → 60%)
+    WHEN '7510406'    THEN 12   -- KT môi trường           (30  → 40%)
+    WHEN '7520201'    THEN 16   -- Kỹ thuật điện           (30  → 53%)
+    WHEN '7520207'    THEN 74   -- KT điện tử (Vi mạch)    (90  → 82%)
+    -- Du lịch
+    WHEN '7810101'    THEN 95   -- Du lịch                 (120 → 79%)
+    WHEN '7810202'    THEN 38   -- Quản trị nhà hàng       (60  → 63%)
+    ELSE 0
+END;
 -- --------------------------------------------------------
 
 --

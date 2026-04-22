@@ -143,6 +143,8 @@ CREATE TABLE `xt_nganh` (
   `sl_dgnl`          INT           DEFAULT NULL,
   `sl_vsat`          INT           DEFAULT NULL,
   `sl_thpt`          VARCHAR(45)   DEFAULT NULL,
+  `sl_dadangky`      INT           NOT NULL DEFAULT 0
+                     COMMENT 'Tổng số thí sinh đã đăng ký (= sl_xtt + sl_dgnl + sl_vsat + sl_thpt)',
   PRIMARY KEY (`idnganh`),
   UNIQUE KEY `manganh_UNIQUE` (`manganh`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -349,6 +351,69 @@ INSERT INTO `xt_nganh` (`manganh`,`tennganh`,`n_tohopgoc`,`n_chitieu`,`n_diemsan
   ('7520207','Kỹ thuật điện tử - viễn thông (Thiết kế vi mạch)','A00',90,19.0,'Y','Y','Y'),
   ('7810101','Du lịch','D01',120,20.5,'Y','Y','Y'),
   ('7810202','Quản trị nhà hàng và dịch vụ ăn uống','D01',60,18.0,'Y','Y','Y');
+
+-- ============================================================
+-- SEED sl_dadangky — số thí sinh đã đăng ký theo từng ngành
+-- Số liệu mô phỏng dựa trên chỉ tiêu & mức độ cạnh tranh
+-- ============================================================
+UPDATE `xt_nganh` SET `sl_dadangky` = CASE `manganh`
+    -- Sư phạm
+    WHEN '7140114'    THEN 28   -- Quản lý giáo dục        (40  → 70%)
+    WHEN '7140201'    THEN 178  -- Giáo dục Mầm non        (200 → 89%)
+    WHEN '7140202'    THEN 182  -- Giáo dục Tiểu học       (200 → 91%)
+    WHEN '7140205'    THEN 7    -- Giáo dục chính trị      (10  → 70%)
+    WHEN '7140209'    THEN 38   -- Sư phạm Toán học        (40  → 95%)
+    WHEN '7140211'    THEN 6    -- Sư phạm Vật lý          (10  → 60%)
+    WHEN '7140212'    THEN 7    -- Sư phạm Hoá học         (10  → 70%)
+    WHEN '7140213'    THEN 6    -- Sư phạm Sinh học        (10  → 60%)
+    WHEN '7140217'    THEN 44   -- Sư phạm Ngữ văn         (50  → 88%)
+    WHEN '7140218'    THEN 8    -- Sư phạm Lịch sử         (10  → 80%)
+    WHEN '7140219'    THEN 7    -- Sư phạm Địa lý          (10  → 70%)
+    WHEN '7140221'    THEN 58   -- Sư phạm Âm nhạc         (75  → 77%)
+    WHEN '7140222'    THEN 52   -- Sư phạm Mỹ thuật        (75  → 69%)
+    WHEN '7140231'    THEN 115  -- Sư phạm Tiếng Anh       (120 → 96%)
+    WHEN '7140247'    THEN 48   -- Sư phạm KHTN             (60  → 80%)
+    WHEN '7140249'    THEN 25   -- Sư phạm LS - ĐL         (40  → 63%)
+    -- Ngôn ngữ / Xã hội
+    WHEN '7220201'    THEN 224  -- Ngôn ngữ Anh            (253 → 89%)
+    WHEN '7220201CLC' THEN 87   -- Ngôn ngữ Anh CLC        (100 → 87%)
+    WHEN '7229010'    THEN 15   -- Lịch sử                 (30  → 50%)
+    WHEN '7310401'    THEN 72   -- Tâm lý học              (100 → 72%)
+    WHEN '7310501'    THEN 13   -- Địa lý học              (30  → 43%)
+    WHEN '7310601'    THEN 58   -- Quốc tế học             (80  → 73%)
+    WHEN '7310630'    THEN 102  -- Việt Nam học            (140 → 73%)
+    WHEN '7320201'    THEN 14   -- Thông tin - Thư viện    (30  → 47%)
+    -- Kinh tế / Kinh doanh
+    WHEN '7340101'    THEN 318  -- Quản trị kinh doanh     (360 → 88%)
+    WHEN '7340101CLC' THEN 89   -- QTKD CLC                (100 → 89%)
+    WHEN '7340120'    THEN 174  -- Kinh doanh quốc tế      (200 → 87%)
+    WHEN '7340201'    THEN 445  -- Tài chính - Ngân hàng   (500 → 89%)
+    WHEN '7340301'    THEN 361  -- Kế toán                 (380 → 95%)
+    WHEN '7340301CLC' THEN 46   -- Kế toán CLC             (50  → 92%)
+    WHEN '7340302'    THEN 51   -- Kiểm toán               (60  → 85%)
+    WHEN '7340406'    THEN 42   -- Quản trị văn phòng      (70  → 60%)
+    -- Luật
+    WHEN '7380101'    THEN 168  -- Luật                    (210 → 80%)
+    -- Môi trường
+    WHEN '7440301'    THEN 13   -- Khoa học môi trường     (30  → 43%)
+    -- CNTT / Kỹ thuật
+    WHEN '7460108'    THEN 72   -- Khoa học dữ liệu        (80  → 90%)
+    WHEN '7460112'    THEN 68   -- Toán ứng dụng           (90  → 76%)
+    WHEN '7480103'    THEN 105  -- Kỹ thuật phần mềm       (110 → 95%)
+    WHEN '7480107'    THEN 78   -- Trí tuệ nhân tạo        (80  → 98%)
+    WHEN '7480201'    THEN 392  -- CNTT                    (400 → 98%)
+    WHEN '7480201CLC' THEN 340  -- CNTT CLC                (350 → 97%)
+    -- Kỹ thuật điện
+    WHEN '7510301'    THEN 28   -- KT điện, điện tử        (45  → 62%)
+    WHEN '7510302'    THEN 27   -- KT điện tử - viễn thông (45  → 60%)
+    WHEN '7510406'    THEN 12   -- KT môi trường           (30  → 40%)
+    WHEN '7520201'    THEN 16   -- Kỹ thuật điện           (30  → 53%)
+    WHEN '7520207'    THEN 74   -- KT điện tử (Vi mạch)    (90  → 82%)
+    -- Du lịch
+    WHEN '7810101'    THEN 95   -- Du lịch                 (120 → 79%)
+    WHEN '7810202'    THEN 38   -- Quản trị nhà hàng       (60  → 63%)
+    ELSE 0
+END;
 
 -- ============================================================
 -- 2. xt_tohop_monthi - Tổ hợp môn xét tuyển
