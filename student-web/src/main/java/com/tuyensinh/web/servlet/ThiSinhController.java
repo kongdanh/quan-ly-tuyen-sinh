@@ -108,9 +108,7 @@ public class ThiSinhController extends HttpServlet {
         var             listToHop = diemService.tinhListToHop(diem);
         req.setAttribute("diem",      diem);
         req.setAttribute("listToHop", listToHop);
-        req.setAttribute("maxToHop",  listToHop.stream()
-            .max(java.util.Comparator.comparingDouble(m -> (Double) m.get("total")))
-            .orElse(null));
+        req.setAttribute("maxToHop",  diemService.tinhMaxToHop(diem));
         forward(req, resp, "/WEB-INF/views/scores.jsp");
     }
 
