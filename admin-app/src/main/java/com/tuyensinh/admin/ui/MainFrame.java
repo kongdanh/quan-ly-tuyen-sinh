@@ -40,6 +40,7 @@ public class MainFrame extends JFrame {
         contentPanel.add(new ToHopMonPanel(), "Tổ hợp môn");
         contentPanel.add(new NganhToHopPanel(), "Ngành - Tổ hợp");
         contentPanel.add(new ThiSinhPanel(), "Quản lý thí sinh");
+        contentPanel.add(new DiemThiPanel(), "Điểm thi");
         contentPanel.add(new DiemCongPanel(), "Điểm cộng");
         contentPanel.add(new NguyenVongPanel(), "Nguyện vọng");
         contentPanel.add(new BangQuyDoiPanel(), "Bảng quy đổi");

@@ -115,12 +115,12 @@ public class ThiSinhController extends HttpServlet {
             throws ServletException, IOException {
         DiemThiXetTuyen diem = diemService.findByCccd(cccd).orElse(null);
         
-        @SuppressWarnings("unchecked")
         List<java.util.Map<String, Object>> listToHop = 
             (List<java.util.Map<String, Object>>) diemService.tinhListToHop(diem);
 
         req.setAttribute("diem", diem);
         req.setAttribute("listToHop", listToHop);
+        req.setAttribute("maxToHop",  diemService.tinhMaxToHop(diem));
         
         // CHECK NULL ĐỂ TRÁNH VĂNG APP NẾU THÍ SINH CHƯA CÓ ĐIỂM
         if (listToHop != null && !listToHop.isEmpty()) {

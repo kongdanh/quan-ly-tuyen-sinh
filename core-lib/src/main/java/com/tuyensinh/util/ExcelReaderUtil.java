@@ -2,7 +2,6 @@ package com.tuyensinh.util;
 
 import com.tuyensinh.annotation.ExcelColumn;
 import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.poi.ss.usermodel.DataFormatter;
 
 import java.io.File;
@@ -21,7 +20,7 @@ public class ExcelReaderUtil {
         List<T> result = new ArrayList<>();
 
         try (FileInputStream fis = new FileInputStream(file);
-             Workbook workbook = new XSSFWorkbook(fis)) {
+               Workbook workbook = WorkbookFactory.create(fis)) {
 
             Sheet sheet = workbook.getSheetAt(0);
             Iterator<Row> rowIterator = sheet.iterator();

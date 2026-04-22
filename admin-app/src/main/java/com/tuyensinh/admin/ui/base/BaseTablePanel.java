@@ -68,6 +68,7 @@ public abstract class BaseTablePanel<T> extends JPanel {
         scrollPane.setBorder(BorderFactory.createLineBorder(
             Color.decode(UIConstants.COLOR_BORDER)));
         scrollPane.getViewport().setBackground(Color.WHITE);
+        scrollPane.setHorizontalScrollBarPolicy(getHorizontalScrollBarPolicy());
         card.add(scrollPane, BorderLayout.CENTER);
 
         paginationPanel = new PaginationPanel((newPage, newSize) -> {
@@ -121,6 +122,12 @@ public abstract class BaseTablePanel<T> extends JPanel {
     /** Index cột chứa nút Thao tác (-1 nếu không có) */
     protected int getActionColumnIndex() { return getColumnNames().length - 1; }
 
+    /** Chế độ auto resize của JTable */
+    protected int getTableAutoResizeMode() { return JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS; }
+
+    /** Chính sách hiển thị thanh cuộn ngang */
+    protected int getHorizontalScrollBarPolicy() { return ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER; }
+
     /** Width của cột Thao tác */
     protected int getActionColumnWidth() { return 90; }
 
@@ -142,6 +149,7 @@ public abstract class BaseTablePanel<T> extends JPanel {
 
         table = new CustomTable();
         table.setModel(tableModel);
+        table.setAutoResizeMode(getTableAutoResizeMode());
 
         configureColumns();
 
