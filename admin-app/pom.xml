@@ -58,6 +58,7 @@
 
     <build>
         <plugins>
+            <!-- Assembly: tạo fat JAR khi mvn package -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
@@ -79,6 +80,16 @@
                         <goals><goal>single</goal></goals>
                     </execution>
                 </executions>
+            </plugin>
+
+            <!-- Exec: chạy nhanh bằng: mvn exec:java -pl admin-app -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.3.0</version>
+                <configuration>
+                    <mainClass>com.tuyensinh.admin.Main</mainClass>
+                </configuration>
             </plugin>
         </plugins>
     </build>
