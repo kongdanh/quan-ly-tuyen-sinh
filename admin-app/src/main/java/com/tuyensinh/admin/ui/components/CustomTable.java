@@ -25,7 +25,7 @@ public class CustomTable extends JTable {
         // Cấu hình Tiêu đề bảng (Header)
         JTableHeader header = getTableHeader();
         
-        header.setResizingAllowed(false);
+        header.setResizingAllowed(true);
         header.setReorderingAllowed(false);
         
         header.setDefaultRenderer(new DefaultTableCellRenderer() {
@@ -56,8 +56,21 @@ public class CustomTable extends JTable {
             c.setBackground(row % 2 == 0 ? Color.WHITE : Color.decode(UIConstants.DASH_ZEBRA_ALT));
         }
         if (c instanceof JLabel) {
-            ((JLabel) c).setBorder(BorderFactory.createEmptyBorder(0, UIConstants.TABLE_CELL_PADDING_X, 0, 0));
+            JLabel lbl = (JLabel) c;
+            int align = lbl.getHorizontalAlignment();
+            if (align == SwingConstants.RIGHT) {
+                lbl.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, UIConstants.TABLE_CELL_PADDING_X));
+            } else if (align == SwingConstants.CENTER) {
+                lbl.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
+            } else {
+                lbl.setBorder(BorderFactory.createEmptyBorder(0, UIConstants.TABLE_CELL_PADDING_X, 0, 0));
+            }
         }
         return c;
+    }
+
+    @Override
+    public boolean getScrollableTracksViewportWidth() {
+        return getPreferredSize().width < getParent().getWidth();
     }
 }
