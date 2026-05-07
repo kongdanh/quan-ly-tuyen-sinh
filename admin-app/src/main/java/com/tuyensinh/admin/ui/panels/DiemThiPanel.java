@@ -175,22 +175,20 @@ public class DiemThiPanel extends JPanel {
             toolbar.getBtnAdd().addActionListener(e -> showAddDialog());
         }
 
-        // Filter theo phương thức – đồng thời đổi cột hiển thị
+        // Filter theo phương thức – đổi cột hiển thị và reload data
         toolbar.addDynamicFilterCategory(
             "Theo phương thức", 3,
             Arrays.asList("Tất cả", "THPT", "VSAT", "DGNL"),
             (col, val) -> {
-                applyMode(val);
-                applyFilter("dPhuongthuc", val);
+                applyMode(val);   // đổi cột
+                page = 1;         // reset về trang đầu
+                loadData();       // reload data theo filter mới
             }
         );
 
         toolbar.getBtnImport().addActionListener(e -> handleImportExcel());
     }
 
-    private void applyFilter(String field, String val) {
-        // handled inside applyMode + loadData combo
-    }
 
     // ================================================================
     // TABLE SETUP
@@ -253,6 +251,13 @@ public class DiemThiPanel extends JPanel {
     }
 
     private void configureDynamicColumns(List<String> keys) {
+        // Tự động giãn cột nếu số lượng ít (để không bị trắng 1 bên), cuộn ngang nếu nhiều cột
+        if (keys.size() <= 10) {
+            table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+        } else {
+            table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        }
+
         // Right-aligned renderer cho cột điểm
         DefaultTableCellRenderer rightRenderer = new DefaultTableCellRenderer() {
             @Override
@@ -268,6 +273,25 @@ public class DiemThiPanel extends JPanel {
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
 
+        // Renderers cho Header để khớp với dữ liệu
+        TableCellRenderer defaultHeaderRenderer = table.getTableHeader().getDefaultRenderer();
+        TableCellRenderer rightHeaderRenderer = (tbl, val, sel, focus, row, col) -> {
+            Component c = defaultHeaderRenderer.getTableCellRendererComponent(tbl, val, sel, focus, row, col);
+            if (c instanceof JLabel) {
+                ((JLabel) c).setHorizontalAlignment(SwingConstants.RIGHT);
+                ((JLabel) c).setBorder(BorderFactory.createEmptyBorder(0, 0, 0, UIConstants.TABLE_CELL_PADDING_X));
+            }
+            return c;
+        };
+        TableCellRenderer centerHeaderRenderer = (tbl, val, sel, focus, row, col) -> {
+            Component c = defaultHeaderRenderer.getTableCellRendererComponent(tbl, val, sel, focus, row, col);
+            if (c instanceof JLabel) {
+                ((JLabel) c).setHorizontalAlignment(SwingConstants.CENTER);
+                ((JLabel) c).setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
+            }
+            return c;
+        };
+
         Set<String> scoreKeys = new HashSet<>(Arrays.asList(
             "TO","LI","HO","SI","SU","DI","VA","N1_THI","N1_CC",
             "CNCN","CNNN","TI","KTPL","NL1","NK1","NK2"
@@ -279,23 +303,29 @@ public class DiemThiPanel extends JPanel {
 
             if ("ACTION".equals(key)) {
                 col.setPreferredWidth(UIConstants.COL_ACTION_WIDTH);
+                col.setHeaderRenderer(centerHeaderRenderer);
             } else if ("ID".equals(key)) {
                 col.setPreferredWidth(50);
                 col.setCellRenderer(centerRenderer);
+                col.setHeaderRenderer(centerHeaderRenderer);
             } else if ("CCCD".equals(key)) {
                 col.setPreferredWidth(125);
                 col.setCellRenderer(centerRenderer);
+                col.setHeaderRenderer(centerHeaderRenderer);
             } else if ("SBD".equals(key)) {
                 col.setPreferredWidth(100);
                 col.setCellRenderer(centerRenderer);
+                col.setHeaderRenderer(centerHeaderRenderer);
             } else if ("PT".equals(key)) {
                 col.setPreferredWidth(100);
                 col.setCellRenderer(centerRenderer);
+                col.setHeaderRenderer(centerHeaderRenderer);
             } else if (scoreKeys.contains(key)) {
-                col.setPreferredWidth("NL1".equals(key) ? 80 : UIConstants.COL_SCORE_WIDTH);
+                col.setPreferredWidth(110); // Đủ rộng cho "Ngoại ngữ (Thi)"
                 col.setCellRenderer(rightRenderer);
+                col.setHeaderRenderer(rightHeaderRenderer);
             } else {
-                col.setPreferredWidth(80);
+                col.setPreferredWidth(100);
             }
         }
     }
@@ -610,9 +640,5 @@ public class DiemThiPanel extends JPanel {
     private void showError(String msg) {
         JOptionPane.showMessageDialog(this, msg, "Lỗi", JOptionPane.ERROR_MESSAGE);
     }
-
-    @Override
-    protected String getModuleCode() {
-        return com.tuyensinh.util.Constants.QUYEN_PHAN_QUYEN; 
-    }
 }
+
