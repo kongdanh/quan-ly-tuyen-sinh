@@ -3,11 +3,13 @@ package com.tuyensinh.service;
 import com.tuyensinh.dao.DiemCongDAO;
 import com.tuyensinh.dao.DiemThiXetTuyenDAO;
 import com.tuyensinh.dao.NguyenVongDAO;
+import com.tuyensinh.dto.DgnlVsatRowDTO;
 import com.tuyensinh.dto.IeltsImportDTO;
 import com.tuyensinh.model.DiemCong;
 import com.tuyensinh.model.DiemThiXetTuyen;
 import com.tuyensinh.model.NganhToHop;
 import com.tuyensinh.model.ThiSinh;
+import com.tuyensinh.util.ExcelReaderUtil;
 import com.tuyensinh.util.HibernateUtil;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
@@ -15,386 +17,491 @@ import org.hibernate.Transaction;
 import java.io.File;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * Service xử lý toàn bộ luồng nghiệp vụ Xét tuyển.
- *
- * <p>Điểm vào chính hiện tại: {@link #processIELTSImport(File)}.
+ * <ul>
+ *   <li>{@link #processIELTSImport(File)}  — Chứng chỉ IELTS / ngoại ngữ</li>
+ *   <li>{@link #processDgnlVsatImport(File)} — File đa-sheet DGNL + VSAT</li>
+ * </ul>
  */
 public class XetTuyenService {
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  Dependencies (tái sử dụng DAO/Service có sẵn trong core-lib)
-    // ──────────────────────────────────────────────────────────────────────────
-
+    // ── Dependencies ────────────────────────────────────────────────────────────
     private final DiemThiXetTuyenDAO diemThiDAO   = new DiemThiXetTuyenDAO();
     private final NguyenVongDAO      nguyenVongDAO = new NguyenVongDAO();
     private final DiemCongDAO        diemCongDAO   = new DiemCongDAO();
     private final BaseImportService<IeltsImportDTO, IeltsImportDTO> baseImport = new BaseImportService<>();
 
-    /** Batch size khớp với cấu hình hibernate.jdbc.batch_size (thường 50-100). */
     private static final int BATCH_SIZE = 50;
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  PUBLIC API
-    // ──────────────────────────────────────────────────────────────────────────
+    // ── Tên sheet (case-insensitive so sánh qua toLowerCase) ───────────────────
+    private static final String SHEET_DGNL = "dgnl";
+    private static final String SHEET_VSAT = "vsat";
 
-    /**
-     * Xử lý import file Excel chứng chỉ IELTS / ngoại ngữ.
-     *
-     * <h3>Luồng xử lý (per row):</h3>
-     * <ol>
-     *   <li><b>Validation</b> – Kiểm tra {@code cccd} tồn tại trong cả
-     *       {@code xt_diemthixettuyen} VÀ {@code xt_nguyenvongxettuyen}.
-     *       Nếu không có trong bảng nào → log + skip dòng đó.</li>
-     *   <li><b>JOIN Query</b> – Lấy danh sách ngành/tổ hợp đăng ký qua
-     *       {@code NguyenVongDAO#findNganhToHopByCccd}.</li>
-     *   <li><b>Subset Check</b> – Lọc các tổ hợp mà thí sinh có <em>đủ</em> điểm
-     *       môn văn hóa trong "Tập hợp cha" ({@code xt_diemthixettuyen}).
-     *       Điều kiện: nếu tổ hợp yêu cầu môn X ({@code nth.monX = true})
-     *       thì thí sinh phải có điểm môn X ({@code dt.monX > 0}).</li>
-     *   <li><b>Conditional Update/Insert</b>:
-     *     <ul>
-     *       <li>Tổ hợp <em>có</em> Ngoại ngữ ({@code nth.n1 = true}):
-     *           UPDATE {@code N1_CC} = GREATEST(N1_THI, diemQd).</li>
-     *       <li>Tổ hợp <em>không</em> Ngoại ngữ ({@code nth.n1 = false}):
-     *           UPSERT vào {@code xt_diemcongxetuyen} với
-     *           {@code diemCC = diemCong}, khóa duy nhất
-     *           {@code dc_keys = {cccd}_{manganh}_{matohop}}.</li>
-     *     </ul>
-     *   </li>
-     * </ol>
-     *
-     * <p>Toàn bộ ghi DB được thực hiện trong 2 phiên batch riêng biệt
-     * (một cho UPDATE N1_CC, một cho UPSERT DiemCong) để tối ưu MySQL.
-     *
-     * @param file File Excel (*.xlsx / *.xls) có các cột: CCCD, Điểm quy đổi, Điểm cộng.
-     * @return Danh sách chuỗi lỗi (rỗng nếu thành công hoàn toàn).
-     */
+    // ── Mã môn VSAT → tên cột DB ───────────────────────────────────────────────
+    // Mỗi môn có thể mang 2 mã khác nhau tuỳ đơn vị tổ chức thi:
+    //   Mã chuẩn (TO_VS / LI_VS / VA_VS / N1_VS) — do VSAT quy định.
+    //   Mã ngắn  (M1 / M2 / M3 / M8)             — do một số trường tự đặt.
+    // Cả hai đều ánh xạ về cùng cột trong xt_diemthixettuyen.
+    //
+    //   Excel MAMONTHI │ Cột DB   │ Môn
+    //   ───────────────┼──────────┼────────────
+    //   TO_VS, M1      │ `TO`     │ Toán       (backtick: reserved keyword MySQL)
+    //   LI_VS, M2      │ LI       │ Vật lý
+    //   VA_VS, M3      │ VA       │ Ngữ văn
+    //   N1_VS, M8      │ N1_THI   │ Ngoại ngữ (điểm thi)
+    private static final Map<String, String> VSAT_MON_MAP;
+    static {
+        VSAT_MON_MAP = new LinkedHashMap<>();
+        // Mã chuẩn VSAT
+        VSAT_MON_MAP.put("TO_VS", "TO");
+        VSAT_MON_MAP.put("LI_VS", "LI");
+        VSAT_MON_MAP.put("VA_VS", "VA");
+        VSAT_MON_MAP.put("N1_VS", "N1_THI");
+        // Alias ngắn (một số trường dùng mã Mx thay vì XX_VS)
+        VSAT_MON_MAP.put("M1",    "TO");
+        VSAT_MON_MAP.put("M2",    "LI");
+        VSAT_MON_MAP.put("M3",    "VA");
+        VSAT_MON_MAP.put("M8",    "N1_THI");
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════════
+    //  1. IELTS IMPORT (từ bài trước — giữ nguyên)
+    // ══════════════════════════════════════════════════════════════════════════════
+
     public List<String> processIELTSImport(File file) {
-
-        // ── Bước 1: Đọc & validate file Excel ──────────────────────────────
         List<String> errors = new ArrayList<>();
-
         List<IeltsImportDTO> rows = new ArrayList<>();
+
         List<String> parseErrors = baseImport.importFromExcel(
-                file,
-                IeltsImportDTO.class,
-                dto -> dto,             // identity mapper – validate first, process later
+                file, IeltsImportDTO.class,
+                dto -> dto,
                 parsed -> rows.addAll(parsed),
-                dto -> validateRow(dto)
+                dto -> validateIeltsRow(dto)
         );
+        if (!parseErrors.isEmpty()) return parseErrors;
 
-        if (!parseErrors.isEmpty()) {
-            return parseErrors;         // ALL-OR-NOTHING: dừng sớm nếu có lỗi format
-        }
-
-        // ── Bước 2: Chuẩn bị danh sách batch ──────────────────────────────
-        /*
-         * N1 Update batch:  (session, cccd, diemQd)
-         * DiemCong Upsert batch: List<DiemCong> entities
-         */
-        List<N1UpdateCommand>  n1Updates    = new ArrayList<>();
-        List<DiemCong>         dcUpserts    = new ArrayList<>();
+        List<N1UpdateCommand> n1Updates = new ArrayList<>();
+        List<DiemCong>        dcUpserts = new ArrayList<>();
 
         for (IeltsImportDTO dto : rows) {
             String cccd = dto.getCccd().trim();
-
-            // ── Validation tập hợp cha ─────────────────────────────────────
             Optional<DiemThiXetTuyen> optDiem = diemThiDAO.findByCccd(cccd);
             if (optDiem.isEmpty()) {
-                errors.add("[SKIP] CCCD=" + cccd + " không tồn tại trong xt_diemthixettuyen (tập hợp cha).");
+                errors.add("[SKIP] CCCD=" + cccd + " không tồn tại trong xt_diemthixettuyen.");
                 continue;
             }
-
             List<NganhToHop> toHopList = nguyenVongDAO.findNganhToHopByCccd(cccd);
             if (toHopList.isEmpty()) {
                 errors.add("[SKIP] CCCD=" + cccd + " không có nguyện vọng trong xt_nguyenvongxettuyen.");
                 continue;
             }
-
             DiemThiXetTuyen dt = optDiem.get();
-
-            // ── Duyệt từng tổ hợp ─────────────────────────────────────────
             for (NganhToHop nth : toHopList) {
-
-                // ── Subset Check: thí sinh phải có đủ điểm môn văn hóa ────
-                if (!passesSubsetCheck(dt, nth)) {
-                    continue;   // Thiếu điểm môn bắt buộc → bỏ qua tổ hợp này
-                }
-
-                String manganh  = nth.getNganh().getManganh();
-                String matohop  = nth.getToHopMon().getMatohop();
-
-                boolean coNgoaiNgu = Boolean.TRUE.equals(nth.getN1());
-
-                if (coNgoaiNgu) {
-                    // ── Case A: Tổ hợp CÓ Ngoại ngữ → ghi UPDATE N1_CC ───
-                    BigDecimal diemQd = coalesceZero(dto.getDiemQd());
-                    n1Updates.add(new N1UpdateCommand(cccd, diemQd));
-
+                if (!passesSubsetCheck(dt, nth)) continue;
+                String manganh = nth.getNganh().getManganh();
+                String matohop = nth.getToHopMon().getMatohop();
+                if (Boolean.TRUE.equals(nth.getN1())) {
+                    n1Updates.add(new N1UpdateCommand(cccd, coalesceZero(dto.getDiemQd())));
                 } else {
-                    // ── Case B: Tổ hợp KHÔNG có Ngoại ngữ → UPSERT DiemCong
-                    String dcKey = cccd + "_" + manganh + "_" + matohop;
-                    DiemCong dc = buildDiemCong(dt.getThiSinh(), manganh, matohop, dto.getDiemCong(), dcKey);
-                    dcUpserts.add(dc);
+                    dcUpserts.add(buildDiemCong(dt.getThiSinh(), manganh, matohop,
+                            dto.getDiemCong(), cccd + "_" + manganh + "_" + matohop));
                 }
             }
         }
-
-        // ── Bước 3: Batch flush DB ─────────────────────────────────────────
-        if (!n1Updates.isEmpty()) {
-            List<String> batchErrors = flushN1Updates(n1Updates);
-            errors.addAll(batchErrors);
-        }
-
-        if (!dcUpserts.isEmpty()) {
-            List<String> batchErrors = flushDiemCongUpserts(dcUpserts);
-            errors.addAll(batchErrors);
-        }
-
+        if (!n1Updates.isEmpty()) errors.addAll(flushN1Updates(n1Updates));
+        if (!dcUpserts.isEmpty()) errors.addAll(flushDiemCongUpserts(dcUpserts));
         return errors;
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  PRIVATE — Validation
-    // ──────────────────────────────────────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════════════════════
+    //  2. DGNL + VSAT IMPORT — entry point
+    // ══════════════════════════════════════════════════════════════════════════════
 
     /**
-     * Validate 1 dòng Excel trước khi xử lý.
-     * Trả về {@code null} nếu hợp lệ, hoặc chuỗi mô tả lỗi.
+     * Điểm vào chính: đọc file Excel đa-sheet và phân phối sang
+     * {@link #processDgnlSheet} / {@link #processVsatSheet}.
+     *
+     * <p>File có thể chứa 1 hoặc cả 2 sheet "DGNL" và "VSAT"
+     * (tên không phân biệt hoa/thường). Sheet không khớp sẽ được bỏ qua.
+     *
+     * @param file File Excel nhiều sheet.
+     * @return Tổng hợp lỗi từ tất cả sheet; rỗng nếu thành công hoàn toàn.
      */
-    private String validateRow(IeltsImportDTO dto) {
-        if (dto.getCccd() == null || dto.getCccd().trim().isEmpty()) {
-            return "Bắt buộc phải có CCCD";
+    public List<String> processDgnlVsatImport(File file) {
+        List<String> errors = new ArrayList<>();
+        Map<String, List<DgnlVsatRowDTO>> allSheets;
+
+        // ── Đọc tất cả sheet bằng ExcelReaderUtil mở rộng ─────────────────────
+        try {
+            allSheets = ExcelReaderUtil.readAllSheets(file, DgnlVsatRowDTO.class);
+        } catch (Exception e) {
+            errors.add("Lỗi đọc file Excel: " + e.getMessage());
+            return errors;
         }
-        if (dto.getDiemQd() != null) {
-            BigDecimal qd = dto.getDiemQd();
-            if (qd.compareTo(BigDecimal.ZERO) < 0 || qd.compareTo(new BigDecimal("10")) > 0) {
-                return "Điểm quy đổi phải nằm trong khoảng 0–10 (CCCD=" + dto.getCccd() + ")";
+
+        if (allSheets.isEmpty()) {
+            errors.add("File Excel không có sheet nào hợp lệ.");
+            return errors;
+        }
+
+        boolean foundAny = false;
+        for (Map.Entry<String, List<DgnlVsatRowDTO>> entry : allSheets.entrySet()) {
+            String sheetName = entry.getKey();
+            List<DgnlVsatRowDTO> rows = entry.getValue();
+
+            // Gán tên sheet vào từng DTO để dùng khi log lỗi
+            rows.forEach(r -> r.setSheetName(sheetName));
+
+            if (sheetName.equalsIgnoreCase(SHEET_DGNL)) {
+                foundAny = true;
+                errors.addAll(processDgnlSheet(rows));
+            } else if (sheetName.equalsIgnoreCase(SHEET_VSAT)) {
+                foundAny = true;
+                errors.addAll(processVsatSheet(rows));
+            } else {
+                System.out.println("[XetTuyenService] Bỏ qua sheet không nhận dạng được: '" + sheetName + "'");
             }
         }
-        if (dto.getDiemCong() != null) {
-            BigDecimal dc = dto.getDiemCong();
-            if (dc.compareTo(BigDecimal.ZERO) < 0 || dc.compareTo(new BigDecimal("10")) > 0) {
-                return "Điểm cộng phải nằm trong khoảng 0–10 (CCCD=" + dto.getCccd() + ")";
-            }
+
+        if (!foundAny) {
+            errors.add("Không tìm thấy sheet 'DGNL' hoặc 'VSAT' trong file.");
         }
-        return null;
+        return errors;
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  PRIVATE — Subset Check
-    // ──────────────────────────────────────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════════════════════
+    //  3. DGNL SHEET — ghi thẳng vào cột NL1
+    // ══════════════════════════════════════════════════════════════════════════════
 
     /**
-     * Kiểm tra xem thí sinh có đủ điểm môn văn hóa mà tổ hợp yêu cầu không.
+     * Xử lý sheet DGNL.
      *
-     * <p>Quy tắc: nếu {@code nth.monX = true} (tổ hợp yêu cầu môn X)
-     * thì {@code dt.monX} phải &gt; 0 (thí sinh có điểm môn đó).
-     * Ngoại ngữ (N1) được kiểm tra riêng qua cột {@code n1}.
+     * <p><b>Logic:</b>
+     * <ol>
+     *   <li>Mỗi dòng: MAMONTHI phải là "DGNL"; DIEM thang 1200.</li>
+     *   <li>CCCD (cột CMND) phải tồn tại trong {@code xt_diemthixettuyen}.</li>
+     *   <li>1 thí sinh có thể có nhiều dòng (nhiều đợt thi) →
+     *       SQL {@code GREATEST(COALESCE(NL1,0), :diem)} đảm bảo chỉ ghi
+     *       nếu điểm mới cao hơn điểm đã có.</li>
+     *   <li>Điểm ghi là điểm thô (thang 1200) — KHÔNG quy đổi,
+     *       để giữ đúng semantic cột NL1 trong DB.</li>
+     * </ol>
      *
-     * @param dt  Bản ghi điểm thi của thí sinh (tập hợp cha).
-     * @param nth Tổ hợp xét tuyển cần kiểm tra.
-     * @return {@code true} nếu thí sinh hội đủ điều kiện.
+     * @param rows Danh sách DTO từ sheet DGNL.
+     * @return Danh sách lỗi.
      */
-    private boolean passesSubsetCheck(DiemThiXetTuyen dt, NganhToHop nth) {
-        // Toán
-        if (Boolean.TRUE.equals(nth.getTo()) && !isPositive(dt.getTo()))   return false;
-        // Ngữ văn
-        if (Boolean.TRUE.equals(nth.getVa()) && !isPositive(dt.getVa()))   return false;
-        // Vật lý
-        if (Boolean.TRUE.equals(nth.getLi()) && !isPositive(dt.getLi()))   return false;
-        // Hóa học
-        if (Boolean.TRUE.equals(nth.getHo()) && !isPositive(dt.getHo()))   return false;
-        // Sinh học
-        if (Boolean.TRUE.equals(nth.getSi()) && !isPositive(dt.getSi()))   return false;
-        // Lịch sử
-        if (Boolean.TRUE.equals(nth.getSu()) && !isPositive(dt.getSu()))   return false;
-        // Địa lý
-        if (Boolean.TRUE.equals(nth.getDi()) && !isPositive(dt.getDi()))   return false;
-        // Tin học
-        if (Boolean.TRUE.equals(nth.getTi()) && !isPositive(dt.getTi()))   return false;
-        // GDCD/KTPL
-        if (Boolean.TRUE.equals(nth.getKtpl()) && !isPositive(dt.getKtpl())) return false;
-        return true;
+    List<String> processDgnlSheet(List<DgnlVsatRowDTO> rows) {
+        List<String> errors      = new ArrayList<>();
+        List<ScoreUpdateCmd> cmds = new ArrayList<>();
+
+        int rowNum = 2; // Excel row index (1 = header)
+        for (DgnlVsatRowDTO dto : rows) {
+
+            // ── Validate ───────────────────────────────────────────────────────
+            String err = validateDgnlVsatRow(dto, "DGNL");
+            if (err != null) { errors.add("DGNL dòng " + rowNum + ": " + err); rowNum++; continue; }
+
+            if (!"DGNL".equalsIgnoreCase(dto.getMamonthi())) {
+                // Sheet DGNL đôi khi có dòng rác với mã môn khác → bỏ qua nhẹ nhàng
+                System.out.println("[DGNL] Bỏ qua dòng " + rowNum + " MAMONTHI=" + dto.getMamonthi());
+                rowNum++; continue;
+            }
+
+            String cccd = dto.getCmnd().trim();
+            if (!existsInDiemThi(cccd)) {
+                errors.add("[DGNL SKIP] CCCD=" + cccd + " không tồn tại trong xt_diemthixettuyen.");
+                rowNum++; continue;
+            }
+
+            // Điểm thô thang 1200 — ghi thẳng vào NL1
+            BigDecimal diem = coalesceZero(dto.getDiem()).setScale(2, RoundingMode.HALF_UP);
+            cmds.add(new ScoreUpdateCmd(cccd, "NL1", diem));
+            rowNum++;
+        }
+
+        if (!cmds.isEmpty()) errors.addAll(flushColumnUpdates(cmds, "DGNL"));
+        return errors;
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  PRIVATE — Batch: UPDATE N1_CC
-    // ──────────────────────────────────────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════════════════════
+    //  4. VSAT SHEET — quy đổi thang, GREATEST so sánh
+    // ══════════════════════════════════════════════════════════════════════════════
 
     /**
-     * Batch UPDATE {@code N1_CC} = GREATEST(N1_THI, diemQd) cho danh sách thí sinh.
+     * Xử lý sheet VSAT.
      *
-     * <p>Dùng Hibernate native SQL để tận dụng {@code GREATEST()} của MySQL,
-     * đồng thời flush theo batch để kiểm soát bộ nhớ.
+     * <p><b>Logic:</b>
+     * <ol>
+     *   <li>Mỗi dòng = 1 môn thi. MAMONTHI ∈ {TO_VS, LI_VS, VA_VS, N1_VS}.
+     *       Mã khác (M1, M2, M8...) → log và skip.</li>
+     *   <li>Quy đổi điểm: {@code diemQuyDoi = DIEM / THANGDIEM * 10},
+     *       làm tròn 2 chữ số thập phân. Nếu THANGDIEM null/0 → mặc định 150.</li>
+     *   <li>CCCD phải tồn tại trong {@code xt_diemthixettuyen}.</li>
+     *   <li>UPDATE: {@code SET col = GREATEST(COALESCE(col,0), :diem)}
+     *       — chỉ ghi nếu điểm mới cao hơn điểm cũ.</li>
+     * </ol>
      *
-     * @param commands Danh sách lệnh UPDATE (cccd + điểm quy đổi).
-     * @return Danh sách lỗi (rỗng nếu thành công).
+     * @param rows Danh sách DTO từ sheet VSAT.
+     * @return Danh sách lỗi.
      */
+    List<String> processVsatSheet(List<DgnlVsatRowDTO> rows) {
+        List<String> errors      = new ArrayList<>();
+        List<ScoreUpdateCmd> cmds = new ArrayList<>();
+
+        // Thang điểm mặc định VSAT = 150
+        BigDecimal DEFAULT_THANG = new BigDecimal("150");
+
+        int rowNum = 2;
+        for (DgnlVsatRowDTO dto : rows) {
+
+            // ── Validate ───────────────────────────────────────────────────────
+            String err = validateDgnlVsatRow(dto, "VSAT");
+            if (err != null) { errors.add("VSAT dòng " + rowNum + ": " + err); rowNum++; continue; }
+
+            String maMon = dto.getMamonthi() == null ? "" : dto.getMamonthi().trim().toUpperCase();
+            String dbCol = VSAT_MON_MAP.get(maMon);
+            if (dbCol == null) {
+                // Mã môn không nằm trong danh sách cần xử lý → bỏ qua
+                System.out.println("[VSAT] Bỏ qua dòng " + rowNum
+                        + " MAMONTHI=" + maMon + " (không ánh xạ)");
+                rowNum++; continue;
+            }
+
+            String cccd = dto.getCmnd().trim();
+            if (!existsInDiemThi(cccd)) {
+                errors.add("[VSAT SKIP] CCCD=" + cccd + " không tồn tại trong xt_diemthixettuyen.");
+                rowNum++; continue;
+            }
+
+            // ── Quy đổi điểm về thang 10 ──────────────────────────────────────
+            BigDecimal thang  = (dto.getThangdiem() != null
+                    && dto.getThangdiem().compareTo(BigDecimal.ZERO) > 0)
+                    ? dto.getThangdiem() : DEFAULT_THANG;
+            BigDecimal diemQD = coalesceZero(dto.getDiem())
+                    .multiply(BigDecimal.TEN)
+                    .divide(thang, 2, RoundingMode.HALF_UP);
+
+            cmds.add(new ScoreUpdateCmd(cccd, dbCol, diemQD));
+            rowNum++;
+        }
+
+        if (!cmds.isEmpty()) errors.addAll(flushColumnUpdates(cmds, "VSAT"));
+        return errors;
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════════
+    //  5. BATCH FLUSH — dùng chung cho DGNL và VSAT
+    // ══════════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Batch UPDATE nhiều cột khác nhau trong {@code xt_diemthixettuyen}.
+     *
+     * <p>SQL template (cột được truyền qua string ghép — an toàn vì đã
+     * whitelist qua {@link #VSAT_MON_MAP} + hằng "NL1"):
+     * <pre>
+     * UPDATE xt_diemthixettuyen
+     * SET &lt;col&gt; = GREATEST(COALESCE(&lt;col&gt;, 0), :diem)
+     * WHERE cccd = :cccd
+     * </pre>
+     *
+     * @param cmds   Danh sách lệnh UPDATE.
+     * @param source Tên nguồn (DGNL / VSAT) — chỉ dùng để log.
+     * @return Danh sách lỗi.
+     */
+    private List<String> flushColumnUpdates(List<ScoreUpdateCmd> cmds, String source) {
+        List<String> errors = new ArrayList<>();
+        Session     session = null;
+        Transaction tx      = null;
+
+        try {
+            session = HibernateUtil.getSessionFactory().openSession();
+            tx      = session.beginTransaction();
+            int count = 0;
+
+            for (ScoreUpdateCmd cmd : cmds) {
+                /*
+                 * Whitelist cột để tránh SQL Injection (col chỉ đến từ VSAT_MON_MAP hoặc "NL1").
+                 * Tên cột có thể chứa ký tự backtick (ví dụ `TO`) — thêm backtick bọc ngoài để
+                 * MySQL xử lý đúng tên cột reserved keyword.
+                 */
+                String colSafe = "`" + cmd.dbCol() + "`";
+                String sql =
+                        "UPDATE xt_diemthixettuyen " +
+                        "SET " + colSafe + " = GREATEST(COALESCE(" + colSafe + ", 0), :diem) " +
+                        "WHERE cccd = :cccd";
+
+                session.createNativeMutationQuery(sql)
+                        .setParameter("diem", cmd.diem())
+                        .setParameter("cccd", cmd.cccd())
+                        .executeUpdate();
+
+                if (++count % BATCH_SIZE == 0) session.flush();
+            }
+
+            tx.commit();
+            System.out.println("[" + source + "] Batch UPDATE hoàn tất: " + cmds.size() + " lệnh.");
+
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                try { tx.rollback(); } catch (Exception rb) {
+                    System.err.println("Rollback " + source + " thất bại: " + rb.getMessage());
+                }
+            }
+            e.printStackTrace();
+            errors.add("Lỗi batch UPDATE " + source + ": " + e.getMessage());
+        } finally {
+            if (session != null && session.isOpen()) session.close();
+        }
+        return errors;
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════════
+    //  6. IELTS HELPERS (giữ nguyên từ bài trước)
+    // ══════════════════════════════════════════════════════════════════════════════
+
     private List<String> flushN1Updates(List<N1UpdateCommand> commands) {
         List<String> errors = new ArrayList<>();
         Session session = null;
         Transaction tx  = null;
-
         try {
             session = HibernateUtil.getSessionFactory().openSession();
             tx = session.beginTransaction();
-
             int count = 0;
             for (N1UpdateCommand cmd : commands) {
-                /*
-                 * SQL tương đương:
-                 *   UPDATE xt_diemthixettuyen
-                 *   SET    N1_CC = GREATEST(COALESCE(N1_THI, 0), :diemQd)
-                 *   WHERE  cccd  = :cccd
-                 *
-                 * COALESCE bảo vệ trường hợp N1_THI = NULL.
-                 */
                 session.createNativeMutationQuery(
                         "UPDATE xt_diemthixettuyen " +
                         "SET N1_CC = GREATEST(COALESCE(N1_THI, 0), :diemQd) " +
-                        "WHERE cccd = :cccd"
-                )
-                .setParameter("diemQd", cmd.diemQd())
-                .setParameter("cccd",   cmd.cccd())
-                .executeUpdate();
-
-                if (++count % BATCH_SIZE == 0) {
-                    session.flush();
-                }
+                        "WHERE cccd = :cccd")
+                        .setParameter("diemQd", cmd.diemQd())
+                        .setParameter("cccd",   cmd.cccd())
+                        .executeUpdate();
+                if (++count % BATCH_SIZE == 0) session.flush();
             }
-
             tx.commit();
-
         } catch (Exception e) {
-            if (tx != null && tx.isActive()) {
-                try { tx.rollback(); } catch (Exception rb) {
-                    System.err.println("Rollback N1_CC thất bại: " + rb.getMessage());
-                }
-            }
+            if (tx != null && tx.isActive()) try { tx.rollback(); } catch (Exception ignored) {}
             e.printStackTrace();
             errors.add("Lỗi batch UPDATE N1_CC: " + e.getMessage());
-
         } finally {
             if (session != null && session.isOpen()) session.close();
         }
-
         return errors;
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  PRIVATE — Batch: UPSERT DiemCong
-    // ──────────────────────────────────────────────────────────────────────────
-
-    /**
-     * Bulk UPSERT vào {@code xt_diemcongxetuyen}.
-     *
-     * <p>Dùng MySQL {@code INSERT INTO ... ON DUPLICATE KEY UPDATE} để đảm bảo
-     * idempotent (chạy import nhiều lần vẫn an toàn).
-     * Khóa duy nhất {@code dc_keys} = {@code {cccd}_{manganh}_{matohop}}.
-     *
-     * @param entities Danh sách {@link DiemCong} cần UPSERT.
-     * @return Danh sách lỗi (rỗng nếu thành công).
-     */
     private List<String> flushDiemCongUpserts(List<DiemCong> entities) {
         List<String> errors = new ArrayList<>();
         Session session = null;
         Transaction tx  = null;
-
         try {
             session = HibernateUtil.getSessionFactory().openSession();
             tx = session.beginTransaction();
-
             int count = 0;
             for (DiemCong dc : entities) {
-                /*
-                 * UPSERT MySQL:
-                 *   INSERT INTO xt_diemcongxetuyen (ts_cccd, manganh, matohop, diemCC, dc_keys)
-                 *   VALUES (:cccd, :manganh, :matohop, :diemCC, :dcKeys)
-                 *   ON DUPLICATE KEY UPDATE diemCC = VALUES(diemCC)
-                 *
-                 * Chỉ cập nhật diemCC khi key trùng; các cột khác giữ nguyên.
-                 */
                 session.createNativeMutationQuery(
                         "INSERT INTO xt_diemcongxetuyen (ts_cccd, manganh, matohop, diemCC, dc_keys) " +
                         "VALUES (:cccd, :manganh, :matohop, :diemCC, :dcKeys) " +
-                        "ON DUPLICATE KEY UPDATE diemCC = VALUES(diemCC)"
-                )
-                .setParameter("cccd",    dc.getThiSinh().getCccd())
-                .setParameter("manganh", dc.getManganh())
-                .setParameter("matohop", dc.getMatohop())
-                .setParameter("diemCC",  dc.getDiemCC())
-                .setParameter("dcKeys",  dc.getDcKeys())
-                .executeUpdate();
-
-                if (++count % BATCH_SIZE == 0) {
-                    session.flush();
-                }
+                        "ON DUPLICATE KEY UPDATE diemCC = VALUES(diemCC)")
+                        .setParameter("cccd",    dc.getThiSinh().getCccd())
+                        .setParameter("manganh", dc.getManganh())
+                        .setParameter("matohop", dc.getMatohop())
+                        .setParameter("diemCC",  dc.getDiemCC())
+                        .setParameter("dcKeys",  dc.getDcKeys())
+                        .executeUpdate();
+                if (++count % BATCH_SIZE == 0) session.flush();
             }
-
             tx.commit();
-
         } catch (Exception e) {
-            if (tx != null && tx.isActive()) {
-                try { tx.rollback(); } catch (Exception rb) {
-                    System.err.println("Rollback DiemCong UPSERT thất bại: " + rb.getMessage());
-                }
-            }
+            if (tx != null && tx.isActive()) try { tx.rollback(); } catch (Exception ignored) {}
             e.printStackTrace();
             errors.add("Lỗi batch UPSERT xt_diemcongxetuyen: " + e.getMessage());
-
         } finally {
             if (session != null && session.isOpen()) session.close();
         }
-
         return errors;
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  PRIVATE — Helpers
-    // ──────────────────────────────────────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════════════════════
+    //  7. VALIDATION HELPERS
+    // ══════════════════════════════════════════════════════════════════════════════
 
-    /**
-     * Xây dựng entity {@link DiemCong} từ các tham số.
-     * diemCC được làm tròn 2 chữ số thập phân. NULL → 0.
-     */
-    private DiemCong buildDiemCong(ThiSinh thiSinh,
-                                   String manganh,
-                                   String matohop,
-                                   BigDecimal rawDiemCong,
-                                   String dcKey) {
+    private String validateIeltsRow(IeltsImportDTO dto) {
+        if (dto.getCccd() == null || dto.getCccd().trim().isEmpty()) return "Bắt buộc phải có CCCD";
+        if (dto.getDiemQd() != null) {
+            BigDecimal v = dto.getDiemQd();
+            if (v.compareTo(BigDecimal.ZERO) < 0 || v.compareTo(new BigDecimal("10")) > 0)
+                return "Điểm quy đổi phải 0–10 (CCCD=" + dto.getCccd() + ")";
+        }
+        if (dto.getDiemCong() != null) {
+            BigDecimal v = dto.getDiemCong();
+            if (v.compareTo(BigDecimal.ZERO) < 0 || v.compareTo(new BigDecimal("10")) > 0)
+                return "Điểm cộng phải 0–10 (CCCD=" + dto.getCccd() + ")";
+        }
+        return null;
+    }
+
+    private String validateDgnlVsatRow(DgnlVsatRowDTO dto, String source) {
+        if (dto.getCmnd() == null || dto.getCmnd().trim().isEmpty())
+            return "Bắt buộc phải có CMND/CCCD";
+        if (dto.getMamonthi() == null || dto.getMamonthi().trim().isEmpty())
+            return "Bắt buộc phải có MAMONTHI";
+        if (dto.getDiem() == null)
+            return "Bắt buộc phải có DIEM (CCCD=" + dto.getCmnd() + ")";
+        if (dto.getDiem().compareTo(BigDecimal.ZERO) < 0)
+            return "DIEM không được âm (CCCD=" + dto.getCmnd() + ")";
+        return null;
+    }
+
+    /** Kiểm tra nhanh cccd có trong xt_diemthixettuyen không — dùng Optional từ DAO có sẵn. */
+    private boolean existsInDiemThi(String cccd) {
+        return diemThiDAO.findByCccd(cccd).isPresent();
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════════
+    //  8. SHARED HELPERS
+    // ══════════════════════════════════════════════════════════════════════════════
+
+    private boolean passesSubsetCheck(DiemThiXetTuyen dt, NganhToHop nth) {
+        if (Boolean.TRUE.equals(nth.getTo())   && !isPositive(dt.getTo()))   return false;
+        if (Boolean.TRUE.equals(nth.getVa())   && !isPositive(dt.getVa()))   return false;
+        if (Boolean.TRUE.equals(nth.getLi())   && !isPositive(dt.getLi()))   return false;
+        if (Boolean.TRUE.equals(nth.getHo())   && !isPositive(dt.getHo()))   return false;
+        if (Boolean.TRUE.equals(nth.getSi())   && !isPositive(dt.getSi()))   return false;
+        if (Boolean.TRUE.equals(nth.getSu())   && !isPositive(dt.getSu()))   return false;
+        if (Boolean.TRUE.equals(nth.getDi())   && !isPositive(dt.getDi()))   return false;
+        if (Boolean.TRUE.equals(nth.getTi())   && !isPositive(dt.getTi()))   return false;
+        if (Boolean.TRUE.equals(nth.getKtpl()) && !isPositive(dt.getKtpl())) return false;
+        return true;
+    }
+
+    private DiemCong buildDiemCong(ThiSinh ts, String manganh, String matohop,
+                                   BigDecimal rawDiem, String dcKey) {
         DiemCong dc = new DiemCong();
-        dc.setThiSinh(thiSinh);
+        dc.setThiSinh(ts);
         dc.setManganh(manganh);
         dc.setMatohop(matohop);
-        dc.setDiemCC(coalesceZero(rawDiemCong).setScale(2, RoundingMode.HALF_UP));
+        dc.setDiemCC(coalesceZero(rawDiem).setScale(2, RoundingMode.HALF_UP));
         dc.setDcKeys(dcKey);
         return dc;
     }
 
-    /** Trả về {@code true} nếu giá trị không null và > 0. */
-    private boolean isPositive(BigDecimal value) {
-        return value != null && value.compareTo(BigDecimal.ZERO) > 0;
+    private boolean isPositive(BigDecimal v) {
+        return v != null && v.compareTo(BigDecimal.ZERO) > 0;
     }
 
-    /**
-     * Tương đương {@code COALESCE(value, 0)} — tránh NullPointerException khi so sánh điểm.
-     */
-    private BigDecimal coalesceZero(BigDecimal value) {
-        return value != null ? value : BigDecimal.ZERO;
+    private BigDecimal coalesceZero(BigDecimal v) {
+        return v != null ? v : BigDecimal.ZERO;
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  PRIVATE — Inner Records / Value Objects
-    // ──────────────────────────────────────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════════════════════
+    //  9. VALUE OBJECTS
+    // ══════════════════════════════════════════════════════════════════════════════
 
-    /**
-     * Lệnh UPDATE N1_CC gọn nhẹ, đóng gói (cccd, diemQd) để truyền vào batch.
-     */
+    /** Lệnh UPDATE 1 cột điểm cho 1 thí sinh (dùng chung DGNL + VSAT). */
+    private record ScoreUpdateCmd(String cccd, String dbCol, BigDecimal diem) {}
+
+    /** Lệnh UPDATE N1_CC cho IELTS import. */
     private record N1UpdateCommand(String cccd, BigDecimal diemQd) {}
 }
