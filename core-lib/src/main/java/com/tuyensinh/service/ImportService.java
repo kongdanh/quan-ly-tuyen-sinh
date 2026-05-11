@@ -373,4 +373,66 @@ public class ImportService {
         }
         return null;
     }
+    public List<String> importToHopMon(File file) {
+        BaseImportService<com.tuyensinh.dto.ToHopMonImportDTO, com.tuyensinh.model.ToHopMon> baseService = new BaseImportService<>();
+        return baseService.importFromExcel(
+                file,
+                com.tuyensinh.dto.ToHopMonImportDTO.class,
+                dto -> {
+                    com.tuyensinh.model.ToHopMon entity = new com.tuyensinh.model.ToHopMon();
+                    entity.setMatohop(dto.getMatohop());
+                    entity.setTentohop(dto.getTentohop());
+                    entity.setMon1(dto.getMon1());
+                    entity.setMon2(dto.getMon2());
+                    entity.setMon3(dto.getMon3());
+                    return entity;
+                },
+                entities -> {
+                    Session session = null;
+                    Transaction tx = null;
+                    try {
+                        session = HibernateUtil.getSessionFactory().openSession();
+                        tx = session.beginTransaction();
+                        int count = 0;
+                        for (com.tuyensinh.model.ToHopMon entity : entities) {
+                            // Check existence
+                            com.tuyensinh.model.ToHopMon existing = session.createQuery(
+                                "FROM ToHopMon t WHERE t.matohop = :ma", com.tuyensinh.model.ToHopMon.class)
+                                .setParameter("ma", entity.getMatohop())
+                                .uniqueResult();
+                            
+                            if (existing == null) {
+                                session.persist(entity);
+                            } else {
+                                existing.setTentohop(entity.getTentohop());
+                                existing.setMon1(entity.getMon1());
+                                existing.setMon2(entity.getMon2());
+                                existing.setMon3(entity.getMon3());
+                                session.merge(existing);
+                            }
+
+                            if (++count % 50 == 0) {
+                                session.flush();
+                                session.clear();
+                            }
+                        }
+                        tx.commit();
+                    } catch (Exception e) {
+                        if (tx != null && tx.isActive()) {
+                            try { tx.rollback(); } catch (Exception ignored) {}
+                        }
+                        throw new RuntimeException("Lỗi lưu tổ hợp môn: " + e.getMessage());
+                    } finally {
+                        if (session != null && session.isOpen()) session.close();
+                    }
+                },
+                dto -> {
+                    if (dto.getMatohop() == null || dto.getMatohop().trim().isEmpty()) return "Mã tổ hợp không được trống";
+                    if (dto.getMon1() == null || dto.getMon1().trim().isEmpty()) return "Môn 1 không được trống";
+                    if (dto.getMon2() == null || dto.getMon2().trim().isEmpty()) return "Môn 2 không được trống";
+                    if (dto.getMon3() == null || dto.getMon3().trim().isEmpty()) return "Môn 3 không được trống";
+                    return null;
+                }
+        );
+    }
 }

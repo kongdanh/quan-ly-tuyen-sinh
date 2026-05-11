@@ -2,28 +2,25 @@ package com.tuyensinh.dto;
 
 import com.tuyensinh.annotation.ExcelColumn;
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
-@AllArgsConstructor
+@Data
 @NoArgsConstructor
-@Getter
-@Setter
+@AllArgsConstructor
 public class ToHopMonImportDTO {
-
-    @ExcelColumn(value = "Mã tổ hợp", aliases = {"Ma to hop", "Matohop", "Ma TH"}, required = true)
+    @ExcelColumn(value = "Mã tổ hợp", aliases = {"matohop"})
     private String matohop;
 
-    @ExcelColumn(value = "Môn 1", aliases = {"Mon 1", "Mon1"}, required = true)
+    @ExcelColumn(value = "Môn 1", aliases = {"mon1"})
     private String mon1;
 
-    @ExcelColumn(value = "Môn 2", aliases = {"Mon 2", "Mon2"}, required = true)
+    @ExcelColumn(value = "Môn 2", aliases = {"mon2"})
     private String mon2;
 
-    @ExcelColumn(value = "Môn 3", aliases = {"Mon 3", "Mon3"}, required = true)
+    @ExcelColumn(value = "Môn 3", aliases = {"mon3"})
     private String mon3;
 
-    @ExcelColumn(value = "Tên tổ hợp", aliases = {"Ten to hop", "Tentohop", "Ten TH"})
+    @ExcelColumn(value = "Tên tổ hợp", aliases = {"tentohop"})
     private String tentohop;
 }

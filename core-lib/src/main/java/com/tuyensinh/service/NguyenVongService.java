@@ -11,22 +11,23 @@ import java.util.*;
 
 public class NguyenVongService {
 
-    private static final int MAX_NGUYEN_VONG = 3;
+    private static final int MAX_NGUYEN_VONG = 100;
 
-    private final NguyenVongDAO  nvDAO          = new NguyenVongDAO();
-    private final NganhToHopDAO  ntDAO          = new NganhToHopDAO();
-    private final NganhDAO       nganhDAO       = new NganhDAO();
+    private final NguyenVongDAO nvDAO = new NguyenVongDAO();
+    private final NganhToHopDAO ntDAO = new NganhToHopDAO();
+    private final NganhDAO nganhDAO = new NganhDAO();
     private final ThiSinhService thiSinhService = new ThiSinhService();
-    private final DiemService    diemService    = new DiemService();
+    private final DiemService diemService = new DiemService();
 
     public KetQuaDangKy dangKyNguyenVong(String cccd,
-                                         String manganh,
-                                         String matohop,
-                                         int    thuTu,
-                                         String phuongThuc,
-                                         String thm) {
+            String manganh,
+            String matohop,
+            int thuTu,
+            String phuongThuc,
+            String thm) {
 
-        System.out.println("[DangKy] Bắt đầu: CCCD=" + cccd + " ngành=" + manganh + " tổhợp=" + matohop + " thuTu=" + thuTu + " pt=" + phuongThuc);
+        System.out.println("[DangKy] Bắt đầu: CCCD=" + cccd + " ngành=" + manganh + " tổhợp=" + matohop + " thuTu="
+                + thuTu + " pt=" + phuongThuc);
 
         try {
             String validErr = validate(cccd, manganh, matohop);
@@ -40,12 +41,12 @@ public class NguyenVongService {
             return KetQuaDangKy.thatBai("Lỗi hệ thống khi kiểm tra dữ liệu: " + e.getMessage());
         }
 
-        Session     session = null;
-        Transaction tx      = null;
+        Session session = null;
+        Transaction tx = null;
 
         try {
             session = HibernateUtil.getSessionFactory().openSession();
-            tx      = session.beginTransaction();
+            tx = session.beginTransaction();
 
             if (isThuTuDaTonTai(session, cccd, thuTu)) {
                 tx.rollback();
@@ -64,7 +65,7 @@ public class NguyenVongService {
             }
 
             ThiSinh thiSinh = findThiSinh(session, cccd);
-            Nganh   nganh   = findNganh(session, manganh);
+            Nganh nganh = findNganh(session, manganh);
 
             if (thiSinh == null || nganh == null) {
                 tx.rollback();
@@ -83,11 +84,12 @@ public class NguyenVongService {
             nv.setNvKeys(nvKeys);
 
             session.persist(nv);
-            System.out.println("[DangKy] Đã tạo NguyenVong id=" + nv.getId() + " CCCD=" + cccd + " ngành=" + manganh + " tổhợp=" + matohop + " thuTu=" + thuTu);
+            System.out.println("[DangKy] Đã tạo NguyenVong id=" + nv.getId() + " CCCD=" + cccd + " ngành=" + manganh
+                    + " tổhợp=" + matohop + " thuTu=" + thuTu);
 
             int updatedRows = session.createNativeMutationQuery(
                     "UPDATE xt_nganh SET sl_dadangky = sl_dadangky + 1 " +
-                    "WHERE manganh = :manganh")
+                            "WHERE manganh = :manganh")
                     .setParameter("manganh", manganh)
                     .executeUpdate();
 
@@ -98,7 +100,8 @@ public class NguyenVongService {
             }
 
             tx.commit();
-            System.out.println("[DangKy] Thành công: CCCD=" + cccd + " ngành=" + manganh + " thuTu=" + thuTu + " sl_dadangky+1");
+            System.out.println(
+                    "[DangKy] Thành công: CCCD=" + cccd + " ngành=" + manganh + " thuTu=" + thuTu + " sl_dadangky+1");
             return KetQuaDangKy.thanhCong(
                     "Đăng ký nguyện vọng thành công: ngành=" + manganh + ", thứ tự=" + thuTu);
 
@@ -116,19 +119,20 @@ public class NguyenVongService {
             return KetQuaDangKy.thatBai("Lỗi hệ thống: " + e.getMessage());
 
         } finally {
-            if (session != null && session.isOpen()) session.close();
+            if (session != null && session.isOpen())
+                session.close();
         }
     }
 
     public KetQuaDangKy huyNguyenVong(int nvId) {
         System.out.println("[Huy] Bắt đầu huỷ nguyện vọng id=" + nvId);
 
-        Session     session = null;
-        Transaction tx      = null;
+        Session session = null;
+        Transaction tx = null;
 
         try {
             session = HibernateUtil.getSessionFactory().openSession();
-            tx      = session.beginTransaction();
+            tx = session.beginTransaction();
 
             NguyenVong nv = session.get(NguyenVong.class, nvId);
             if (nv == null) {
@@ -137,13 +141,13 @@ public class NguyenVongService {
             }
 
             String manganh = nv.getNganh().getManganh();
-            String cccd    = nv.getThiSinh().getCccd();
+            String cccd = nv.getThiSinh().getCccd();
 
             session.remove(nv);
 
             session.createNativeMutationQuery(
                     "UPDATE xt_nganh SET sl_dadangky = GREATEST(sl_dadangky - 1, 0) " +
-                    "WHERE manganh = :manganh")
+                            "WHERE manganh = :manganh")
                     .setParameter("manganh", manganh)
                     .executeUpdate();
 
@@ -153,7 +157,9 @@ public class NguyenVongService {
 
         } catch (Exception e) {
             if (tx != null && tx.isActive()) {
-                try { tx.rollback(); } catch (Exception rb) {
+                try {
+                    tx.rollback();
+                } catch (Exception rb) {
                     System.err.println("[Huy] Rollback thất bại: " + rb.getMessage());
                 }
             }
@@ -161,27 +167,32 @@ public class NguyenVongService {
             return KetQuaDangKy.thatBai("Lỗi hệ thống: " + e.getMessage());
 
         } finally {
-            if (session != null && session.isOpen()) session.close();
+            if (session != null && session.isOpen())
+                session.close();
         }
     }
 
     public SaveResult saveWish(String cccd, String manganh, Integer idnv, DiemThiXetTuyen diem) {
         Map<String, Double> scoreMap = diemService.buildScoreMap(diem);
-        List<NganhToHop>    listChoPhep = ntDAO.findByMaNganh(manganh);
+        List<NganhToHop> listChoPhep = ntDAO.findByMaNganh(manganh);
 
         NganhToHop toHopToiUu = null;
         double diemMax = -1.0;
         for (NganhToHop th : listChoPhep) {
             double d = diemService.tinhDiemXet(scoreMap, th);
-            if (d > diemMax) { diemMax = d; toHopToiUu = th; }
+            if (d > diemMax) {
+                diemMax = d;
+                toHopToiUu = th;
+            }
         }
 
-        if (toHopToiUu == null) return SaveResult.NOT_QUALIFIED;
+        if (toHopToiUu == null)
+            return SaveResult.NOT_QUALIFIED;
 
-        Nganh  nganh = nganhDAO.findByMaNganh(manganh).orElse(null);
+        Nganh nganh = nganhDAO.findByMaNganh(manganh).orElse(null);
         String ttThm = toHopToiUu.getThMon1() + "-"
-                     + toHopToiUu.getThMon2() + "-"
-                     + toHopToiUu.getThMon3();
+                + toHopToiUu.getThMon2() + "-"
+                + toHopToiUu.getThMon3();
 
         if (idnv != null) {
             return updateWish(cccd, idnv, nganh, manganh, diemMax, ttThm);
@@ -204,14 +215,17 @@ public class NguyenVongService {
 
     public void reorderByIds(String[] ids, String cccd) {
         Set<Integer> validIds = new HashSet<>();
-        for (NguyenVong v : nvDAO.findByCccd(cccd)) validIds.add(v.getId());
+        for (NguyenVong v : nvDAO.findByCccd(cccd))
+            validIds.add(v.getId());
 
         for (int i = 0; i < ids.length; i++) {
             try {
                 int id = Integer.parseInt(ids[i].trim());
-                if (!validIds.contains(id)) continue;
+                if (!validIds.contains(id))
+                    continue;
                 NguyenVong nv = nvDAO.findById(id);
-                if (nv == null) continue;
+                if (nv == null)
+                    continue;
                 nv.setNvTt(i + 1);
                 nv.setNvKeys(buildKey(cccd, nv.getNganh().getManganh(), i + 1));
                 nvDAO.update(nv);
@@ -223,7 +237,8 @@ public class NguyenVongService {
     }
 
     public List<NguyenVong> findByCccd(String cccd) {
-        if (cccd == null || cccd.isBlank()) return Collections.emptyList();
+        if (cccd == null || cccd.isBlank())
+            return Collections.emptyList();
         return nvDAO.findByCccd(cccd);
     }
 
@@ -269,7 +284,7 @@ public class NguyenVongService {
     private boolean isTohopOfNganh(Session session, String manganh, String matohop) {
         Long count = session.createQuery(
                 "SELECT COUNT(nth) FROM NganhToHop nth " +
-                "WHERE nth.nganh.manganh = :manganh AND nth.toHopMon.matohop = :matohop",
+                        "WHERE nth.nganh.manganh = :manganh AND nth.toHopMon.matohop = :matohop",
                 Long.class)
                 .setParameter("manganh", manganh)
                 .setParameter("matohop", matohop)
@@ -280,7 +295,7 @@ public class NguyenVongService {
     private boolean isThuTuDaTonTai(Session session, String cccd, int thuTu) {
         Long count = session.createQuery(
                 "SELECT COUNT(nv) FROM NguyenVong nv " +
-                "WHERE nv.thiSinh.cccd = :cccd AND nv.nvTt = :thutu",
+                        "WHERE nv.thiSinh.cccd = :cccd AND nv.nvTt = :thutu",
                 Long.class)
                 .setParameter("cccd", cccd)
                 .setParameter("thutu", thuTu)
@@ -298,7 +313,7 @@ public class NguyenVongService {
     }
 
     private SaveResult updateWish(String cccd, int idnv, Nganh nganh,
-                                  String manganh, double diemMax, String ttThm) {
+            String manganh, double diemMax, String ttThm) {
         NguyenVong nv = nvDAO.findById(idnv);
         if (nv == null || !nv.getThiSinh().getCccd().equals(cccd)) {
             return SaveResult.FORBIDDEN;
@@ -312,12 +327,13 @@ public class NguyenVongService {
     }
 
     private SaveResult insertWish(String cccd, Nganh nganh, String manganh,
-                                  double diemMax, String ttThm, DiemThiXetTuyen diem) {
+            double diemMax, String ttThm, DiemThiXetTuyen diem) {
         List<NguyenVong> current = nvDAO.findByCccd(cccd);
-        if (current.size() >= MAX_NGUYEN_VONG) return SaveResult.MAX_REACHED;
+        if (current.size() >= MAX_NGUYEN_VONG)
+            return SaveResult.MAX_REACHED;
 
-        int     thuTu = current.size() + 1;
-        ThiSinh ts    = thiSinhService.findByCccd(cccd).orElse(null);
+        int thuTu = current.size() + 1;
+        ThiSinh ts = thiSinhService.findByCccd(cccd).orElse(null);
 
         NguyenVong nv = new NguyenVong();
         nv.setThiSinh(ts);
@@ -348,19 +364,29 @@ public class NguyenVongService {
 
     public static final class KetQuaDangKy {
         private final boolean thanhCong;
-        private final String  thongDiep;
+        private final String thongDiep;
+
         private KetQuaDangKy(boolean thanhCong, String thongDiep) {
             this.thanhCong = thanhCong;
             this.thongDiep = thongDiep;
         }
+
         public static KetQuaDangKy thanhCong(String msg) {
-            return new KetQuaDangKy(true,  msg);
+            return new KetQuaDangKy(true, msg);
         }
+
         public static KetQuaDangKy thatBai(String msg) {
             return new KetQuaDangKy(false, msg);
         }
-        public boolean isThanhCong() { return thanhCong; }
-        public String getThongDiep() { return thongDiep; }
+
+        public boolean isThanhCong() {
+            return thanhCong;
+        }
+
+        public String getThongDiep() {
+            return thongDiep;
+        }
+
         @Override
         public String toString() {
             return (thanhCong ? "[OK] " : "[FAIL] ") + thongDiep;
