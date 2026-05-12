@@ -22,19 +22,29 @@ public class SidebarPanel extends JPanel {
     }
 
     private static final MenuDef[] ALL_MENUS = {
-            new MenuDef("Dashboard",          "icon_dashboard.svg",   null), 
-            new MenuDef("Ngành tuyển sinh",   "icon_nganh.svg",       Constants.QUYEN_NGANH),
-            new MenuDef("Tổ hợp môn",         "icon_tohop.svg",       Constants.QUYEN_TOHOP),
-            new MenuDef("Ngành - Tổ hợp",     "icon_nganh_tohop.svg", Constants.QUYEN_NGANH_TOHOP),
-            new MenuDef("Quản lý thí sinh",   "icon_user.svg",        Constants.QUYEN_THI_SINH),
-            new MenuDef("Điểm thi",           "icon_diem.svg",        Constants.QUYEN_DIEM_THI),
-            new MenuDef("Điểm cộng",          "icon_diemcong.svg",    Constants.QUYEN_DIEM_CONG),
-            new MenuDef("Nguyện vọng",        "icon_nguyenvongxt.svg",Constants.QUYEN_NGUYEN_VONG),
-            new MenuDef("Bảng quy đổi",       "icon_bangquydoi.svg",  Constants.QUYEN_BANG_QUY_DOI),
-            new MenuDef("Thống kê",           "icon_thongke.svg",     Constants.QUYEN_THONG_KE),
-            new MenuDef("Người dùng",         "icon_user.svg",        Constants.QUYEN_PHAN_QUYEN),
-            new MenuDef("Nhóm quyền",         "icon_phanquyen.svg",   Constants.QUYEN_PHAN_QUYEN),
-            new MenuDef("Cấu hình hệ thống",   "icon_cauhinh.svg",     Constants.QUYEN_CAU_HINH)
+            new MenuDef("HE THONG & CAU HINH", "HEADER", null),
+            new MenuDef("Dashboard",           "icon_dashboard.svg",   null), 
+            new MenuDef("Đợt tuyển sinh",      "icon_cauhinh.svg",     Constants.QUYEN_CAU_HINH),
+            new MenuDef("Bảng quy đổi",        "icon_bangquydoi.svg",  Constants.QUYEN_BANG_QUY_DOI), 
+            new MenuDef("Điểm cộng",           "icon_diemcong.svg",    Constants.QUYEN_DIEM_CONG),
+
+            new MenuDef("DANH MỤC XÉT TUYỂN",  "HEADER", null),
+            new MenuDef("Quản lý điểm chuẩn",  "icon_diem.svg",        Constants.QUYEN_DIEM_CHUAN),
+            new MenuDef("Ngành tuyển sinh",    "icon_nganh.svg",       Constants.QUYEN_NGANH),
+            new MenuDef("Tổ hợp môn",          "icon_tohop.svg",       Constants.QUYEN_TOHOP),
+            new MenuDef("Ngành - Tổ hợp",      "icon_nganh_tohop.svg", Constants.QUYEN_NGANH_TOHOP),
+
+            new MenuDef("QUẢN LÝ HỒ SƠ",       "HEADER", null),
+            new MenuDef("Hồ sơ xét tuyển",     "icon_user.svg",        Constants.QUYEN_HO_SO),
+            new MenuDef("Điểm thi",            "icon_diem.svg",        Constants.QUYEN_DIEM_THI),
+            
+            new MenuDef("XỬ LÝ KẾT QUẢ",       "HEADER", null),
+            new MenuDef("Quản lý xét tuyển",   "icon_nguyenvongxt.svg",Constants.QUYEN_NGUYEN_VONG),
+            new MenuDef("Thống kê",            "icon_thongke.svg",     Constants.QUYEN_THONG_KE),
+
+            new MenuDef("PHÂN QUYỀN",          "HEADER", null),
+            new MenuDef("Người dùng",          "icon_user.svg",        Constants.QUYEN_NGUOI_DUNG),
+            new MenuDef("Nhóm quyền",          "icon_phanquyen.svg",   Constants.QUYEN_PHAN_QUYEN),
         };
 
     private final List<JPanel> menuItems = new ArrayList<>();
@@ -62,6 +72,7 @@ public class SidebarPanel extends JPanel {
         top.setBorder(new EmptyBorder(14, 0, 10, 0));
         top.setPreferredSize(new Dimension(UIConstants.SIDEBAR_WIDTH, 54));
 
+
         try { top.add(new JLabel(new FlatSVGIcon("assets/icon_login.svg", 22, 22))); } catch (Exception ignored) {}
 
         JLabel lbl = new JLabel(Constants.APP_TITLE_SHORT);
@@ -75,24 +86,26 @@ public class SidebarPanel extends JPanel {
         JPanel center = new JPanel();
         center.setLayout(new BoxLayout(center, BoxLayout.Y_AXIS));
         center.setOpaque(false);
-        center.setBorder(new EmptyBorder(4, 0, 0, 0));
-
-        JLabel menuLabel = new JLabel("  MENU QUẢN TRỊ");
-        menuLabel.setFont(UIManager.getFont("defaultFont").deriveFont(Font.BOLD, 11f)); 
-        menuLabel.setForeground(new Color(255, 255, 255, 100));
-        menuLabel.setBorder(new EmptyBorder(0, UIConstants.DASH_SIDEBAR_PAD, 8, 0));
-        menuLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        center.add(menuLabel);
+        center.setBorder(new EmptyBorder(10, 0, 0, 0));
 
         AdminSession session = AdminSession.getInstance();
         int currentIndex = 0;
 
         for (MenuDef def : ALL_MENUS) {
-            if (session.hasPermission(def.permissionCode)) {
+            if ("HEADER".equals(def.icon)) {
+                JLabel headerLabel = new JLabel("  " + def.title);
+                headerLabel.setFont(UIManager.getFont("defaultFont").deriveFont(Font.BOLD, 10f)); 
+                headerLabel.setForeground(new Color(255, 255, 255, 120)); 
+                headerLabel.setBorder(new EmptyBorder(15, UIConstants.DASH_SIDEBAR_PAD, 5, 0));
+                headerLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+                
+                center.add(headerLabel);
+            } 
+            else if (def.permissionCode == null || session.hasPermission(def.permissionCode)) {
                 JPanel item = createMenuItem(def.title, def.icon, currentIndex);
                 menuItems.add(item);
                 center.add(item);
-                center.add(Box.createVerticalStrut(6)); 
+                center.add(Box.createVerticalStrut(2));
                 currentIndex++;
             }
         }
@@ -155,6 +168,7 @@ public class SidebarPanel extends JPanel {
                 }
 
                 try { new FlatSVGIcon("assets/" + iconFile, 16, 16).paintIcon(this, g2, 28, (h - 16) / 2); } catch (Exception ignored) {}
+
 
                 int fontStyle = index == selectedIndex ? Font.BOLD : Font.BOLD;
                 g2.setFont(UIManager.getFont("defaultFont").deriveFont(fontStyle, 14f));

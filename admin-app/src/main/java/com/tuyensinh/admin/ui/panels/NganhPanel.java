@@ -214,19 +214,47 @@ public class NganhPanel extends BaseTablePanel<Nganh> {
     protected void setupExtras() {
         toolbar.addClearFilterOption(() -> { activeFilters.clear(); currentPage = 1; loadTableData(); });
 
-        toolbar.addDynamicFilterCategory("Tr\u1ea1ng th\u00e1i", -1,
-                Arrays.asList("T\u1ea5t c\u1ea3", "\u0110ang tuy\u1ec3n", "\u0110\u00e3 \u0111\u1ee7 ch\u1ec9 ti\u00eau", "T\u1ea1m d\u1eebng"),
-                (col, val) -> { if ("T\u1ea5t c\u1ea3".equals(val)) activeFilters.remove("trangThai"); else activeFilters.put("trangThai", val); currentPage = 1; loadTableData(); });
+        toolbar.addDynamicFilterCategory("Trạng thái", -1,
+                Arrays.asList("Tất cả", "Đang tuyển", "Đã đủ chỉ tiêu", "Tạm dừng"),
+                (col, val) -> { if ("Tất cả".equals(val)) activeFilters.remove("trangThai"); else activeFilters.put("trangThai", val); currentPage = 1; loadTableData(); });
 
-        toolbar.addDynamicFilterCategory("Ch\u1ec9 ti\u00eau", -1,
-                Arrays.asList("T\u1ea5t c\u1ea3", "< 100", "100 - 150", "150 - 200", "> 200"),
-                (col, val) -> { if ("T\u1ea5t c\u1ea3".equals(val)) activeFilters.remove("nChitieuRange"); else activeFilters.put("nChitieuRange", val); currentPage = 1; loadTableData(); });
+        toolbar.addDynamicFilterCategory("Chỉ tiêu", -1,
+                Arrays.asList("Tất cả", "< 100", "100 - 150", "150 - 200", "> 200"),
+                (col, val) -> { if ("Tất cả".equals(val)) activeFilters.remove("nChitieuRange"); else activeFilters.put("nChitieuRange", val); currentPage = 1; loadTableData(); });
 
-        toolbar.addDynamicFilterCategory("X\u00e9t tuy\u1ec3n th\u1eb3ng", -1,
-                Arrays.asList("T\u1ea5t c\u1ea3", "C\u00f3", "Kh\u00f4ng"),
-                (col, val) -> { if ("T\u1ea5t c\u1ea3".equals(val)) activeFilters.remove("nTuyenthang"); else applyFilter("nTuyenthang", "C\u00f3".equals(val) ? "1" : "0"); });
+        toolbar.addDynamicFilterCategory("Xét tuyển thẳng", -1,
+                Arrays.asList("Tất cả", "Có", "Không"),
+                (col, val) -> { if ("Tất cả".equals(val)) activeFilters.remove("nTuyenthang"); else applyFilter("nTuyenthang", "Có".equals(val) ? "1" : "0"); });
 
         toolbar.getBtnImport().addActionListener(e -> importExcel());
+
+        // Nút xem Tổ hợp môn của ngành
+        JButton btnXemToHop = new JButton("Xem Tổ hợp môn");
+        btnXemToHop.addActionListener(e -> {
+            int row = table.getSelectedRow();
+            if (row < 0) {
+                JOptionPane.showMessageDialog(this, "Vui lòng chọn một ngành để xem tổ hợp môn.");
+                return;
+            }
+            String maNganh = (String) getCellValue(row, 1);
+            String tenNganh = (String) getCellValue(row, 2);
+            
+            new com.tuyensinh.service.NganhToHopService().findByMaNganhAsync(maNganh).thenAccept(list -> {
+                SwingUtilities.invokeLater(() -> {
+                    if (list == null || list.isEmpty()) {
+                        JOptionPane.showMessageDialog(this, "Ngành này chưa được gán tổ hợp môn nào.");
+                        return;
+                    }
+                    StringBuilder sb = new StringBuilder("Các tổ hợp môn của ngành " + tenNganh + ":\n\n");
+                    for (com.tuyensinh.model.NganhToHop nt : list) {
+                        sb.append(" • ").append(nt.getToHopMon().getMatohop())
+                          .append(": ").append(nt.getToHopMon().getTentohop()).append("\n");
+                    }
+                    JOptionPane.showMessageDialog(this, sb.toString(), "Tổ hợp môn theo ngành", JOptionPane.INFORMATION_MESSAGE);
+                });
+            });
+        });
+        toolbar.add(btnXemToHop);
     }
 
     // =========================================================================

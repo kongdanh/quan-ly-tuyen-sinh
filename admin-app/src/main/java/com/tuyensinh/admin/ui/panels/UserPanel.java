@@ -82,7 +82,7 @@ public class UserPanel extends BaseTablePanel<User> {
 
     @Override
     protected String getModuleCode() {
-        return com.tuyensinh.util.Constants.QUYEN_PHAN_QUYEN; 
+        return com.tuyensinh.util.Constants.QUYEN_NGUOI_DUNG; 
     }
 
 }

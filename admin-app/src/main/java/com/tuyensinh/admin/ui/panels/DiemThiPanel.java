@@ -235,6 +235,6 @@ public class DiemThiPanel extends BaseTablePanel<DiemThiXetTuyen> {
 
     @Override
     protected String getModuleCode() {
-        return com.tuyensinh.util.Constants.QUYEN_PHAN_QUYEN; 
+        return com.tuyensinh.util.Constants.QUYEN_DIEM_THI; 
     }
 }
