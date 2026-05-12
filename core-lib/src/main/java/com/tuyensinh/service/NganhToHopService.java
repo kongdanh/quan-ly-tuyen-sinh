@@ -2,6 +2,7 @@ package com.tuyensinh.service;
 
 import com.tuyensinh.dao.NganhToHopDAO;
 import com.tuyensinh.model.NganhToHop;
+import com.tuyensinh.util.SystemLogger;
 
 import java.util.List;
 import java.util.Map;
@@ -16,8 +17,7 @@ public class NganhToHopService {
     }
 
     /**
-     * Tìm kiếm và phân trang Async (Dùng cho BaseTablePanel)
-     * Hỗ trợ search theo keyword chung và filter riêng cho Tên ngành, Tổ hợp
+     * Tim kiem va phan trang to hop xet tuyen (ho tro loc theo ten nganh, ma to hop)
      */
     public CompletableFuture<List<NganhToHop>> findPageWithFilters(
             String keyword, 
@@ -27,20 +27,16 @@ public class NganhToHopService {
             int pageSize) {
         
         return CompletableFuture.supplyAsync(() -> {
-            // Lấy giá trị từ 2 thanh search tùy chỉnh trong setupExtras
             String tenNganhFilter = (String) filters.getOrDefault("tennganh", "");
             String maToHopFilter = (String) filters.getOrDefault("matohop", "");
-
-            // Nếu filters là "Tất cả", ta coi như rỗng để DAO không lọc
             String finalTenNganh = "Tất cả".equals(tenNganhFilter) ? "" : tenNganhFilter;
             String finalMaToHop = "Tất cả".equals(maToHopFilter) ? "" : maToHopFilter;
-
             return dao.findWithFilters(keyword, finalTenNganh, finalMaToHop, page, pageSize);
         });
     }
 
     /**
-     * Đếm tổng số lượng bản ghi dựa trên bộ lọc (Async)
+     * Dem tong so ban ghi to hop xet tuyen theo bo loc
      */
     public CompletableFuture<Long> countWithFiltersAsync(
             String keyword, 
@@ -50,42 +46,56 @@ public class NganhToHopService {
         return CompletableFuture.supplyAsync(() -> {
             String tenNganhFilter = (String) filters.getOrDefault("tennganh", "");
             String maToHopFilter = (String) filters.getOrDefault("matohop", "");
-            
             String finalTenNganh = "Tất cả".equals(tenNganhFilter) ? "" : tenNganhFilter;
             String finalMaToHop = "Tất cả".equals(maToHopFilter) ? "" : maToHopFilter;
-
             return dao.countWithFilters(keyword, finalTenNganh, finalMaToHop);
         });
     }
 
     /**
-     * Xóa theo ID (Async)
+     * Xoa to hop xet tuyen theo ID
      */
     public CompletableFuture<Boolean> deleteByIdAsync(Integer id) { 
         return CompletableFuture.supplyAsync(() -> {
             if (id == null) return false;
+            System.out.println("[NganhToHopService] Xoa to hop xet tuyen ID=" + id);
             dao.deleteById(id);
+            SystemLogger.log(null, "System", "Xóa tổ hợp xét tuyển ID=" + id, true);
             return true;
         });
     }
 
     /**
-     * Tìm theo ID (Async) - Dùng cho showEditDialog
+     * Tim to hop xet tuyen theo ID
      */
     public CompletableFuture<NganhToHop> findByIdAsync(int id) {
         return CompletableFuture.supplyAsync(() -> dao.findById(id));
     }
 
-    // --- Giữ lại các hàm cũ để phục vụ logic nghiệp vụ khác ---
-
+    /**
+     * Lay toan bo danh sach to hop xet tuyen
+     */
     public List<NganhToHop> getAll() {
         return dao.findAllFull();
     }
 
+    /**
+     * Them moi to hop xet tuyen cho nganh
+     */
     public void save(NganhToHop entity) {
         if (entity == null || entity.getNganh() == null || entity.getToHopMon() == null) {
-            throw new IllegalArgumentException("Dữ liệu ngành và tổ hợp không hợp lệ");
+            throw new IllegalArgumentException("Du lieu nganh va to hop khong hop le");
         }
+        System.out.println("[NganhToHopService] Them to hop xet tuyen cho nganh: " + entity.getNganh().getManganh());
         dao.save(entity);
+        System.out.println("[NganhToHopService] Them to hop thanh cong");
+        SystemLogger.log(null, "System", "Thêm tổ hợp xét tuyển cho ngành: " + entity.getNganh().getManganh(), true);
+    }
+
+    /**
+     * Lay danh sach to hop mon theo ma nganh
+     */
+    public CompletableFuture<List<NganhToHop>> findByMaNganhAsync(String maNganh) {
+        return CompletableFuture.supplyAsync(() -> dao.findByMaNganh(maNganh));
     }
 }

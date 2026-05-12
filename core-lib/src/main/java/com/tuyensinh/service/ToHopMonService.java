@@ -10,7 +10,7 @@ public class ToHopMonService {
     private final ToHopMonDAO toHopMonDAO = new ToHopMonDAO();
 
     /**
-     * Lấy toàn bộ danh sách tổ hợp môn
+     * Lay toan bo danh sach to hop mon
      */
     public List<ToHopMon> getAll() {
         return toHopMonDAO.findAllSync();

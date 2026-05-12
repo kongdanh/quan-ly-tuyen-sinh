@@ -10,12 +10,10 @@ public class NhatKyHoatDongService {
     
     private final NhatKyHoatDongDAO nhatKyDAO = new NhatKyHoatDongDAO();
 
-    // =====================================================================
-    // LẤY DANH SÁCH LOG MỚI NHẤT (CHO DASHBOARD)
-    // =====================================================================
+    /**
+     * Lay danh sach log moi nhat (dung cho Dashboard)
+     */
     public CompletableFuture<List<NhatKyHoatDong>> getLatestLogs(int limit) {
-        // Có thể thêm các logic kiểm tra phân quyền (nếu cần) ở đây trước khi gọi DAO
-        // sẽ được update sau..... 
         return nhatKyDAO.getLatestLogs(limit);
     }
 }

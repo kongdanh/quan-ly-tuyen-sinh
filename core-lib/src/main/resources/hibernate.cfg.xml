@@ -64,6 +64,8 @@
     <mapping class="com.tuyensinh.model.NhatKyHoatDong"/>
     <mapping class="com.tuyensinh.model.DotTuyenSinh"/>
     <mapping class="com.tuyensinh.model.HoSoTuyenSinh"/>
-
+    <mapping class="com.tuyensinh.model.KetQuaXetTuyen"/>
+    <mapping class="com.tuyensinh.model.DiemChuanDot"/>
+    
     </session-factory>
 </hibernate-configuration>
