@@ -60,8 +60,8 @@ public class NguyenVongController extends BaseController {
         if (user == null) return "redirect:/login";
 
         try {
-            boolean ok = nvService.deleteWish(idnv, user.getCccd());
-            return "redirect:/thisinh/wishes?" + (ok ? "success=delete" : "error=forbidden");
+            NguyenVongService.KetQuaDangKy kq = nvService.huyNguyenVong(idnv, user.getCccd());
+            return "redirect:/thisinh/wishes?" + (kq.isThanhCong() ? "success=delete" : "error=forbidden");
         } catch (Exception e) {
             return "redirect:/thisinh/wishes?error=delete_failed";
         }

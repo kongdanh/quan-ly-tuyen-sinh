@@ -17,32 +17,99 @@ public class ExcelReaderUtil {
     private static final DataFormatter dataFormatter = new DataFormatter();
 
     public static <T> List<T> readExcel(File file, Class<T> dtoClass) throws Exception {
+        try (FileInputStream fis = new FileInputStream(file);
+             Workbook workbook = WorkbookFactory.create(fis)) {
+            Sheet sheet = workbook.getSheetAt(0);
+            return readSheetInternal(sheet, dtoClass);
+        }
+    }
+
+    /**
+     * Đọc 1 sheet cụ thể theo tên (case-insensitive).
+     *
+     * @param file      File Excel.
+     * @param sheetName Tên sheet cần đọc (ví dụ: "DGNL", "VSAT").
+     * @param dtoClass  Class DTO để ánh xạ.
+     * @return Danh sách DTO từ sheet đó; rỗng nếu không tìm thấy sheet.
+     * @throws Exception Nếu lỗi đọc file.
+     */
+    public static <T> List<T> readSheet(File file, String sheetName, Class<T> dtoClass) throws Exception {
         List<T> result = new ArrayList<>();
 
         try (FileInputStream fis = new FileInputStream(file);
-               Workbook workbook = WorkbookFactory.create(fis)) {
+             Workbook workbook = WorkbookFactory.create(fis)) {
 
-            Sheet sheet = workbook.getSheetAt(0);
-            Iterator<Row> rowIterator = sheet.iterator();
-
-            if (!rowIterator.hasNext()) {
-                throw new IllegalArgumentException("File Excel rỗng");
-            }
-
-            // Đọc header
-            Row headerRow = rowIterator.next();
-            Map<String, Integer> headerMap = buildHeaderMap(headerRow, dtoClass);
-
-            // Đọc data
-            while (rowIterator.hasNext()) {
-                Row row = rowIterator.next();
-                if (isEmptyRow(row)) {
-                    continue;
+            Sheet sheet = workbook.getSheet(sheetName);
+            if (sheet == null) {
+                // Thử tìm case-insensitive
+                for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
+                    if (workbook.getSheetName(i).equalsIgnoreCase(sheetName)) {
+                        sheet = workbook.getSheetAt(i);
+                        break;
+                    }
                 }
-
-                T dto = mapRowToDTO(row, headerMap, dtoClass);
-                result.add(dto);
             }
+            if (sheet == null) {
+                throw new IllegalArgumentException("Không tìm thấy sheet: " + sheetName);
+            }
+
+            result = readSheetInternal(sheet, dtoClass);
+        }
+        return result;
+    }
+
+    /**
+     * Đọc tất cả sheet trong file Excel, trả về Map theo tên sheet.
+     *
+     * <p>Dùng cho import DGNL/VSAT khi file có nhiều sheet cần xử lý khác nhau.
+     *
+     * @param file     File Excel.
+     * @param dtoClass Class DTO dùng chung cho tất cả sheet.
+     * @return Map &lt;tênSheet, danhSáchDTO&gt; theo thứ tự sheet trong file.
+     * @throws Exception Nếu lỗi đọc file.
+     */
+    public static <T> Map<String, List<T>> readAllSheets(File file, Class<T> dtoClass) throws Exception {
+        // Dùng LinkedHashMap để giữ thứ tự sheet
+        Map<String, List<T>> result = new LinkedHashMap<>();
+
+        try (FileInputStream fis = new FileInputStream(file);
+             Workbook workbook = WorkbookFactory.create(fis)) {
+
+            int sheetCount = workbook.getNumberOfSheets();
+            for (int i = 0; i < sheetCount; i++) {
+                Sheet sheet = workbook.getSheetAt(i);
+                String name  = workbook.getSheetName(i);
+                try {
+                    result.put(name, readSheetInternal(sheet, dtoClass));
+                } catch (Exception e) {
+                    // Sheet không có header hợp lệ → bỏ qua, ghi log
+                    System.err.println("[ExcelReaderUtil] Bỏ qua sheet '" + name + "': " + e.getMessage());
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Phần lõi: đọc 1 {@link Sheet} đã mở vào danh sách DTO.
+     * Được tách ra để tái sử dụng bởi tất cả các overload.
+     */
+    private static <T> List<T> readSheetInternal(Sheet sheet, Class<T> dtoClass) throws Exception {
+        List<T> result = new ArrayList<>();
+        Iterator<Row> rowIterator = sheet.iterator();
+
+        if (!rowIterator.hasNext()) {
+            return result; // Sheet rỗng
+        }
+
+        Row headerRow = rowIterator.next();
+        Map<String, Integer> headerMap = buildHeaderMap(headerRow, dtoClass);
+
+        while (rowIterator.hasNext()) {
+            Row row = rowIterator.next();
+            if (isEmptyRow(row)) continue;
+            T dto = mapRowToDTO(row, headerMap, dtoClass);
+            result.add(dto);
         }
         return result;
     }

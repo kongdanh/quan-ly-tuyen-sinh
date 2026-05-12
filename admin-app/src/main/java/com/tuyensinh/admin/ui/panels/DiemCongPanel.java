@@ -1,8 +1,10 @@
 package com.tuyensinh.admin.ui.panels;
 
 import com.tuyensinh.admin.ui.base.BaseTablePanel;
+import com.tuyensinh.admin.ui.dialog.DiemCongDialog;
 import com.tuyensinh.model.DiemCong;
 import com.tuyensinh.service.DiemCongService;
+import com.tuyensinh.util.Constants;
 
 import javax.swing.*;
 import java.util.Arrays;
@@ -10,23 +12,34 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * Panel quản lý điểm cộng (IELTS, DGNL, VSAT, Ưu tiên).
+ */
 public class DiemCongPanel extends BaseTablePanel<DiemCong> {
 
     private final DiemCongService diemCongService = new DiemCongService();
 
     public DiemCongPanel() {
-        super("Quản lý điểm cộng", "Danh sách điểm cộng của thí sinh (Tiếng Anh, HSG, Ưu tiên...)");
+        super("Quản lý Điểm Cộng", "Danh sách các loại điểm ưu tiên, chứng chỉ của thí sinh");
         loadTableData();
     }
 
     @Override
+    protected String getModuleCode() {
+        return Constants.QUYEN_DIEM_CONG;
+    }
+
+    @Override
     protected String[] getColumnNames() {
-        return new String[]{"ID", "CCCD Thí sinh", "Tên Thí sinh", "SBD", "Điểm Chứng chỉ", "Điểm Ưu tiên XT", "Tổng Điểm Cộng", "Ghi chú"};
+        return new String[]{
+            "ID", "CCCD", "Tên Thí sinh", "Mã Ngành", "Tổ Hợp", "Phương Thức", 
+            "Điểm Chứng Chỉ", "Điểm Ưu Tiên", "Tổng Điểm", "Ghi chú"
+        };
     }
 
     @Override
     protected List<String> getSearchFields() {
-        return Arrays.asList("tsCccd", "thiSinh.cccd", "thiSinh.ho", "thiSinh.ten", "thiSinh.sobaodanh");
+        return Arrays.asList("thiSinh.cccd", "manganh", "dcKeys", "thiSinh.ho", "thiSinh.ten");
     }
 
     @Override
@@ -37,38 +50,35 @@ public class DiemCongPanel extends BaseTablePanel<DiemCong> {
     }
 
     @Override
-    protected Object[] toTableRow(DiemCong dc) {
-        String tenThiSinh = dc.getThiSinh() != null ? dc.getThiSinh().getHo() + " " + dc.getThiSinh().getTen() : "";
-        String sbd = dc.getThiSinh() != null ? dc.getThiSinh().getSobaodanh() : "";
-        String cccd = dc.getTsCccd();
+    protected Object[] toTableRow(DiemCong entity) {
+        String tenThiSinh = entity.getThiSinh() != null ? entity.getThiSinh().getHo() + " " + entity.getThiSinh().getTen() : "";
         return new Object[]{
-            dc.getId(),
-            cccd,
+            entity.getId(),
+            entity.getThiSinh() != null ? entity.getThiSinh().getCccd() : "",
             tenThiSinh,
-            sbd,
-            dc.getDiemCC(),
-            dc.getDiemUtxt(),
-            dc.getDiemTong(),
-            dc.getGhichu()
+            entity.getManganh(),
+            entity.getMatohop(),
+            entity.getPhuongthuc(),
+            entity.getDiemCC(),
+            entity.getDiemUtxt(),
+            entity.getDiemTong(),
+            entity.getGhichu()
         };
     }
 
     @Override
-    protected CompletableFuture<List<DiemCong>> fetchPage(
-            String keyword, Map<String, Object> filters, int page, int pageSize) {
+    protected CompletableFuture<List<DiemCong>> fetchPage(String keyword, Map<String, Object> filters, int page, int pageSize) {
         return diemCongService.findPageWithFilters(keyword, getSearchFields(), filters, page, pageSize);
     }
 
     @Override
-    protected CompletableFuture<Long> fetchCount(
-            String keyword, Map<String, Object> filters) {
+    protected CompletableFuture<Long> fetchCount(String keyword, Map<String, Object> filters) {
         return diemCongService.countWithFiltersAsync(keyword, getSearchFields(), filters);
     }
 
     @Override
     protected void showAddDialog() {
-        com.tuyensinh.admin.ui.dialog.DiemCongDialog dialog = new com.tuyensinh.admin.ui.dialog.DiemCongDialog(
-            getParentFrame(), null);
+        DiemCongDialog dialog = new DiemCongDialog(getParentFrame(), "Thêm Điểm Cộng", null);
         dialog.setVisible(true);
         if (dialog.isSaved()) loadTableData();
     }
@@ -78,8 +88,7 @@ public class DiemCongPanel extends BaseTablePanel<DiemCong> {
         int id = getIdFromRow(tableRow);
         diemCongService.findByIdAsync(id).thenAccept(dc -> SwingUtilities.invokeLater(() -> {
             if (dc != null) {
-                com.tuyensinh.admin.ui.dialog.DiemCongDialog dialog = new com.tuyensinh.admin.ui.dialog.DiemCongDialog(
-                    getParentFrame(), dc);
+                DiemCongDialog dialog = new DiemCongDialog(getParentFrame(), "Chỉnh sửa Điểm Cộng", dc);
                 dialog.setVisible(true);
                 if (dialog.isSaved()) loadTableData();
             }
@@ -91,24 +100,18 @@ public class DiemCongPanel extends BaseTablePanel<DiemCong> {
         int id = getIdFromRow(tableRow);
         if (!confirmDelete("Bản ghi điểm cộng ID = " + id)) return;
 
-        diemCongService.deleteByIdAsync(id).thenAccept(success ->
-            SwingUtilities.invokeLater(() -> {
-                if (success) {
-                    loadTableData();
-                    showSuccess("Đã xóa điểm cộng.");
-                } else {
-                    showError("Không thể xóa. Vui lòng thử lại.");
-                }
-            })
-        );
+        diemCongService.deleteByIdAsync(id).thenAccept(success -> SwingUtilities.invokeLater(() -> {
+            if (success) {
+                loadTableData();
+                showSuccess("Đã xóa điểm cộng.");
+            } else {
+                showError("Không thể xóa. Vui lòng thử lại.");
+            }
+        }));
     }
 
     @Override
     protected void setupExtras() {
-    }
-
-    @Override
-    protected String getModuleCode() {
-        return com.tuyensinh.util.Constants.QUYEN_DIEM_THI; // Hoặc quyền khác phù hợp
+        // Có thể thêm nút Import Excel tại đây nếu cần
     }
 }
