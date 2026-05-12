@@ -119,7 +119,7 @@ public class ExcelReaderUtil {
         if (type == String.class) {
             return value;
         } else if (type == BigDecimal.class) {
-            return new BigDecimal(value);
+            return new BigDecimal(value.replace(',', '.'));
         } else if (type == Integer.class || type == int.class) {
             return (int) Double.parseDouble(value);
         } else if (type == Double.class || type == double.class) {

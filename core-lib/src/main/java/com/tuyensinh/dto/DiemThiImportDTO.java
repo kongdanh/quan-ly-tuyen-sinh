@@ -38,7 +38,7 @@ public class DiemThiImportDTO {
     @ExcelColumn(value = "VA", aliases = {"Van", "Ngu van"})
     private BigDecimal va;
 
-    @ExcelColumn(value = "N1_THI", aliases = {"N1", "TA_THI", "Anh thi"})
+    @ExcelColumn(value = "N1_THI", aliases = {"N1", "NN", "TA_THI", "Anh thi", "Ngoai ngu", "Ngoại ngữ"})
     private BigDecimal n1Thi;
 
     @ExcelColumn(value = "N1_CC", aliases = {"TA_CC", "Anh CC"})
