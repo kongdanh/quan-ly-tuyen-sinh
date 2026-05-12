@@ -19,4 +19,20 @@ public class NguyenVongDAO extends GenericDAO<NguyenVong> {
                     .list();
         }
     }
+
+    public List<NguyenVong> findByDotTuyenSinh(Integer idDot) {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            String hql = "SELECT nv FROM NguyenVong nv " +
+                         "JOIN FETCH nv.thiSinh " +
+                         "JOIN FETCH nv.nganh " +
+                         "WHERE nv.dotTuyenSinh.id = :idDot " +
+                         "ORDER BY nv.diemXettuyen DESC";
+            return session.createQuery(hql, NguyenVong.class)
+                    .setParameter("idDot", idDot)
+                    .list();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return java.util.Collections.emptyList();
+        }
+    }
 }
