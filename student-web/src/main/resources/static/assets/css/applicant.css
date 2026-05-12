@@ -1,0 +1,192 @@
+@charset "UTF-8";
+
+/* =========================================================
+   CSS DÀNH CHO CỔNG THÍ SINH (DASHBOARD, PROFILE, SCORES...)
+   ========================================================= */
+
+:root {
+    --primary: #2563eb;        
+    --primary-hover: #1e3a8a;  
+    --dark-blue: #0a1628;      
+    --bg-main: #f3f4f6;
+    --card-bg: #ffffff;
+    --border: #e5e7eb;
+    --text-main: #111827;
+    --text-muted: #6b7280;
+    --status-success: #16a34a;
+    --status-success-bg: #dcfce7;
+    --status-error: #dc2626;
+    --status-error-bg: #fee2e2;
+    --status-warning: #d97706;
+    --status-warning-bg: #fef3c7;
+}
+
+body {
+    margin: 0;
+    font-family: 'Be Vietnam Pro', 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg-main);
+    color: var(--text-main);
+    min-height: 100vh;
+}
+
+/* =========================================
+   1. NAVBAR & NOTIFICATIONS
+   ========================================= */
+.navbar {
+    background: var(--card-bg);
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 5%;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+.navbar-brand { display: flex; align-items: center; gap: 12px; width: 250px; }
+.logo-box { 
+    background: linear-gradient(135deg, var(--dark-blue), var(--primary)); 
+    padding: 8px; border-radius: 8px; color: white; display: flex; 
+}
+.nav-links { display: flex; gap: 8px; flex: 1; justify-content: center; }
+.nav-item { 
+    display: flex; align-items: center; gap: 8px; padding: 8px 16px; 
+    border-radius: 8px; text-decoration: none; font-size: 14px; 
+    font-weight: 500; color: #4b5563; transition: all 0.2s; 
+}
+.nav-item:hover { background: var(--bg-main); color: var(--text-main); }
+.nav-item.active { background: #eff6ff; color: var(--primary); font-weight: 600; }
+
+.navbar-actions { width: 250px; display: flex; justify-content: flex-end; align-items: center; }
+.notif-wrapper { position: relative; margin-right: 16px; }
+.notif-btn { 
+    background: none; border: none; cursor: pointer; color: #4b5563; 
+    padding: 8px; border-radius: 50%; transition: 0.2s; position: relative;
+}
+.notif-btn:hover { background: var(--bg-main); color: var(--primary); }
+.notif-badge { 
+    position: absolute; top: 2px; right: 2px; background: var(--status-error); 
+    color: white; font-size: 10px; font-weight: bold; width: 16px; height: 16px; 
+    border-radius: 50%; display: flex; align-items: center; justify-content: center; 
+    border: 2px solid white; 
+}
+.notif-dropdown { 
+    display: none; position: absolute; top: 100%; right: 0; width: 340px; 
+    background: white; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
+    border: 1px solid var(--border); margin-top: 8px; overflow: hidden; 
+}
+.notif-header { padding: 12px 16px; font-weight: 600; border-bottom: 1px solid var(--border); background: #f9fafb; font-size: 14px; }
+.notif-list { max-height: 350px; overflow-y: auto; }
+.notif-empty { padding: 24px; text-align: center; color: var(--text-muted); font-size: 13px; }
+.notif-item { padding: 12px 16px; border-bottom: 1px solid var(--bg-main); display: flex; gap: 12px; transition: 0.2s; }
+.notif-item:hover { background: #f9fafb; }
+.notif-icon { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 16px; }
+.notif-icon.success { background: var(--status-success-bg); color: var(--status-success); }
+.notif-icon.error { background: var(--status-error-bg); color: var(--status-error); }
+.notif-content { flex: 1; }
+.notif-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.notif-desc { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+.notif-reason { margin-top: 6px; padding: 6px 10px; background: var(--status-error-bg); border-left: 3px solid var(--status-error); font-size: 11px; color: #991b1b; border-radius: 0 4px 4px 0; }
+.notif-time { font-size: 11px; color: #9ca3af; margin-top: 6px; display: block; }
+
+/* =========================================
+   2. LAYOUT & GRID
+   ========================================= */
+.container { max-width: 960px; margin: 32px auto; padding: 0 20px; }
+.page-header { margin-bottom: 24px; }
+.page-title { font-family: 'Playfair Display', serif; font-size: 26px; color: var(--dark-blue); margin: 0 0 4px 0; font-weight: 800;}
+.page-subtitle { font-size: 14px; color: var(--text-muted); margin: 0; }
+
+.grid-2 { display: grid; grid-template-columns: repeat(1, 1fr); gap: 20px; }
+@media(min-width: 768px) { .grid-2 { grid-template-columns: repeat(2, 1fr); } }
+.grid-3 { display: grid; grid-template-columns: repeat(1, 1fr); gap: 24px; }
+@media(min-width: 768px) { .grid-3 { grid-template-columns: repeat(3, 1fr); } }
+
+/* =========================================
+   3. CARDS & UTILITIES
+   ========================================= */
+.card { 
+    background: var(--card-bg); border: 1px solid var(--border); 
+    border-radius: 12px; padding: 24px; margin-bottom: 24px; 
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: all 0.3s ease; 
+}
+.card:hover { box-shadow: 0 8px 16px rgba(0,0,0,0.06); }
+.card-header { font-size: 16px; font-weight: 600; margin: 0 0 16px 0; }
+
+.alert-box { padding: 16px; border-radius: 8px; margin-bottom: 16px; font-size: 14px; }
+.alert-warning { background: var(--status-warning-bg); border: 1px solid #fde68a; color: var(--status-warning); }
+
+.badge { padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
+.badge-success { background: var(--status-success-bg); color: var(--status-success); }
+.badge-warning { background: var(--status-warning-bg); color: var(--status-warning); }
+.badge-info { background: #dbeafe; color: var(--primary); }
+.badge-error { background: var(--status-error-bg); color: var(--status-error); }
+
+/* Nút bấm (Buttons) */
+.btn { 
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px; 
+    padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; 
+    cursor: pointer; border: 1px solid transparent; transition: 0.2s; text-decoration: none; 
+}
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
+.btn-outline { background: white; border-color: var(--border); color: var(--text-main); }
+.btn-outline:hover { background: #f9fafb; border-color: #d1d5db; }
+.btn-danger-outline { color: var(--status-error); border-color: #fca5a5; background: white; }
+.btn-danger-outline:hover { background: var(--status-error-bg); }
+
+/* Gradients */
+.bg-purple-gradient { background: linear-gradient(135deg, #3b82f6, #8b5cf6) !important; color: white !important; border: none !important; }
+.text-light-blue { color: #bfdbfe !important; }
+
+/* =========================================
+   4. MODULE: PROFILE & SCORES
+   ========================================= */
+.profile-header { display: flex; gap: 20px; align-items: center; border-bottom: 1px solid var(--bg-main); padding-bottom: 20px; margin-bottom: 24px; }
+.avatar-circle { width: 80px; height: 80px; background: linear-gradient(135deg, var(--dark-blue), var(--primary)); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 32px; flex-shrink: 0; }
+.info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+.info-item { background: #f9fafb; padding: 14px 18px; border-radius: 8px; border: 1px solid var(--border); }
+.info-item label { display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;}
+.info-item span { font-size: 15px; font-weight: 500; word-break: break-word; }
+.info-item.full-width { grid-column: 1 / -1; }
+
+.score-row { display: flex; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--bg-main); }
+.score-row:last-child { border-bottom: none; }
+.score-label { font-size: 14px; color: var(--text-muted); font-weight: 500; }
+.score-value { font-size: 15px; font-weight: 700; }
+.tohop-card { padding: 16px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 12px; background: white; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s;}
+.tohop-card:hover { border-color: #bfdbfe; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+.tohop-highest { background: #eff6ff; border-color: #93c5fd; border-left: 4px solid var(--primary); }
+
+/* =========================================
+   5. MODULE: WISHES (Nguyện vọng)
+   ========================================= */
+.wish-card { background: #fff; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 20px; overflow: hidden; transition: transform 0.2s; }
+.wish-card.sortable-ghost { opacity: 0.4; transform: scale(0.98); } 
+.wish-header { background: #f9fafb; padding: 16px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.wish-body { padding: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.drag-handle { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; font-size: 20px; color: #9ca3af; cursor: grab; margin-right: 12px; transition: color 0.2s; }
+.drag-handle:hover { color: var(--primary); }
+.drag-handle:active { cursor: grabbing; }
+.wish-rank { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; font-weight: bold; font-size: 15px; margin-right: 12px; }
+.rank-1 { background: #fef08a; color: #854d0e; } 
+.rank-other { background: #dbeafe; color: #1e40af; }
+.data-box { background: #f9fafb; border: 1px solid var(--border); padding: 10px 14px; border-radius: 6px; font-size: 14px; font-weight: 600; margin-top: 6px; }
+.data-highlight { background: var(--status-success-bg); border-color: #bbf7d0; color: var(--status-success); }
+
+/* =========================================
+   6. MODALS & FORMS
+   ========================================= */
+.modal-overlay { position: fixed; inset: 0; background: rgba(10, 22, 40, 0.6); z-index: 9999; display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+.modal-content { background: white; padding: 32px; border-radius: 16px; width: 90%; max-width: 550px; max-height: 90vh; overflow-y: auto; box-shadow: 0 24px 60px rgba(0,0,0,0.2); }
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-size: 13px; margin-bottom: 6px; font-weight: 600;}
+.form-control { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; transition: all 0.2s; box-sizing: border-box; font-family: inherit;}
+.form-control:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+
+/* Select2 Override */
+.select2-container .select2-selection--single { height: 44px; border: 1px solid #d1d5db; border-radius: 8px; display: flex; align-items: center; }
+.select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 44px; font-size: 14px; padding-left: 12px;}
+.select2-container--default .select2-selection--single .select2-selection__arrow { height: 42px; }

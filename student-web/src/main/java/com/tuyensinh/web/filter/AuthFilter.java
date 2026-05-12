@@ -10,7 +10,7 @@ import java.io.IOException;
 public class AuthFilter implements Filter {
 
     private static final String[] PUBLIC_PATHS = {
-        "/login.jsp", "/LoginServlet", "/assets/", "/uploads/"
+        "/", "/login", "/register", "/verify-otp", "/assets/", "/uploads/", "/thisinh/tracuu/"
     };
 
     private static final String[] PUBLIC_EXTENSIONS = {
@@ -25,7 +25,7 @@ public class AuthFilter implements Filter {
         HttpServletResponse response = (HttpServletResponse) res;
         String path = request.getServletPath();
 
-        // accept public paths
+        // Cho phep truy cap cac path public
         for (String pub : PUBLIC_PATHS) {
             if (path.equals(pub) || path.startsWith(pub)) {
                 chain.doFilter(req, res);
@@ -33,7 +33,7 @@ public class AuthFilter implements Filter {
             }
         }
 
-        // accept public extensions
+        // Cho phep cac file tinh (css, js, hinh anh)
         String lower = path.toLowerCase();
         for (String ext : PUBLIC_EXTENSIONS) {
             if (lower.endsWith(ext)) {
@@ -42,7 +42,7 @@ public class AuthFilter implements Filter {
             }
         }
 
-        // check session
+        // Kiem tra dang nhap
         HttpSession session = request.getSession(false);
         Object user = (session != null) ? session.getAttribute(WebConstants.SESSION_THISINH) : null;
 
