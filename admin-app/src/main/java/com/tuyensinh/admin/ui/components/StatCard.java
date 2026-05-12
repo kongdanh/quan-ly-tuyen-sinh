@@ -8,7 +8,11 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.geom.RoundRectangle2D;
 
+/**
+ * Card thong ke tren Dashboard, hien thi tieu de, gia tri va bieu do mini
+ */
 public class StatCard extends JPanel {
+    private final JLabel lblValue;
 
     public StatCard(String title, String value, String iconName, String colorHex, int[] chartData) {
         setOpaque(false);
@@ -28,7 +32,7 @@ public class StatCard extends JPanel {
         lblTitle.setFont(UIManager.getFont("defaultFont").deriveFont(Font.BOLD, 13f));
         lblTitle.setForeground(Color.decode(UIConstants.DASH_TEXT_MUTED));
         
-        JLabel lblValue = new JLabel(value);
+        lblValue = new JLabel(value);
         lblValue.setFont(UIManager.getFont("defaultFont").deriveFont(Font.BOLD, 28f));
         lblValue.setForeground(Color.decode(UIConstants.DASH_TEXT_DARK));
 
@@ -70,6 +74,9 @@ public class StatCard extends JPanel {
             
             add(bottomWrap, BorderLayout.SOUTH);
         }
+    }
+    public void setValue(String value) {
+        lblValue.setText(value);
     }
 
     @Override

@@ -120,5 +120,16 @@ public class TableToolbar extends JPanel {
     public SearchTextField getSearchField() { return txtSearch; }
     public RoundedButton getBtnAdd() { return btnAdd; }
     public RoundedButton getBtnImport() { return btnImport; }
+    public JPanel getRightPanel() {
+        for (Component c : getComponents()) {
+            if (c instanceof JPanel) {
+                LayoutManager lm = ((JPanel) c).getLayout();
+                if (lm instanceof FlowLayout && ((FlowLayout) lm).getAlignment() == FlowLayout.RIGHT) {
+                    return (JPanel) c;
+                }
+            }
+        }
+        return null;
+    }
     // public RoundedButton getBtnExport() { return btnExport; }
 }

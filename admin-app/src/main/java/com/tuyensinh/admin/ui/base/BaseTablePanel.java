@@ -139,7 +139,7 @@ public abstract class BaseTablePanel<T> extends JPanel {
     // ================================================================
 
     /** Setup bảng, gắn Action cell vào cột cuối kèm kiểm tra quyền */
-    private void setupTable() {
+    protected void setupTable() {
         tableModel = new DefaultTableModel(getColumnNames(), 0) {
             @Override
             public boolean isCellEditable(int row, int col) {
@@ -204,6 +204,7 @@ public abstract class BaseTablePanel<T> extends JPanel {
      * Load data từ DB vào bảng — dùng CompletableFuture để không block EDT.
      */
     protected void loadTableData() {
+        System.out.println("loadTableData() called with keyword='" + currentSearchKeyword + "', page=" + currentPage + ", filters=" + activeFilters);
         paginationPanel.setEnabled(false);
 
         CompletableFuture<List<T>> dataFuture = fetchPage(
@@ -216,16 +217,21 @@ public abstract class BaseTablePanel<T> extends JPanel {
                 List<T> list  = dataFuture.get();
                 long    total = countFuture.get();
 
+                System.out.println("loadTableData got " + list.size() + " items, total=" + total);
+                
                 SwingUtilities.invokeLater(() -> {
                     tableModel.setRowCount(0);
                     for (T entity : list) {
-                        tableModel.addRow(toTableRow(entity));
+                        Object[] row = toTableRow(entity);
+                        tableModel.addRow(row);
+                        System.out.println("  + Added row: " + java.util.Arrays.toString(row));
                     }
                     paginationPanel.updatePagination((int) total, currentPage);
                     paginationPanel.setEnabled(true);
                     toolbar.getSearchField().requestFocusInWindow();
                 });
             } catch (Exception e) {
+                System.err.println("loadTableData exception: " + e.getMessage());
                 e.printStackTrace();
                 SwingUtilities.invokeLater(() -> paginationPanel.setEnabled(true));
             }
