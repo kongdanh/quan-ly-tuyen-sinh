@@ -26,7 +26,8 @@ public class ThongKeService {
                 if (idDot != null && idDot > 0) q2.setParameter("idDot", idDot);
                 stats.put("tongHoSoHopLe", q2.uniqueResult());
                 
-                var q3 = session.createQuery("SELECT COUNT(k) FROM KetQuaXetTuyen k WHERE k.trangThai = 'TRUNG_TUYEN'" + dotFilterAnd.replace("h.", "k.hoSo."), Long.class);
+                String kFilter = (idDot != null && idDot > 0) ? " AND k.hoSo.dotTuyenSinh.id = :idDot" : "";
+                var q3 = session.createQuery("SELECT COUNT(k) FROM KetQuaXetTuyen k WHERE k.trangThai = 'TRUNG_TUYEN'" + kFilter, Long.class);
                 if (idDot != null && idDot > 0) q3.setParameter("idDot", idDot);
                 stats.put("tongTrungTuyen", q3.uniqueResult());
                 

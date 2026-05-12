@@ -8,10 +8,14 @@ import org.springframework.stereotype.Service;
 @Service
 public class EmailService {
 
-    @Autowired
+    @Autowired(required = false)
     private JavaMailSender mailSender;
 
     public boolean sendOtpEmail(String toEmail, String otp) {
+        if (mailSender == null) {
+            System.err.println("[EmailService] Chưa cấu hình JavaMailSender. Không thể gửi email.");
+            return false;
+        }
         try {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom("hethongtuyensinh.sgu@gmail.com"); 
@@ -31,6 +35,7 @@ public class EmailService {
 
     // 1. Gửi mail Đậu
     public void sendPassEmail(String toEmail, String tenThiSinh, String tenNganh) {
+        if (mailSender == null) return;
         try {
             SimpleMailMessage msg = new SimpleMailMessage();
             msg.setFrom("hethongtuyensinh.sgu@gmail.com");
@@ -46,6 +51,7 @@ public class EmailService {
 
     // 2. Gửi mail Rớt
     public void sendFailEmail(String toEmail, String tenThiSinh) {
+        if (mailSender == null) return;
         try {
             SimpleMailMessage msg = new SimpleMailMessage();
             msg.setFrom("hethongtuyensinh.sgu@gmail.com");
@@ -61,6 +67,7 @@ public class EmailService {
 
     // 3. Gửi mail Xác nhận nhập học thành công
     public void sendConfirmSuccessEmail(String toEmail, String tenThiSinh, String tenNganh) {
+        if (mailSender == null) return;
         try {
             SimpleMailMessage msg = new SimpleMailMessage();
             msg.setFrom("hethongtuyensinh.sgu@gmail.com");

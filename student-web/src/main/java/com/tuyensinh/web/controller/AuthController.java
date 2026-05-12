@@ -131,8 +131,8 @@ public class AuthController {
         String otp = String.format("%06d", new Random().nextInt(999999));
         System.out.println("======> MÃ OTP ĐĂNG KÝ CỦA " + email + " LÀ: " + otp); 
         
-        // Gửi mã OTP qua email cho thí sinh (Cần cấu hình SMTP trong application.properties)
-        // emailService.sendOtpEmail(email.trim(), otp);
+        // Gửi mã OTP qua email cho thí sinh (Sử dụng cấu hình SMTP trong application.properties)
+        emailService.sendOtpEmail(email.trim(), otp);
 
         // Luu thong tin dang ky vao session cho xac thuc OTP
         ThiSinh tempTs = new ThiSinh();
