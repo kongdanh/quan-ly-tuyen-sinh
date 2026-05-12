@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Kết quả xét tuyển - SGU</title>
+    <link rel="stylesheet" th:href="@{/assets/css/global.css}">
+    <link rel="stylesheet" th:href="@{/assets/css/applicant.css}">
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar :: navbar('results')}"></div>
+
+<main class="container">
+    <div class="page-header">
+        <h1 class="page-title">Kết quả Xét tuyển</h1>
+        <p class="page-subtitle">Hệ thống tuyển sinh Đại học Sài Gòn 2026</p>
+    </div>
+
+    <th:block th:if="${daCoKetQua}">
+        
+        <div th:if="${trungTuyen != null and trungTuyen.trangThai == 'TRUNG_TUYEN'}" class="card" style="border: none; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 40px 20px; text-align: center; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.4);">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 72px; height: 72px; margin: 0 auto 16px auto;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z" />
+            </svg>
+            <h2 style="font-size: 32px; margin: 0 0 8px 0; font-weight: 800;">CHÚC MỪNG BẠN!</h2>
+            <p style="font-size: 18px; opacity: 0.9; margin-bottom: 30px;">Bạn đã chính thức TRÚNG TUYỂN vào trường</p>
+            
+            <div style="background: rgba(255, 255, 255, 1); color: #064e3b; padding: 24px; border-radius: 12px; text-align: left; max-width: 500px; margin: 0 auto; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                <div style="margin-bottom: 16px; border-bottom: 1px solid #e5e7eb; padding-bottom: 12px;">
+                    <label style="font-size: 12px; color: #6b7280; text-transform: uppercase; font-weight: 700;">Ngành học:</label>
+                    <div style="font-size: 18px; font-weight: bold; color: #059669;" th:text="${trungTuyen.nganh.tennganh}"></div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div>
+                        <label style="font-size: 12px; color: #6b7280; text-transform: uppercase; font-weight: 700;">Điểm xét tuyển:</label>
+                        <div style="font-size: 24px; font-weight: 800; color: #111827;" th:text="${trungTuyen.diemXetTuyen}"></div>
+                    </div>
+                    <div>
+                        <label style="font-size: 12px; color: #6b7280; text-transform: uppercase; font-weight: 700;">Tổ hợp:</label>
+                        <div style="font-size: 20px; font-weight: 700; color: #111827;" th:text="${trungTuyen.maToHop != null ? trungTuyen.maToHop : 'Không rõ'}"></div>
+                    </div>
+                    <div style="grid-column: span 2;">
+                        <label style="font-size: 12px; color: #6b7280; text-transform: uppercase; font-weight: 700;">Phương thức:</label>
+                        <div style="font-size: 15px; font-weight: 600;" th:text="${trungTuyen.phuongThuc != null ? trungTuyen.phuongThuc : 'Xét tuyển thẳng/Kết quả thi'}"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: center; gap: 15px; margin-top: 30px;">
+                <a th:href="@{/thisinh/ket-qua/in-giay-bao}" style="display: inline-flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.2); color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; border: 1px solid white; transition: all 0.3s; cursor: pointer; gap: 8px;">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                    Tải Giấy Báo PDF
+                </a>
+
+                <form th:action="@{/thisinh/ket-qua/xac-nhan}" method="post" th:if="${trungTuyen.xacNhan == null or !trungTuyen.xacNhan}" style="margin: 0;">
+                    <button type="submit" onclick="return confirm('Bạn có chắc chắn muốn xác nhận nhập học vào ngành này không?');" style="background: white; color: #059669; border: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        Xác Nhận Nhập Học
+                    </button>
+                </form>
+                
+                <div th:if="${trungTuyen.xacNhan != null and trungTuyen.xacNhan}" style="background: rgba(255,255,255,0.2); border: 1px solid white; padding: 12px 24px; border-radius: 8px; font-weight: bold; display: inline-flex; align-items: center; justify-content: center;">
+                    DA XAC NHAN NHAP HOC
+                </div>
+            </div>
+
+        </div>
+    </th:block>
+
+    <th:block th:unless="${daCoKetQua}">
+        <div class="card" style="text-align: center; padding: 60px 20px; background: white; border: 2px dashed #e5e7eb; border-radius: 16px;">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 72px; height: 72px; margin: 0 auto 20px auto; color: #3b82f6;">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+            </svg>
+            <h2 style="font-size: 22px; color: #111827; margin: 0 0 12px 0;">Đang chờ xử lý kết quả</h2>
+            <p style="color: #6b7280; font-size: 15px; margin: 0; line-height: 1.5;">Hội đồng Tuyển sinh đang tiến hành đối soát dữ liệu.<br>Kết quả dự kiến sẽ được công bố vào thời gian sớm nhất.</p>
+        </div>
+    </th:block>
+</main>
+</body>
+</html>

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard - Hệ thống Xét tuyển SGU</title>
+    <link rel="stylesheet" th:href="@{/assets/css/global.css}">
+    <link rel="stylesheet" th:href="@{/assets/css/applicant.css}">
+</head>
+<body>
+
+<!-- Navbar -->
+<div th:replace="~{fragments/navbar :: navbar('dashboard')}"></div>
+
+<main class="container">
+    
+    <div class="alert-box" th:if="${isDefaultPassword}" style="background: #fffbeb; border: 1px solid #fcd34d; color: #b45309; display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-radius: 8px; margin-bottom: 24px;">
+        <div style="font-size: 14px; display: flex; align-items: center; gap: 8px;">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink: 0; color: #ea580c;"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            <span><strong>Cảnh báo bảo mật:</strong> Tài khoản của bạn đang sử dụng mật khẩu mặc định (Ngày sinh). Vui lòng đổi mật khẩu ngay!</span>
+        </div>
+        <button type="button" class="btn" style="background: #ea580c; color: white; border: none; font-size: 13px; font-weight: 600; padding: 8px 16px; border-radius: 6px; cursor: pointer;" onclick="document.getElementById('pwdModal').style.display='flex'">
+            Đổi mật khẩu
+        </button>
+    </div>
+
+    <!-- Thong bao doi mat khau -->
+    <div class="alert-box" th:if="${param.success != null and param.success[0] == 'pwd_changed'}" style="background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; margin-bottom: 24px; padding: 12px 16px; border-radius: 8px; font-weight: 500;">Doi mat khau thanh cong.</div>
+    <div class="alert-box" th:if="${param.error != null and param.error[0] == 'wrong_old_pwd'}" style="background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; margin-bottom: 24px; padding: 12px 16px; border-radius: 8px; font-weight: 500;">Doi mat khau that bai: Mat khau hien tai khong chinh xac!</div>
+    <div class="alert-box" th:if="${param.error != null and param.error[0] == 'pwd_mismatch'}" style="background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; margin-bottom: 24px; padding: 12px 16px; border-radius: 8px; font-weight: 500;">Doi mat khau that bai: Mat khau xac nhan khong khop!</div>
+    
+    <div class="card banner-gradient">
+        <h1 style="font-size: 28px; margin: 0 0 8px 0; font-weight: 600;" th:text="'Xin chào, ' + ${user.hoTen} + '!'">Xin chào!</h1>
+        <p style="color: #dbeafe; margin: 0 0 20px 0; font-size: 15px;">Mã thí sinh: <span style="font-family: monospace;" th:text="${user.idThiSinh}"></span></p>
+        <div style="display: inline-block; background: rgba(255,255,255,0.15); padding: 8px 16px; border-radius: 8px; font-size: 14px; backdrop-filter: blur(4px);">
+            Trang thai: Dang nop ho so
+        </div>
+    </div>
+
+    <div class="grid-3">
+        <!-- Luu y cach truyen link vao su kien onclick -->
+        <div class="card" th:onclick="|window.location.href='@{/thisinh/scores}'|" style="cursor: pointer; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                <div class="icon-box icon-blue" style="width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: #eff6ff; color: #2563eb;">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                </div>
+                    <span class="badge badge-success" style="background: #dcfce7; color: #16a34a; font-weight: normal; border: 1px solid #bbf7d0;">Đã có</span>
+                </div>
+                <h3 style="margin: 0 0 8px 0; font-size: 16px; color: #111827;">Điểm thi của tôi</h3>
+                <p style="font-size: 13px; color: #6b7280; margin: 0 0 16px 0;">Tổng điểm xét tuyển</p>
+                <p style="color: #2563eb; font-size: 32px; font-weight: bold; margin: 0 0 16px 0;" th:text="${maxToHop != null ? maxToHop.totalStr : '0.00'}"></p>
+            </div>
+            <p style="font-size: 12px; color: #6b7280; margin: 0; padding-top: 16px; border-top: 1px solid #f3f4f6;" th:text="${maxToHop != null ? maxToHop.desc : 'Chưa có đủ điểm tổ hợp'}">
+            </p>
+        </div>
+
+        <div class="card" th:onclick="|window.location.href='@{/thisinh/wishes}'|" style="cursor: pointer;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 16px;">
+                <div class="icon-box icon-blue" style="width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: #eff6ff; color: #2563eb; margin-bottom: 0;">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                </div>
+                <span th:if="${wishes != null and !wishes.isEmpty()}" class="badge badge-info">Đã đăng ký</span>
+                <span th:unless="${wishes != null and !wishes.isEmpty()}" class="badge badge-warning">Chưa đăng ký</span>
+            </div>
+            <h3 style="margin: 0 0 4px 0; font-size: 16px;">Nguyện vọng</h3>
+            <p class="text-muted" style="font-size: 13px; margin: 0 0 12px 0;" th:text="'Đã đăng ký ' + ${wishes.size()} + ' nguyện vọng'"></p>
+            <ul style="list-style: none; padding: 0; margin: 0; font-size: 13px;">
+                <!-- Hien thi toi da 3 nguyen vong -->
+                <li th:each="w, stat : ${wishes}" th:if="${stat.index < 3}" style="margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    <span class="text-muted" th:text="'NV' + ${w.nvTt} + ':'"></span> <span th:text="${w.nganh.tennganh}"></span>
+                </li>
+            </ul>
+        </div>
+
+        <div class="card" th:onclick="|window.location.href='@{/thisinh/results}'|" style="cursor: pointer;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 16px;">
+                <div class="icon-box icon-amber" style="width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: #fffbeb; color: #d97706;">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+                <span class="badge badge-warning">Đang chờ</span>
+            </div>
+            <h3 style="margin: 0 0 4px 0; font-size: 16px;">Kết quả xét tuyển</h3>
+            <p class="text-muted" style="font-size: 13px; margin: 0 0 12px 0;">Công bố dự kiến</p>
+            <p style="font-size: 20px; font-weight: bold; margin: 0; color: #111827;">25/08/2026</p>
+        </div>
+    </div>
+</main>
+
+<div id="pwdModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(3px);">
+    <div style="background: white; padding: 28px; border-radius: 12px; width: 90%; max-width: 400px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);">
+        <h3 style="margin: 0 0 20px 0; font-size: 18px; color: #111827; border-bottom: 1px solid #e5e7eb; padding-bottom: 12px;">Đổi Mật Khẩu</h3>
+        
+        <form th:action="@{/thisinh/change-password}" method="POST" onsubmit="return validatePwdForm()">
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; font-size: 13px; margin-bottom: 6px; color: #374151; font-weight: 600;">Mật khẩu hiện tại</label>
+                <input type="password" name="oldPassword" required style="width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 6px; box-sizing: border-box; font-size: 14px;">
+            </div>
+            
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; font-size: 13px; margin-bottom: 6px; color: #374151; font-weight: 600;">Mật khẩu mới</label>
+                <input type="password" name="newPassword" id="newPassword" required minlength="6" style="width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 6px; box-sizing: border-box; font-size: 14px;">
+            </div>
+            
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; font-size: 13px; margin-bottom: 6px; color: #374151; font-weight: 600;">Xác nhận mật khẩu mới</label>
+                <input type="password" name="confirmPassword" id="confirmPassword" required minlength="6" style="width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 6px; box-sizing: border-box; font-size: 14px;">
+                <p id="pwdErrorMsg" style="color: #ef4444; font-size: 12px; margin-top: 6px; display: none;">Mật khẩu xác nhận không khớp!</p>
+            </div>
+            
+            <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; padding-top: 16px; border-top: 1px solid #f3f4f6;">
+                <button type="button" onclick="document.getElementById('pwdModal').style.display='none'" style="padding: 8px 16px; border: 1px solid #d1d5db; background: white; border-radius: 6px; cursor: pointer; color: #374151;">Hủy bỏ</button>
+                <button type="submit" style="padding: 8px 16px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Cập nhật mật khẩu</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function validatePwdForm() {
+        var newP = document.getElementById("newPassword").value;
+        var confP = document.getElementById("confirmPassword").value;
+        if (newP !== confP) {
+            document.getElementById("pwdErrorMsg").style.display = "block";
+            return false;
+        }
+        document.getElementById("pwdErrorMsg").style.display = "none";
+        return true;
+    }
+</script>
+</body>
+</html>

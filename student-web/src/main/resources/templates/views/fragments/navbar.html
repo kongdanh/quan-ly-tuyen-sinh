@@ -1,0 +1,93 @@
+<!-- Khai báo fragment có nhận tham số activeTab -->
+<nav th:fragment="navbar(activeTab)" class="navbar" xmlns:th="http://www.thymeleaf.org">
+    <div class="navbar-brand">
+        <div class="logo-box">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"></path><path d="M22 10v6"></path><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"></path></svg>
+        </div>
+        <div>
+            <div style="font-weight: 600; font-size: 14px; color: #1e3a8a;">Cổng thông tin Thí sinh</div>
+            <div style="font-size: 11px; color: #6b7280;">Đại học Sài Gòn</div>
+        </div>
+    </div>
+
+    <!-- Dùng th:classappend để nối thêm class 'active' nếu điều kiện đúng -->
+    <div class="nav-links">
+        <a th:if="${session.thisinh != null}" th:href="@{/thisinh/dashboard}" class="nav-item" th:classappend="${activeTab == 'dashboard'} ? 'active' : ''">Trang chủ</a>
+        <a th:if="${session.thisinh != null}" th:href="@{/thisinh/profile}" class="nav-item" th:classappend="${activeTab == 'profile'} ? 'active' : ''">Hồ sơ</a>
+        <a th:if="${session.thisinh != null}" th:href="@{/thisinh/scores}" class="nav-item" th:classappend="${activeTab == 'scores'} ? 'active' : ''">Điểm thi</a>
+        <a th:href="@{/thisinh/tracuu/tonghop}" class="nav-item" th:classappend="${activeTab == 'tracuu'} ? 'active' : ''">Tra cứu</a>
+        <a th:if="${session.thisinh != null}" th:href="@{/thisinh/wishes}" class="nav-item" th:classappend="${activeTab == 'wishes'} ? 'active' : ''">Nguyện vọng</a>
+        <a th:if="${session.thisinh != null}" th:href="@{/thisinh/results}" class="nav-item" th:classappend="${activeTab == 'results'} ? 'active' : ''">Kết quả</a>
+    </div>
+
+    <div class="navbar-actions" style="display: flex; align-items: center; gap: 12px;">
+        <div th:if="${session.thisinh != null}" class="notif-wrapper">
+            <button class="notif-btn" onclick="toggleNotif(event)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                
+                <span class="notif-badge" id="notifBadge" th:if="${unreadCount != null and unreadCount > 0}" th:text="${unreadCount}">0</span>
+            </button>
+
+            <div class="notif-dropdown" id="notifDropdown">
+                <div class="notif-header">Thông báo của bạn</div>
+                <div class="notif-list">
+                    
+                    <div class="notif-empty" th:if="${#lists.isEmpty(notifications)}">Chưa có thông báo nào.</div>
+                    
+                    <th:block th:unless="${#lists.isEmpty(notifications)}">
+                        <!-- Vòng lặp foreach của Thymeleaf -->
+                        <div class="notif-item" th:each="n : ${notifications}">
+                            <div class="notif-icon" th:classappend="${n.trangThai == 'ACCEPTED'} ? 'success' : 'error'">
+                                <span th:text="${n.trangThai == 'ACCEPTED'} ? '✓' : '✗'"></span>
+                            </div>
+                            
+                            <div class="notif-content">
+                                <div class="notif-title">Cập nhật trạng thái hồ sơ</div>
+                                <div class="notif-desc">
+                                    Yêu cầu sửa đổi thông tin của bạn đã xử lý 
+                                    <strong th:style="${n.trangThai == 'ACCEPTED'} ? 'color: #16a34a' : 'color: #dc2626'"
+                                            th:text="${n.trangThai == 'ACCEPTED'} ? 'THÀNH CÔNG' : 'THÀNH BẠI'">
+                                    </strong>.
+                                </div>
+                                <span class="notif-time" th:text="'Mã YC: #' + ${n.id}"></span> 
+                            </div>
+                        </div>
+                    </th:block>
+                </div>
+            </div>
+        </div>
+
+        <a th:if="${session.thisinh != null}" th:href="@{/logout}" class="btn btn-danger-outline">Đăng xuất</a>
+        <a th:if="${session.thisinh == null}" th:href="@{/login}" class="btn btn-primary">Đăng nhập</a>
+    </div>
+
+    <!-- Truyền đường dẫn api vào data-url để js đọc -->
+    <script th:inline="javascript">
+        function toggleNotif(event) {
+            event.stopPropagation();
+            var dropdown = document.getElementById('notifDropdown');
+            var isOpening = (dropdown.style.display !== 'block');
+            
+            dropdown.style.display = isOpening ? 'block' : 'none';
+
+            var badge = document.getElementById('notifBadge');
+            if (isOpening && badge) {
+                // Thymeleaf tự động render đường dẫn API chuẩn xác
+                var apiReadUrl = /*[[@{/thisinh/notifications/read}]]*/ '/thisinh/notifications/read';
+                fetch(apiReadUrl, { method: 'POST' })
+                .then(response => {
+                    if (response.ok) badge.style.display = 'none';
+                }).catch(err => console.log("Lỗi đánh dấu đọc: ", err));
+            }
+        }
+
+        window.onclick = function(event) {
+            if (!event.target.closest('.notif-wrapper')) {
+                var dropdown = document.getElementById('notifDropdown');
+                if (dropdown && dropdown.style.display === 'block') {
+                    dropdown.style.display = 'none';
+                }
+            }
+        }
+    </script>
+</nav>

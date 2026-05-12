@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Quy trình Xét tuyển - SGU</title>
+    <link rel="stylesheet" th:href="@{/assets/css/global.css}">
+    <link rel="stylesheet" th:href="@{/assets/css/applicant.css}">
+</head>
+<body style="background: #f8fafc;">
+
+    <div th:replace="~{fragments/public_navbar :: navbar('quytrinh')}"></div>
+
+    <main class="container" style="padding: 60px 0; min-height: 70vh;">
+        <h1 style="color: #1e3a8a; text-align: center; margin-bottom: 40px;">Quy trình & Quy đổi Bằng cấp</h1>
+
+        <div class="grid-2">
+            <div class="card">
+                <h3 style="margin-top: 0; color: #111827; border-bottom: 2px solid #2563eb; padding-bottom: 10px; display: inline-block;">Quy trình 4 Bước</h3>
+                <ol style="color: #4b5563; line-height: 1.8; padding-left: 20px; margin-top: 20px;">
+                    <li><strong>Đăng ký tài khoản:</strong> Xác thực qua Email cá nhân.</li>
+                    <li><strong>Hoàn thiện Hồ sơ:</strong> Nộp hình ảnh CCCD, Học bạ, chờ duyệt hợp lệ.</li>
+                    <li><strong>Đăng ký Nguyện vọng:</strong> Chọn ngành, hệ thống tự động tối ưu tổ hợp.</li>
+                    <li><strong>Theo dõi Kết quả:</strong> Chờ trường chạy thuật toán và công bố điểm trúng tuyển.</li>
+                </ol>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-top: 0; color: #111827; border-bottom: 2px solid #10b981; padding-bottom: 10px; display: inline-block;">Quy đổi Tiếng Anh (Tham khảo)</h3>
+                <ul style="color: #4b5563; line-height: 1.8; padding-left: 20px; margin-top: 20px;">
+                    <li>IELTS 5.0 -> Quy đổi: <strong>8.0 điểm</strong></li>
+                    <li>IELTS 5.5 -> Quy đổi: <strong>9.0 điểm</strong></li>
+                    <li>IELTS 6.0 trở lên -> Quy đổi: <strong>10.0 điểm</strong></li>
+                    <li>TOEFL iBT (tương đương) cũng áp dụng mốc điểm trên.</li>
+                </ul>
+            </div>
+        </div>
+    </main>
+
+</body>
+</html>
