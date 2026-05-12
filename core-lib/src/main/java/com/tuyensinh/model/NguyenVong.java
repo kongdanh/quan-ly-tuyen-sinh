@@ -48,8 +48,8 @@ public class NguyenVong {
     @Column(name = "diem_cong", precision = 6, scale = 2)
     private BigDecimal diemCong;
 
-    @Column(name = "diem_xettuyen", precision = 10, scale = 5)
-    private BigDecimal diemXettuyen;
+    @Column(name = "diem_xettuyen")
+    private Double diemXettuyen;
 
     @Column(name = "nv_ketqua", length = 45)
     private String nvKetqua;
@@ -63,4 +63,14 @@ public class NguyenVong {
 
     @Column(name = "tt_thm", length = 45)
     private String ttThm;
+
+    public Integer getThuTu() { return this.nvTt; }
+    public Nganh getNganh() { return this.nganh; }
+    public Double getDiemXettuyen() {
+        return this.diemXettuyen;
+    }
+
+    public void setDiemXettuyen(Double diemXettuyen) {
+        this.diemXettuyen = diemXettuyen;
+    }
 }

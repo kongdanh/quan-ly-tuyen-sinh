@@ -24,6 +24,9 @@ public class DiemCong {
     @JoinColumn(name = "ts_cccd", nullable = false, referencedColumnName = "cccd")
     private ThiSinh thiSinh;
 
+    @Column(name = "ts_cccd", insertable = false, updatable = false)
+    private String tsCccd;
+
     @Column(name = "manganh", length = 45)
     private String manganh;
 
