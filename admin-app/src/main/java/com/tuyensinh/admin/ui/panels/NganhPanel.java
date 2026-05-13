@@ -15,11 +15,18 @@ import java.util.concurrent.CompletableFuture;
 
 public class NganhPanel extends BaseTablePanel<Nganh> {
 
-    private static final String[] COLUMN_NAMES = {
-            "STT", "M\u00e3 ng\u00e0nh", "T\u00ean ng\u00e0nh", "Khoa",
-            "Ch\u1ec9 ti\u00eau", "\u0110\u00e3 \u0111\u0103ng k\u00fd", "T\u1ec9 l\u1ec7", "Tr\u1ea1ng th\u00e1i", "H\u00e0nh \u0111\u1ed9ng"
-    };
-    private static final int[] COLUMN_WIDTHS = {50, 110, 200, 110, 80, 100, 140, 130, 90};
+//    private static final String[] COLUMN_NAMES = {
+//            "STT", "M\u00e3 ng\u00e0nh", "T\u00ean ng\u00e0nh", "Khoa",
+//            "Ch\u1ec9 ti\u00eau", "\u0110\u00e3 \u0111\u0103ng k\u00fd", "T\u1ec9 l\u1ec7", "Tr\u1ea1ng th\u00e1i", "H\u00e0nh \u0111\u1ed9ng"
+//    };
+private static final String[] COLUMN_NAMES = {
+        "STT", "M\u00e3 ng\u00e0nh", "T\u00ean ng\u00e0nh", "Khoa",
+        "Ch\u1ec9 ti\u00eau", "Tuy\u1ec3n th\u1eb3ng", "\u0110GNL", "THPT", "VSAT",
+        "\u0110\u00e3 \u0111\u0103ng k\u00fd", "T\u1ec9 l\u1ec7",
+        "Tr\u1ea1ng th\u00e1i", "H\u00e0nh \u0111\u1ed9ng"
+};
+    private static final int[] COLUMN_WIDTHS =
+            {50, 110, 220, 120, 80, 90, 80, 80, 80, 100, 160, 130, 90};
 
     private final NganhService nganhService = new NganhService();
     private static final List<String> SEARCH_FIELDS = List.of("manganh", "tennganh");
@@ -39,7 +46,7 @@ public class NganhPanel extends BaseTablePanel<Nganh> {
     @Override protected String getToolbarTitle()   { return "Danh s\u00e1ch ng\u00e0nh"; }
     @Override protected int getActionColumnIndex() { return COLUMN_NAMES.length - 1; }
     @Override protected int getActionColumnWidth() { return 90; }
-
+    private Map<String, Long> dangKyCountCache = new java.util.HashMap<>();
     @Override
     protected Object[] toTableRow(Nganh n) {
         int chiTieu  = n.getNChitieu()   != null ? n.getNChitieu()   : 0;
@@ -52,6 +59,10 @@ public class NganhPanel extends BaseTablePanel<Nganh> {
                 n.getTennganh(),
                 resolveKhoa(n.getManganh()),
                 chiTieu,
+                "1".equals(n.getNTuyenthang()) ? "Có" : "Không",
+                "1".equals(n.getNDgnl()) ? "Có" : "Không",
+                "1".equals(n.getNThpt()) ? "Có" : "Không",
+                "1".equals(n.getNVsat()) ? "Có" : "Không",
                 daDangKy,
                 phanTram,
                 resolveTrangThai(n, phanTram),
@@ -68,7 +79,7 @@ public class NganhPanel extends BaseTablePanel<Nganh> {
 
     @Override
     protected void showEditDialog(int tableRow) {
-        Object idObj = getCellValue(tableRow, 8);
+        Object idObj = getCellValue(tableRow, 12);
         if (idObj == null) return;
         int id = (idObj instanceof Integer) ? (Integer) idObj : Integer.parseInt(idObj.toString());
         nganhService.findByIdAsync(id).thenAccept(nganh -> {
@@ -88,7 +99,7 @@ public class NganhPanel extends BaseTablePanel<Nganh> {
     @Override
     protected void deleteRecord(int tableRow) {
         String tenNganh = getNameFromRow(tableRow);
-        Object idObj    = getCellValue(tableRow, 8);
+        Object idObj    = getCellValue(tableRow, 12);
         Object maObj    = getCellValue(tableRow, 1);
         if (idObj == null || maObj == null) return;
         int    id      = (idObj instanceof Integer) ? (Integer) idObj : Integer.parseInt(idObj.toString());
@@ -188,7 +199,15 @@ public class NganhPanel extends BaseTablePanel<Nganh> {
             return null;
         });
     }
+    @Override
+    protected int getTableAutoResizeMode() {
+        return JTable.AUTO_RESIZE_OFF;
+    }
 
+    @Override
+    protected int getHorizontalScrollBarPolicy() {
+        return ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED;
+    }
     // =========================================================================
     // COLUMN CONFIG
     // =========================================================================
@@ -199,11 +218,11 @@ public class NganhPanel extends BaseTablePanel<Nganh> {
         for (int i = 0; i < COLUMN_WIDTHS.length && i < cm.getColumnCount(); i++) {
             TableColumn col = cm.getColumn(i);
             col.setPreferredWidth(COLUMN_WIDTHS[i]);
-            if (i == 0 || i == 4 || i == 5) col.setMaxWidth(COLUMN_WIDTHS[i] + 20);
+            if (i == 0 || i == 4) col.setMaxWidth(COLUMN_WIDTHS[i] + 20);
         }
         cm.getColumn(0).setCellRenderer(new SttRenderer());
-        cm.getColumn(6).setCellRenderer(new ProgressBarRenderer());
-        cm.getColumn(7).setCellRenderer(new StatusBadgeRenderer());
+        cm.getColumn(10).setCellRenderer(new ProgressBarRenderer()); // Tỉ lệ
+        cm.getColumn(11).setCellRenderer(new StatusBadgeRenderer()); // Trạng thái
     }
 
     // =========================================================================
@@ -261,16 +280,34 @@ public class NganhPanel extends BaseTablePanel<Nganh> {
     // FETCH
     // =========================================================================
 
+    // Bỏ field dangKyCountCache đi, không cần nữa
+
     @Override
     protected CompletableFuture<List<Nganh>> fetchPage(
             String keyword, Map<String, Object> filters, int page, int pageSize) {
+
         Map<String, Object> dbFilters = buildDbFilters(filters);
-        return nganhService.findPageWithFilters(keyword, SEARCH_FIELDS, dbFilters, page, pageSize)
-                .thenApply(list -> applyClientFilters(list, filters));
+
+        CompletableFuture<List<Nganh>> dataFuture =
+                nganhService.findPageWithFilters(keyword, SEARCH_FIELDS, dbFilters, page, pageSize)
+                        .thenApply(list -> applyClientFilters(list, filters));
+
+        CompletableFuture<Map<String, Long>> countFuture =
+                nganhService.fetchDangKyCountMap();
+
+        // Chờ cả 2 xong rồi gắn count thực tế vào từng Nganh
+        return dataFuture.thenCombine(countFuture, (list, countMap) -> {
+            for (Nganh n : list) {
+                long realCount = countMap.getOrDefault(n.getManganh(), 0L);
+                n.setSlDadangky((int) realCount);
+            }
+            return list;
+        });
     }
 
     @Override
-    protected CompletableFuture<Long> fetchCount(String keyword, Map<String, Object> filters) {
+    protected CompletableFuture<Long> fetchCount(
+            String keyword, Map<String, Object> filters) {
         Map<String, Object> dbFilters = buildDbFilters(filters);
         return nganhService.findPageWithFilters(keyword, SEARCH_FIELDS, dbFilters, 1, Integer.MAX_VALUE)
                 .thenApply(list -> (long) applyClientFilters(list, filters).size());
@@ -353,8 +390,10 @@ public class NganhPanel extends BaseTablePanel<Nganh> {
                 n.setManganh(cellStr(row, 0));    n.setTennganh(cellStr(row, 1));
                 n.setNTohopgoc(cellStr(row, 2));  n.setNChitieu(cellInt(row, 3));
                 n.setNDiemsan(cellBD(row, 4));    n.setNDiemtrungtuyen(cellBD(row, 5));
-                n.setNTuyenthang(cellStr(row, 6)); n.setNDgnl(cellStr(row, 7));
-                n.setNThpt(cellStr(row, 8));       n.setNVsat(cellStr(row, 9));
+                n.setNTuyenthang(String.valueOf(cellInt(row, 6)));
+                n.setNDgnl(String.valueOf(cellInt(row, 7)));
+                n.setNThpt(String.valueOf(cellInt(row, 8)));
+                n.setNVsat(String.valueOf(cellInt(row, 9)));
                 n.setSlDadangky(cellInt(row, 10));
                 if (n.getManganh() != null && !n.getManganh().isEmpty()
                         && n.getTennganh() != null && !n.getTennganh().isEmpty())
@@ -429,7 +468,7 @@ public class NganhPanel extends BaseTablePanel<Nganh> {
     }
 
     private static class ProgressBarRenderer implements TableCellRenderer {
-        private static final int TRACK_W = 100, TRACK_H = 7, LABEL_W = 36, GAP = 6;
+        private static final int TRACK_W = 100, TRACK_H = 7, LABEL_W = 50, GAP = 6;
 
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value,

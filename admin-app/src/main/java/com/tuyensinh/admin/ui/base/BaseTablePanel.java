@@ -3,6 +3,8 @@ package com.tuyensinh.admin.ui.base;
 import com.tuyensinh.admin.ui.components.*;
 import com.tuyensinh.admin.util.UIConstants;
 import com.tuyensinh.admin.util.AdminSession;
+import com.tuyensinh.model.Nganh;
+import com.tuyensinh.service.NganhService;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -218,7 +220,7 @@ public abstract class BaseTablePanel<T> extends JPanel {
                 long    total = countFuture.get();
 
                 System.out.println("loadTableData got " + list.size() + " items, total=" + total);
-                
+
                 SwingUtilities.invokeLater(() -> {
                     tableModel.setRowCount(0);
                     for (T entity : list) {
