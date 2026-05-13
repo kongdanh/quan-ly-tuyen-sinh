@@ -30,6 +30,10 @@ public class NganhDAO extends GenericDAO<Nganh> {
             return new ArrayList<>();
         }
     }
+    /**
+     * Đếm số nguyện vọng đang ký thực tế từ bảng xt_nguyenvong.
+     * Trả về Map<maNganh, soLuong> cho toàn bộ danh sách.
+     */
 
     public Optional<Nganh> findByMaNganh(String maNganh) {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {

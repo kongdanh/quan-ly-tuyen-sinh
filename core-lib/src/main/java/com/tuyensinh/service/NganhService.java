@@ -209,6 +209,10 @@ public class NganhService {
         }
         return result;
     }
+    /**
+     * Lấy số lượng đăng ký thực tế từ bảng nguyện vọng.
+     * Trả về Map<maNganh, count> — gọi 1 lần cho toàn bộ danh sách.
+     */
 
     /**
      * Tinh tong so luong dang ky tu tat ca phuong thuc
