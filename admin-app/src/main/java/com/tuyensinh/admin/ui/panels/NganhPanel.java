@@ -26,7 +26,7 @@ private static final String[] COLUMN_NAMES = {
         "Tr\u1ea1ng th\u00e1i", "H\u00e0nh \u0111\u1ed9ng"
 };
     private static final int[] COLUMN_WIDTHS =
-            {50,110,220,120,80,90,80,80,80,100,120,130,90};
+            {50, 110, 220, 120, 80, 90, 80, 80, 80, 100, 160, 130, 90};
 
     private final NganhService nganhService = new NganhService();
     private static final List<String> SEARCH_FIELDS = List.of("manganh", "tennganh");
@@ -280,16 +280,34 @@ private static final String[] COLUMN_NAMES = {
     // FETCH
     // =========================================================================
 
+    // Bỏ field dangKyCountCache đi, không cần nữa
+
     @Override
     protected CompletableFuture<List<Nganh>> fetchPage(
             String keyword, Map<String, Object> filters, int page, int pageSize) {
+
         Map<String, Object> dbFilters = buildDbFilters(filters);
-        return nganhService.findPageWithFilters(keyword, SEARCH_FIELDS, dbFilters, page, pageSize)
-                .thenApply(list -> applyClientFilters(list, filters));
+
+        CompletableFuture<List<Nganh>> dataFuture =
+                nganhService.findPageWithFilters(keyword, SEARCH_FIELDS, dbFilters, page, pageSize)
+                        .thenApply(list -> applyClientFilters(list, filters));
+
+        CompletableFuture<Map<String, Long>> countFuture =
+                nganhService.fetchDangKyCountMap();
+
+        // Chờ cả 2 xong rồi gắn count thực tế vào từng Nganh
+        return dataFuture.thenCombine(countFuture, (list, countMap) -> {
+            for (Nganh n : list) {
+                long realCount = countMap.getOrDefault(n.getManganh(), 0L);
+                n.setSlDadangky((int) realCount);
+            }
+            return list;
+        });
     }
 
     @Override
-    protected CompletableFuture<Long> fetchCount(String keyword, Map<String, Object> filters) {
+    protected CompletableFuture<Long> fetchCount(
+            String keyword, Map<String, Object> filters) {
         Map<String, Object> dbFilters = buildDbFilters(filters);
         return nganhService.findPageWithFilters(keyword, SEARCH_FIELDS, dbFilters, 1, Integer.MAX_VALUE)
                 .thenApply(list -> (long) applyClientFilters(list, filters).size());
@@ -450,7 +468,7 @@ private static final String[] COLUMN_NAMES = {
     }
 
     private static class ProgressBarRenderer implements TableCellRenderer {
-        private static final int TRACK_W = 100, TRACK_H = 7, LABEL_W = 36, GAP = 6;
+        private static final int TRACK_W = 100, TRACK_H = 7, LABEL_W = 50, GAP = 6;
 
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value,

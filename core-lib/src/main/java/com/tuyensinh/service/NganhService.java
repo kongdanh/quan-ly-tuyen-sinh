@@ -32,7 +32,13 @@ public class NganhService {
     public CompletableFuture<Nganh> findByIdAsync(Serializable id) { return nganhDAO.findByIdAsync(id); }
 
     public Optional<Nganh> findByMaNganh(String maNganh) { return nganhDAO.findByMaNganh(maNganh); }
-
+    /**
+     * Lấy số lượng đăng ký thực tế từ bảng nguyện vọng.
+     * Trả về Map<maNganh, count> — gọi 1 lần cho toàn bộ danh sách.
+     */
+    public CompletableFuture<Map<String, Long>> fetchDangKyCountMap() {
+        return CompletableFuture.supplyAsync(() -> nganhDAO.countDangKyByMaNganh());
+    }
     /**
      * Lay danh sach nganh dong bo, bao ve UI khoi loi DB
      */
