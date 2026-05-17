@@ -216,4 +216,84 @@ public class DotTuyenSinhService {
         }
     }
 
+        /**
+     * Cập nhật trạng thái của đợt tuyển sinh
+     * @param idDot ID đợt tuyển sinh
+     * @param trangThai Trạng thái mới (ACTIVE/INACTIVE)
+     */
+    public void updateTrangThaiDot(Integer idDot, String trangThai) {
+        Transaction transaction = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+            String hql = "UPDATE DotTuyenSinh SET trangThai = :trangThai WHERE id = :idDot";
+            int updated = session.createMutationQuery(hql)
+                .setParameter("trangThai", trangThai)
+                .setParameter("idDot", idDot)
+                .executeUpdate();
+            transaction.commit();
+            System.out.println("[DotTuyenSinhService] Đã cập nhật trạng thái đợt ID=" + idDot + " thành " + trangThai);
+        } catch (Exception e) {
+            if (transaction != null) transaction.rollback();
+            e.printStackTrace();
+            throw new RuntimeException("Lỗi cập nhật trạng thái đợt: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Lấy trạng thái hiện tại của đợt tuyển sinh
+     * @param idDot ID đợt tuyển sinh
+     * @return Trạng thái (ACTIVE/INACTIVE)
+     */
+    public String getTrangThaiDot(Integer idDot) {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            String hql = "SELECT trangThai FROM DotTuyenSinh WHERE id = :idDot";
+            return session.createQuery(hql, String.class)
+                        .setParameter("idDot", idDot)
+                        .uniqueResultOptional()
+                        .orElse("UNKNOWN");
+        } catch (Exception e) {
+            System.err.println("[DotTuyenSinhService] Loi lay trang thai dot: " + e.getMessage());
+            return "UNKNOWN";
+        }
+    }
+
+    /**
+     * Kiểm tra xem đợt tuyển sinh có đang ACTIVE không
+     * @param idDot ID đợt tuyển sinh
+     * @return true nếu đang ACTIVE
+     */
+    public boolean isDotActive(Integer idDot) {
+        return "ACTIVE".equals(getTrangThaiDot(idDot));
+    }
+
+    /**
+     * Khóa đợt tuyển sinh (chuyển sang INACTIVE)
+     * @param idDot ID đợt tuyển sinh
+     */
+    public void lockDot(Integer idDot) {
+        Transaction transaction = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+            String hql = "UPDATE DotTuyenSinh SET trangThai = 'INACTIVE' WHERE id = :idDot";
+            int updated = session.createMutationQuery(hql)
+                .setParameter("idDot", idDot)
+                .executeUpdate();
+            transaction.commit();
+            System.out.println("[DotTuyenSinhService] Đã khóa đợt ID=" + idDot);
+            SystemLogger.log(null, "System", "Khóa đợt tuyển sinh ID=" + idDot, true);
+        } catch (Exception e) {
+            if (transaction != null) transaction.rollback();
+            e.printStackTrace();
+            throw new RuntimeException("Lỗi khóa đợt: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Mở khóa đợt tuyển sinh (chuyển sang ACTIVE)
+     * @param idDot ID đợt tuyển sinh
+     */
+    public void unlockDot(Integer idDot) {
+        updateTrangThaiDot(idDot, "ACTIVE");
+    }
+
 }

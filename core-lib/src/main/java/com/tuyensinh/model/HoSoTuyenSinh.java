@@ -57,10 +57,14 @@ public class HoSoTuyenSinh implements Serializable {
 
     // Trong file HoSoTuyenSinh.java
     public Double getTongDiemXetTuyen() {
+        // Ưu tiên field đã lưu trong DB để tránh phụ thuộc lazy/session ở ngoài transaction
+        if (this.tongDiemXetTuyen != null) {
+            return this.tongDiemXetTuyen;
+        }
         if (this.nguyenVongs == null || this.nguyenVongs.isEmpty()) {
             return 0.0;
         }
-        // Lấy điểm cao nhất trong tất cả các nguyện vọng của thí sinh
+        // fallback: lấy điểm cao nhất trong tất cả các nguyện vọng của thí sinh
         return this.nguyenVongs.stream()
                 .mapToDouble(nv -> nv.getDiemXettuyen() != null ? nv.getDiemXettuyen() : 0.0)
                 .max()

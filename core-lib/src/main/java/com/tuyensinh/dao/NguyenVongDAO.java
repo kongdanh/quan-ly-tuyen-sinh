@@ -60,4 +60,19 @@ public class NguyenVongDAO extends GenericDAO<NguyenVong> {
             return Collections.emptyList();
         }
     }
+
+    /**
+     * Tìm các nguyện vọng theo ID hồ sơ tuyển sinh.
+     */
+    public List<NguyenVong> findByHoSoId(Integer idHoSo) {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            String hql = "SELECT nv FROM NguyenVong nv WHERE nv.hoSoTuyenSinh.id = :idHoSo ORDER BY nv.nvTt ASC";
+            return session.createQuery(hql, NguyenVong.class)
+                    .setParameter("idHoSo", idHoSo)
+                    .list();
+        } catch (Exception e) {
+            System.err.println("[NguyenVongDAO] Lỗi findByHoSoId: " + e.getMessage());
+            return Collections.emptyList();
+        }
+    }
 }

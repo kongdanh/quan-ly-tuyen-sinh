@@ -7,6 +7,7 @@ import com.tuyensinh.util.SystemLogger;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
@@ -36,8 +37,127 @@ public class NguyenVongService {
     }
 
     public List<NguyenVong> findByDotTuyenSinh(Integer idDot) {
-        if (idDot == null) return Collections.emptyList();
-        return nvDAO.findByDotTuyenSinh(idDot);
+        System.out.println("[NguyenVongService] findByDotTuyenSinh called with idDot=" + idDot);
+        
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            String sql;
+            if (idDot == null || idDot <= 0) {
+                // Lấy tất cả các đợt
+                System.out.println("[NguyenVongService] Lấy dữ liệu TẤT CẢ các đợt");
+                sql = "SELECT nv.* FROM xt_nguyenvongxettuyen nv ORDER BY nv.id_dot, nv.nn_cccd, nv.nv_tt";
+            } else {
+                // Lấy theo đợt cụ thể
+                System.out.println("[NguyenVongService] Lấy dữ liệu cho đợt ID=" + idDot);
+                sql = "SELECT nv.* FROM xt_nguyenvongxettuyen nv WHERE nv.id_dot = :idDot ORDER BY nv.nn_cccd, nv.nv_tt";
+            }
+            
+            var query = session.createNativeQuery(sql);
+            if (idDot != null && idDot > 0) {
+                query.setParameter("idDot", idDot);
+            }
+            
+            List<Object[]> results = query.getResultList();
+            
+            System.out.println("[NguyenVongService] Tìm thấy " + results.size() + " bản ghi");
+            
+            List<NguyenVong> list = new java.util.ArrayList<>();
+            
+            for (Object[] row : results) {
+                try {
+                    NguyenVong nv = new NguyenVong();
+                    
+                    // Set ID - cột 0
+                    if (row[0] != null) {
+                        nv.setId(((Number) row[0]).intValue());
+                    }
+                    
+                    // Set ID ho so - cột 1
+                    if (row[1] != null) {
+                        HoSoTuyenSinh hs = new HoSoTuyenSinh();
+                        hs.setId(((Number) row[1]).intValue());
+                        nv.setHoSoTuyenSinh(hs);
+                    }
+                    
+                    // Set CCCD - cột 2
+                    String cccd = row[2] != null ? row[2].toString() : "";
+                    if (!cccd.isEmpty()) {
+                        ThiSinh ts = new ThiSinh();
+                        ts.setCccd(cccd);
+                        nv.setThiSinh(ts);
+                    }
+                    
+                    // Set ma nganh - cột 3
+                    String maNganh = row[3] != null ? row[3].toString() : "";
+                    if (!maNganh.isEmpty()) {
+                        Nganh nganh = new Nganh();
+                        nganh.setManganh(maNganh);
+                        nv.setNganh(nganh);
+                    }
+                    
+                    // Set nguyen vong thu - cột 4
+                    if (row[4] != null) {
+                        nv.setNvTt(((Number) row[4]).intValue());
+                    }
+                    
+                    // Set diem thxt - cột 5
+                    if (row[5] != null) {
+                        nv.setDiemThxt(new BigDecimal(row[5].toString()));
+                    }
+                    
+                    // Set diem utqd - cột 6
+                    if (row[6] != null) {
+                        nv.setDiemUtqd(new BigDecimal(row[6].toString()));
+                    }
+                    
+                    // Set diem cong - cột 7
+                    if (row[7] != null) {
+                        nv.setDiemCong(new BigDecimal(row[7].toString()));
+                    }
+                    
+                    // Set diem xet tuyen - cột 8
+                    if (row[8] != null) {
+                        nv.setDiemXettuyen(Double.parseDouble(row[8].toString()));
+                    }
+                    
+                    // Set ket qua - cột 9
+                    nv.setNvKetqua(row[9] != null ? row[9].toString() : "");
+                    
+                    // Set keys - cột 10
+                    nv.setNvKeys(row[10] != null ? row[10].toString() : "");
+                    
+                    // Set phuong thuc - cột 11
+                    nv.setTtPhuongthuc(row[11] != null ? row[11].toString() : "");
+                    
+                    // Set to hop mon - cột 12
+                    nv.setTtThm(row[12] != null ? row[12].toString() : "");
+                    
+                    // Set dot tuyen sinh - cột 13
+                    if (row[13] != null) {
+                        DotTuyenSinh dot = new DotTuyenSinh();
+                        dot.setId(((Number) row[13]).intValue());
+                        nv.setDotTuyenSinh(dot);
+                    }
+                    
+                    list.add(nv);
+                    
+                } catch (Exception e) {
+                    System.err.println("[NguyenVongService] Lỗi khi parse dòng: " + e.getMessage());
+                }
+            }
+            
+            System.out.println("[NguyenVongService] Trả về " + list.size() + " nguyện vọng");
+            return list;
+            
+        } catch (Exception e) {
+            System.err.println("[NguyenVongService] Lỗi: " + e.getMessage());
+            e.printStackTrace();
+            return new java.util.ArrayList<>();
+        }
+    }
+
+    public List<NguyenVong> findByHoSoId(Integer idHoSo) {
+        if (idHoSo == null) return Collections.emptyList();
+        return nvDAO.findByHoSoId(idHoSo);
     }
 
     // ── Nghiệp vụ Web (Sử dụng KetQuaDangKy) ────────────────────────────────────
@@ -68,6 +188,9 @@ public class NguyenVongService {
                 return KetQuaDangKy.thatBai("Thông tin thí sinh hoặc ngành không hợp lệ.");
             }
 
+            // Tìm HoSoTuyenSinh phù hợp
+            HoSoTuyenSinh hoSo = findHoSoTuyenSinh(session, ts.getId(), activeDot.getId());
+
             NguyenVong nv = new NguyenVong();
             nv.setThiSinh(ts);
             nv.setNganh(nganh);
@@ -77,6 +200,12 @@ public class NguyenVongService {
             nv.setNvKetqua("CHO");
             nv.setDotTuyenSinh(activeDot);
             nv.setNvKeys(buildKey(cccd, manganh, thuTu));
+            if (hoSo != null) {
+                nv.setHoSoTuyenSinh(hoSo);
+                System.out.println("[NguyenVongService] dangKyNguyenVong: Gán HoSo ID=" + hoSo.getId() + " cho NguyenVong mới (CCCD=" + cccd + ")");
+            } else {
+                System.out.println("[NguyenVongService] dangKyNguyenVong: CẢNH BÁO - Không tìm thấy HoSo cho CCCD=" + cccd + ", DotID=" + activeDot.getId());
+            }
 
             session.persist(nv);
             tx.commit();
@@ -157,6 +286,11 @@ public class NguyenVongService {
 
         int thuTu = current.size() + 1;
         ThiSinh ts = thiSinhService.findByCccd(cccd).orElse(null);
+        if (ts == null) return SaveResult.NOT_QUALIFIED;
+
+        // Tìm HoSoTuyenSinh phù hợp
+        HoSoTuyenSinhService hoSoService = new HoSoTuyenSinhService();
+        HoSoTuyenSinh hoSo = hoSoService.findByThiSinhAndDot(ts.getId(), activeDot.getId()).orElse(null);
 
         NguyenVong nv = new NguyenVong();
         nv.setThiSinh(ts);
@@ -168,6 +302,12 @@ public class NguyenVongService {
         nv.setTtPhuongthuc(diem.getDPhuongthuc());
         nv.setDotTuyenSinh(activeDot);
         nv.setNvKeys(buildKey(cccd, manganh, thuTu));
+        if (hoSo != null) {
+            nv.setHoSoTuyenSinh(hoSo);
+            System.out.println("[NguyenVongService] insertWish: Gán HoSo ID=" + hoSo.getId() + " cho NguyenVong mới (CCCD=" + cccd + ")");
+        } else {
+            System.out.println("[NguyenVongService] insertWish: CẢNH BÁO - Không tìm thấy HoSo cho CCCD=" + cccd);
+        }
         nvDAO.save(nv);
         return SaveResult.OK;
     }
@@ -217,6 +357,19 @@ public class NguyenVongService {
     private Nganh findNganh(Session session, String manganh) {
         return session.createQuery("FROM Nganh n WHERE n.manganh = :manganh", Nganh.class)
                 .setParameter("manganh", manganh).uniqueResult();
+    }
+
+    private HoSoTuyenSinh findHoSoTuyenSinh(Session session, Integer idThiSinh, Integer idDot) {
+        try {
+            String hql = "SELECT hs FROM HoSoTuyenSinh hs WHERE hs.thiSinh.id = :idThiSinh AND hs.dotTuyenSinh.id = :idDot";
+            return session.createQuery(hql, HoSoTuyenSinh.class)
+                    .setParameter("idThiSinh", idThiSinh)
+                    .setParameter("idDot", idDot)
+                    .uniqueResult();
+        } catch (Exception e) {
+            System.err.println("[NguyenVongService] Lỗi findHoSoTuyenSinh: " + e.getMessage());
+            return null;
+        }
     }
 
     private boolean isThuTuDaTonTai(Session session, String cccd, int thuTu) {

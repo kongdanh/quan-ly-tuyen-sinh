@@ -4,6 +4,7 @@ import com.tuyensinh.admin.ui.base.BaseTablePanel;
 import com.tuyensinh.admin.ui.dialog.HoSoTuyenSinhFormDialog;
 import com.tuyensinh.model.DotTuyenSinh;
 import com.tuyensinh.model.HoSoTuyenSinh;
+import com.tuyensinh.model.NguyenVong;
 import com.tuyensinh.service.DotTuyenSinhService;
 import com.tuyensinh.service.HoSoTuyenSinhService;
 import com.tuyensinh.util.Constants;
@@ -172,6 +173,17 @@ public class HoSoTuyenSinhPanel extends BaseTablePanel<HoSoTuyenSinh> {
     protected void showEditDialog(int row) {
         HoSoTuyenSinh hs = service.findById(getIdFromRow(row));
         if (hs != null) {
+            // Debug: Log thông tin hồ sơ
+            System.out.println("[HoSoTuyenSinhPanel] Xem chi tiết HoSo ID=" + hs.getId() + ", MaHoSo=" + hs.getMaHoSo());
+            
+            // Debug: Kiểm tra NguyenVong
+            com.tuyensinh.service.NguyenVongService nvService = new com.tuyensinh.service.NguyenVongService();
+            java.util.List<NguyenVong> nvList = nvService.findByHoSoId(hs.getId());
+            System.out.println("[HoSoTuyenSinhPanel] Tìm thấy " + nvList.size() + " NguyenVong cho HoSo ID=" + hs.getId());
+            for (NguyenVong nv : nvList) {
+                System.out.println("  - NV #" + nv.getNvTt() + ": " + (nv.getNganh() != null ? nv.getNganh().getTennganh() : "N/A"));
+            }
+            
             HoSoTuyenSinhFormDialog dialog = new HoSoTuyenSinhFormDialog(getParentFrame(), hs);
             dialog.setVisible(true);
             if (dialog.isSaved()) loadTableData();

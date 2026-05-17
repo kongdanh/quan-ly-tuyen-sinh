@@ -11,6 +11,7 @@ import com.tuyensinh.model.BangQuyDoi;
 import com.tuyensinh.model.DiemCong;
 import com.tuyensinh.model.DiemThiXetTuyen;
 import com.tuyensinh.model.KetQuaXetTuyen;
+import com.tuyensinh.model.HoSoTuyenSinh;
 import com.tuyensinh.model.NganhToHop;
 import com.tuyensinh.model.NguyenVong;
 import com.tuyensinh.model.ThiSinh;
@@ -64,12 +65,16 @@ public class XetTuyenService {
     /**
      * Chạy thuật toán xét tuyển cho 1 đợt.
      */
+    /**
+     * Chạy thuật toán xét tuyển cho 1 đợt.
+     */
     public void chayThuatToanXetTuyen(Integer idDot) {
         System.out.println("[XetTuyenService] Bat dau chay thuat toan xet tuyen cho Dot ID=" + idDot);
         SystemLogger.log(null, "System", "Bắt đầu chạy thuật toán xét tuyển cho Đợt ID=" + idDot, true);
         
+        Session session = HibernateUtil.getSessionFactory().openSession();
         Transaction transaction = null;
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try {
             transaction = session.beginTransaction();
 
             session.createNativeMutationQuery(
@@ -77,22 +82,79 @@ public class XetTuyenService {
                    .setParameter("idDot", idDot)
                    .executeUpdate();
 
+            // Lấy danh sách Nguyện vọng cần xét
             Query<NguyenVong> query = session.createQuery(
-                "SELECT nv FROM NguyenVong nv JOIN FETCH nv.nganh JOIN FETCH nv.hoSoTuyenSinh hs JOIN FETCH nv.thiSinh t WHERE hs.dotTuyenSinh.id = :idDot AND hs.trangThai = 'HOP_LE' ORDER BY t.cccd, nv.nvTt ASC", 
+                "SELECT nv FROM NguyenVong nv WHERE nv.hoSoTuyenSinh.dotTuyenSinh.id = :idDot AND nv.hoSoTuyenSinh.trangThai = 'HOP_LE' ORDER BY nv.hoSoTuyenSinh.thiSinh.cccd, nv.nvTt ASC", 
                 NguyenVong.class);
             query.setParameter("idDot", idDot);
             List<NguyenVong> listNV = query.getResultList();
             
-            System.out.println("[XetTuyenService] Tim thay " + listNV.size() + " nguyen vong can xet");
+            // Force init các relationship (tránh lỗi Lazy loading)
+            for (NguyenVong nv : listNV) {
+                if (nv.getNganh() != null) nv.getNganh().getId();
+                if (nv.getHoSoTuyenSinh() != null) nv.getHoSoTuyenSinh().getId();
+                if (nv.getThiSinh() != null) nv.getThiSinh().getId();
+            }
 
             Map<String, List<NguyenVong>> mapThiSinh = listNV.stream()
                     .collect(Collectors.groupingBy(nv -> nv.getThiSinh().getCccd()));
+
+            // LẤY ĐIỂM CHUẨN (Đã fix lỗi 999.0)
+            List<com.tuyensinh.model.DiemChuanDot> diemChuanDots = session.createQuery(
+                    "SELECT dc FROM DiemChuanDot dc WHERE dc.dotTuyenSinh.id = :idDot",
+                    com.tuyensinh.model.DiemChuanDot.class
+            ).setParameter("idDot", idDot).getResultList();
+
+            if (diemChuanDots.isEmpty()) {
+                throw new RuntimeException("Chưa có dữ liệu Điểm chuẩn cho Đợt này. Vui lòng vào màn hình Quản lý Điểm chuẩn để Lưu cấu hình điểm trước!");
+            }
+
+            Map<String, Double> diemChuanMap = new HashMap<>();
+            for (com.tuyensinh.model.DiemChuanDot dc : diemChuanDots) {
+                if (dc.getDiemChuan() == null) continue;
+                Double score = dc.getDiemChuan().doubleValue();
+                
+                String manganh = dc.getNganhToHop() != null && dc.getNganhToHop().getNganh() != null
+                        ? dc.getNganhToHop().getNganh().getManganh() : null;
+
+                if (manganh != null) {
+                    manganh = manganh.trim().toUpperCase();
+                    // 1. Lưu Key: MANGANH (Dùng làm Fallback, chuẩn nhất cho các trường Đại học)
+                    diemChuanMap.putIfAbsent(manganh, score);
+
+                    // 2. Lưu Key: MANGANH|MATOHOP (vd: 7480201|A00)
+                    if (dc.getNganhToHop().getToHopMon() != null && dc.getNganhToHop().getToHopMon().getMatohop() != null) {
+                        String matohop = dc.getNganhToHop().getToHopMon().getMatohop().trim().toUpperCase();
+                        diemChuanMap.put(manganh + "|" + matohop, score);
+                    }
+                    
+                    // 3. Lưu Key: MANGANH|MON1-MON2-MON3 (Để khớp với chữ TO-VA-LI của Thí sinh)
+                    String m1 = dc.getNganhToHop().getThMon1();
+                    String m2 = dc.getNganhToHop().getThMon2();
+                    String m3 = dc.getNganhToHop().getThMon3();
+                    if (m1 != null && m2 != null && m3 != null) {
+                         String combo = m1.trim().toUpperCase() + "-" + m2.trim().toUpperCase() + "-" + m3.trim().toUpperCase();
+                         diemChuanMap.put(manganh + "|" + combo, score);
+                    }
+                }
+            }
 
             int soTrungTuyen = 0;
             int soRot = 0;
 
             for (Map.Entry<String, List<NguyenVong>> entry : mapThiSinh.entrySet()) {
                 boolean daDau = false;
+                
+                // Cập nhật điểm max vào hồ sơ
+                Double tongDiemMax = entry.getValue().stream()
+                        .mapToDouble(nv -> nv.getDiemXettuyen() != null ? nv.getDiemXettuyen() : 0.0).max().orElse(0.0);
+
+                if (!entry.getValue().isEmpty() && entry.getValue().get(0).getHoSoTuyenSinh() != null) {
+                    HoSoTuyenSinh hs = entry.getValue().get(0).getHoSoTuyenSinh();
+                    hs.setTongDiemXetTuyen(tongDiemMax);
+                    session.merge(hs);
+                }
+
                 for (NguyenVong nv : entry.getValue()) {
                     if (daDau) {
                         nv.setNvKetqua("HUY");
@@ -100,16 +162,24 @@ public class XetTuyenService {
                         continue;
                     }
 
-                    BigDecimal bdDiemChuan = (BigDecimal) session.createQuery(
-                        "SELECT dc.diemChuan FROM DiemChuanDot dc " +
-                        "WHERE dc.dotTuyenSinh.id = :idDot AND dc.nganhToHop.manganh = :maNganh AND dc.nganhToHop.matohop = :maTh")
-                        .setParameter("idDot", idDot)
-                        .setParameter("maNganh", nv.getNganh().getManganh())
-                        .setParameter("maTh", nv.getTtThm())
-                        .uniqueResult();
+                    String maNganhNorm = nv.getNganh().getManganh() != null ? nv.getNganh().getManganh().trim().toUpperCase() : "";
+                    String maThNorm = nv.getTtThm() != null ? nv.getTtThm().trim().toUpperCase() : "";
+                    String key = maNganhNorm + "|" + maThNorm;
 
-                    Double diemChuan = (bdDiemChuan != null) ? bdDiemChuan.doubleValue() : 999.0;
+                    // MAPPING THÔNG MINH
+                    Double diemChuan = 999.0;
+                    if (diemChuanMap.containsKey(key)) {
+                        diemChuan = diemChuanMap.get(key); // Khớp theo Manganh|TO-VA-LI hoặc Manganh|A00
+                    } else if (diemChuanMap.containsKey(maNganhNorm)) {
+                        diemChuan = diemChuanMap.get(maNganhNorm); // Lấy Điểm chuẩn chung của Ngành đó
+                    }
+
                     Double diemThiSinh = nv.getDiemXettuyen() != null ? nv.getDiemXettuyen() : 0.0;
+                    nv.setDiemXettuyen(diemThiSinh);
+                    
+                    System.out.println("[DEBUG XET TUYEN] CCCD=" + nv.getThiSinh().getCccd() 
+                        + " | NV=" + nv.getNvTt() + " | Ngành=" + maNganhNorm 
+                        + " | Tổ Hợp=" + maThNorm + " | Điểm TS=" + diemThiSinh + " | Điểm Chuẩn=" + diemChuan);
 
                     if (diemThiSinh >= diemChuan) {
                         nv.setNvKetqua("DAU");
@@ -135,15 +205,14 @@ public class XetTuyenService {
             }
             transaction.commit();
             
-            System.out.println("[XetTuyenService] Hoan thanh xet tuyen Dot ID=" + idDot + ": " + soTrungTuyen + " trung tuyen, " + soRot + " rot");
             SystemLogger.log(null, "System", "Hoàn thành xét tuyển Đợt ID=" + idDot + ": " + soTrungTuyen + " trúng tuyển, " + soRot + " rớt", true);
             
         } catch (Exception e) {
             if (transaction != null) transaction.rollback();
-            System.err.println("[XetTuyenService] Loi chay thuat toan xet tuyen: " + e.getMessage());
-            e.printStackTrace();
             SystemLogger.log(null, "System", "Lỗi chạy thuật toán xét tuyển Đợt ID=" + idDot + ": " + e.getMessage(), false);
-            throw new RuntimeException("Loi chay thuat toan: " + e.getMessage());
+            throw new RuntimeException(e.getMessage()); // Quăng lỗi gọn gàng để UI hứng
+        } finally {
+            if (session != null) session.close();
         }
     }
 

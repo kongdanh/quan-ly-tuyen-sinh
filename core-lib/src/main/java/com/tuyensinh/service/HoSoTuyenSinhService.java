@@ -7,6 +7,7 @@ import com.tuyensinh.util.SystemLogger;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 public class HoSoTuyenSinhService {
@@ -14,6 +15,13 @@ public class HoSoTuyenSinhService {
     private final DiemService diemService = new DiemService();
 
     public HoSoTuyenSinh findById(Serializable id) { return dao.findById(id); }
+    
+    /**
+     * Tìm hồ sơ tuyển sinh theo ThiSinh và DotTuyenSinh
+     */
+    public Optional<HoSoTuyenSinh> findByThiSinhAndDot(Integer idThiSinh, Integer idDot) {
+        return dao.findByThiSinhAndDot(idThiSinh, idDot);
+    }
     
     /**
      * Luu ho so tuyen sinh moi
