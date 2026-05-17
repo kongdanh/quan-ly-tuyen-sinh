@@ -7,6 +7,7 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
+import java.awt.event.*;
 import java.awt.geom.RoundRectangle2D;
 import java.util.List;
 import java.util.function.BiConsumer;
@@ -104,16 +105,30 @@ public class TableToolbar extends JPanel {
         JMenu categoryMenu = new JMenu(categoryName);
         categoryMenu.setFont(UIManager.getFont("defaultFont").deriveFont(Font.BOLD, 12f));
         
+        MenuPanel panel = new MenuPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBackground(Color.WHITE);
+        
         for (String val : uniqueValues) {
-            JMenuItem item = new JMenuItem(val);
-            item.setFont(UIManager.getFont("defaultFont").deriveFont(Font.PLAIN, 12f));
-            item.addActionListener(e -> {
+            FilterMenuItem item = new FilterMenuItem(val, () -> {
                 btnFilter.setText("Lọc: " + val);
                 lblTitle.setText(categoryName + ": " + val);
                 onFilterAction.accept(columnIndex, val);
+                filterMenu.setVisible(false);
             });
-            categoryMenu.add(item);
+            item.setFont(UIManager.getFont("defaultFont").deriveFont(Font.PLAIN, 12f));
+            panel.add(item);
         }
+        
+        MenuScrollPane scrollPane = new MenuScrollPane(panel);
+        scrollPane.setBorder(null);
+        int maxItems = Math.min(uniqueValues.size(), 10);
+        scrollPane.setPreferredSize(new Dimension(200, maxItems * 25 + 10));
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        
+        categoryMenu.add(scrollPane);
         filterMenu.add(categoryMenu);
     }
 
@@ -131,5 +146,126 @@ public class TableToolbar extends JPanel {
         }
         return null;
     }
+    
+    // --- Custom Menu Elements for Scrollable JMenu ---
+    
+    private static class MenuScrollBar extends JScrollBar implements MenuElement {
+        public MenuScrollBar(int orientation) { super(orientation); }
+        @Override public void processMouseEvent(java.awt.event.MouseEvent event, MenuElement[] path, MenuSelectionManager manager) {
+            manager.setSelectedPath(path);
+        }
+        @Override public void processKeyEvent(java.awt.event.KeyEvent event, MenuElement[] path, MenuSelectionManager manager) {}
+        @Override public void menuSelectionChanged(boolean isIncluded) {}
+        @Override public MenuElement[] getSubElements() { return new MenuElement[0]; }
+        @Override public Component getComponent() { return this; }
+    }
+
+    private static class MenuPanel extends JPanel implements MenuElement {
+        @Override public void processMouseEvent(java.awt.event.MouseEvent event, MenuElement[] path, MenuSelectionManager manager) {
+            manager.setSelectedPath(path);
+        }
+        @Override public void processKeyEvent(java.awt.event.KeyEvent event, MenuElement[] path, MenuSelectionManager manager) {}
+        @Override public void menuSelectionChanged(boolean isIncluded) {}
+        @Override public MenuElement[] getSubElements() {
+            java.util.List<MenuElement> list = new java.util.ArrayList<>();
+            for (Component c : getComponents()) {
+                if (c instanceof MenuElement) {
+                    list.add((MenuElement) c);
+                }
+            }
+            return list.toArray(new MenuElement[0]);
+        }
+        @Override public Component getComponent() { return this; }
+    }
+
+    private static class MenuViewport extends JViewport implements MenuElement {
+        @Override public void processMouseEvent(java.awt.event.MouseEvent event, MenuElement[] path, MenuSelectionManager manager) {
+            manager.setSelectedPath(path);
+        }
+        @Override public void processKeyEvent(java.awt.event.KeyEvent event, MenuElement[] path, MenuSelectionManager manager) {}
+        @Override public void menuSelectionChanged(boolean isIncluded) {}
+        @Override public MenuElement[] getSubElements() {
+            Component view = getView();
+            if (view instanceof MenuElement) {
+                return new MenuElement[] { (MenuElement) view };
+            }
+            return new MenuElement[0];
+        }
+        @Override public Component getComponent() { return this; }
+    }
+
+    private static class MenuScrollPane extends JScrollPane implements MenuElement {
+        public MenuScrollPane(Component view) {
+            super();
+            MenuViewport viewport = new MenuViewport();
+            viewport.setView(view);
+            setViewport(viewport);
+            setVerticalScrollBar(new MenuScrollBar(JScrollBar.VERTICAL));
+            setHorizontalScrollBar(new MenuScrollBar(JScrollBar.HORIZONTAL));
+        }
+        @Override public void processMouseEvent(java.awt.event.MouseEvent event, MenuElement[] path, MenuSelectionManager manager) {
+            manager.setSelectedPath(path);
+        }
+        @Override public void processKeyEvent(java.awt.event.KeyEvent event, MenuElement[] path, MenuSelectionManager manager) {}
+        @Override public void menuSelectionChanged(boolean isIncluded) {}
+        @Override public MenuElement[] getSubElements() {
+            java.util.List<MenuElement> list = new java.util.ArrayList<>();
+            if (getVerticalScrollBar() instanceof MenuElement) {
+                list.add((MenuElement) getVerticalScrollBar());
+            }
+            if (getHorizontalScrollBar() instanceof MenuElement) {
+                list.add((MenuElement) getHorizontalScrollBar());
+            }
+            if (getViewport() instanceof MenuElement) {
+                list.add((MenuElement) getViewport());
+            }
+            return list.toArray(new MenuElement[0]);
+        }
+        @Override public Component getComponent() { return this; }
+    }
+    
+    private static class FilterMenuItem extends JLabel implements MenuElement {
+        private final Runnable onClick;
+
+        public FilterMenuItem(String text, Runnable onClick) {
+            super(text);
+            this.onClick = onClick;
+            setOpaque(true);
+            setBackground(Color.WHITE);
+            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            setBorder(new EmptyBorder(4, 10, 4, 10));
+
+            addMouseListener(new MouseAdapter() {
+                @Override public void mouseEntered(MouseEvent e) {
+                    setBackground(Color.decode(UIConstants.DASH_SELECT_BG));
+                }
+                @Override public void mouseExited(MouseEvent e) {
+                    setBackground(Color.WHITE);
+                }
+                @Override public void mousePressed(MouseEvent e) {
+                    // Xử lý ngay khi nhấn xuống, không chờ nhả chuột
+                    MenuSelectionManager.defaultManager().clearSelectedPath();
+                    onClick.run();
+                }
+            });
+        }
+
+        @Override public void processMouseEvent(MouseEvent event, MenuElement[] path, MenuSelectionManager manager) {
+            // Chỉ dùng để duy trì path khi hover, KHÔNG xử lý click ở đây
+            // để tránh bị gọi 2 lần
+            if (event.getID() == MouseEvent.MOUSE_ENTERED) {
+                manager.setSelectedPath(path);
+            }
+            // Relay event xuống component để MouseAdapter bắt được
+            dispatchEvent(event);
+        }
+        @Override public void processKeyEvent(KeyEvent event, MenuElement[] path, MenuSelectionManager manager) {}
+        @Override public void menuSelectionChanged(boolean isIncluded) {
+            setBackground(isIncluded ? Color.decode(UIConstants.DASH_SELECT_BG) : Color.WHITE);
+        }
+        @Override public MenuElement[] getSubElements() { return new MenuElement[0]; }
+        @Override public Component getComponent() { return this; }
+    }
+    
     // public RoundedButton getBtnExport() { return btnExport; }
 }

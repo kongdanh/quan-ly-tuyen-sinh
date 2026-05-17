@@ -18,7 +18,8 @@ public class SystemLogger {
             log.setUserId(userId);
             // Nếu không có tên thì mặc định là Hệ thống
             log.setUsername(username != null && !username.isBlank() ? username : "System");
-            log.setHanhDong(action);
+            String safeAction = action != null && action.length() > 250 ? action.substring(0, 250) + "..." : action;
+            log.setHanhDong(safeAction);
             log.setTrangThai(isSuccess ? "SUCCESS" : "FAILED");
             
             try {

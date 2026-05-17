@@ -7,6 +7,7 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.KeyEvent;
+import java.util.concurrent.ExecutionException;
 
 public abstract class BaseFormDialog<T> extends JDialog {
 
@@ -68,7 +69,12 @@ public abstract class BaseFormDialog<T> extends JDialog {
     protected abstract void buildFormFields();
     protected abstract void populateForm(T entity);
     protected abstract void collectData(T entity);
-    protected abstract String validateData(); 
+    protected abstract String validateData();
+
+    protected String validateDataAsync() {
+        return null;
+    }
+
     protected abstract void persist(T entity);
 
     protected void setupExtras() {}
@@ -121,30 +127,43 @@ public abstract class BaseFormDialog<T> extends JDialog {
     private void handleSave() {
         clearError();
 
-        String error = validateData();
-        if (error != null) {
-            showValidationError(error);
+        String localError = validateData();
+        if (localError != null) {
+            showValidationError(localError);
             return;
         }
 
-        collectData(entity);
         btnSave.setEnabled(false);
-        btnSave.setText("Đang lưu...");
+        btnSave.setText("Đang kiểm tra...");
 
         SwingWorker<Void, Void> worker = new SwingWorker<>() {
-            @Override protected Void doInBackground() {
+            @Override
+            protected Void doInBackground() throws Exception {
+                String asyncError = validateDataAsync();
+                if (asyncError != null) {
+                    throw new IllegalArgumentException(asyncError);
+                }
+
+                SwingUtilities.invokeAndWait(() -> collectData(entity));
                 persist(entity);
                 return null;
             }
-            @Override protected void done() {
+
+            @Override
+            protected void done() {
                 try {
                     get();
                     saved = true;
                     dispose();
+                } catch (ExecutionException e) {
+                    btnSave.setEnabled(true);
+                    btnSave.setText(isAddNew ? "Thêm mới" : "Lưu thay đổi");
+                    Throwable cause = e.getCause() != null ? e.getCause() : e;
+                    showValidationError(cause.getMessage());
                 } catch (Exception e) {
                     btnSave.setEnabled(true);
                     btnSave.setText(isAddNew ? "Thêm mới" : "Lưu thay đổi");
-                    showValidationError("Lỗi khi lưu: " + e.getMessage());
+                    showValidationError("Lỗi không xác định: " + e.getMessage());
                 }
             }
         };

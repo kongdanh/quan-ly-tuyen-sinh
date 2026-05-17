@@ -41,14 +41,16 @@ public class NganhToHopFormDialog extends BaseFormDialog<NganhToHop> {
         super(parent, "Liên kết Ngành - Tổ hợp", entity, isAddNew, 450, 580);
 
         buildFormFields();
-        loadDataToComboBoxes();
-
+        
         txtMon1.setEditable(false);
         txtMon2.setEditable(false);
         txtMon3.setEditable(false);
 
         cbToHop.addActionListener(e -> fillMonFromToHop());
-        
+        cbNganh.addActionListener(e -> updateToHopList());
+
+        loadDataToComboBoxes();
+
         if (!isAddNew) {
             populateForm(entity);
         } else {
@@ -101,13 +103,49 @@ public class NganhToHopFormDialog extends BaseFormDialog<NganhToHop> {
     }
 
     private void loadDataToComboBoxes() {
+        isFilling = true;
         // Load danh sách ngành
         List<Nganh> dsNganh = nganhService.findAllSync();
         dsNganh.forEach(cbNganh::addItem);
+        isFilling = false;
+        
+        updateToHopList();
+    }
 
-        // Load danh sách tổ hợp
-        List<ToHopMon> dsToHop = toHopMonService.getAll();
-        dsToHop.forEach(cbToHop::addItem);
+    private void updateToHopList() {
+        if (isFilling) return;
+
+        Nganh selectedNganh = (Nganh) cbNganh.getSelectedItem();
+        ToHopMon currentlySelectedToHop = (ToHopMon) cbToHop.getSelectedItem();
+
+        isFilling = true;
+        cbToHop.removeAllItems();
+
+        if (selectedNganh != null) {
+            List<ToHopMon> dsToHop = toHopMonService.getAvailableForNganh(selectedNganh.getManganh());
+            
+            // Allow the currently assigned ToHopMon when editing
+            if (entity != null && !isAddNew && entity.getNganh() != null && 
+                entity.getNganh().getManganh().equals(selectedNganh.getManganh()) && entity.getToHopMon() != null) {
+                boolean containsCurrent = dsToHop.stream().anyMatch(t -> t.getMatohop().equals(entity.getToHopMon().getMatohop()));
+                if (!containsCurrent) {
+                    cbToHop.addItem(entity.getToHopMon());
+                }
+            }
+
+            dsToHop.forEach(cbToHop::addItem);
+            
+            if (currentlySelectedToHop != null) {
+                for (int i = 0; i < cbToHop.getItemCount(); i++) {
+                    if (cbToHop.getItemAt(i).getMatohop().equals(currentlySelectedToHop.getMatohop())) {
+                        cbToHop.setSelectedIndex(i);
+                        break;
+                    }
+                }
+            }
+        }
+        isFilling = false;
+        fillMonFromToHop();
     }
 
     @Override
@@ -117,10 +155,28 @@ public class NganhToHopFormDialog extends BaseFormDialog<NganhToHop> {
         isFilling = true;
 
         // Set Ngành
-        cbNganh.setSelectedItem(nt.getNganh());
+        if (nt.getNganh() != null) {
+            for (int i = 0; i < cbNganh.getItemCount(); i++) {
+                if (cbNganh.getItemAt(i).getManganh().equals(nt.getNganh().getManganh())) {
+                    cbNganh.setSelectedIndex(i);
+                    break;
+                }
+            }
+        }
+        
+        isFilling = false;
+        updateToHopList(); // Manually update ToHopList after Nganh is selected
+        isFilling = true;
 
         // Set Tổ hợp
-        cbToHop.setSelectedItem(nt.getToHopMon());
+        if (nt.getToHopMon() != null) {
+            for (int i = 0; i < cbToHop.getItemCount(); i++) {
+                if (cbToHop.getItemAt(i).getMatohop().equals(nt.getToHopMon().getMatohop())) {
+                    cbToHop.setSelectedIndex(i);
+                    break;
+                }
+            }
+        }
 
         // Fill môn theo tổ hợp
         fillMonFromToHop();

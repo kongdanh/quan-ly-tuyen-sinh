@@ -15,4 +15,14 @@ public class ToHopMonService {
     public List<ToHopMon> getAll() {
         return toHopMonDAO.findAllSync();
     }
+
+    /**
+     * Lay danh sach to hop mon chua duoc gan cho nganh
+     */
+    public List<ToHopMon> getAvailableForNganh(String maNganh) {
+        if (maNganh == null || maNganh.isEmpty()) {
+            return getAll();
+        }
+        return toHopMonDAO.findNotInNganh(maNganh);
+    }
 }
