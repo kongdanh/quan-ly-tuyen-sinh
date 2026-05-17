@@ -107,7 +107,7 @@ public class DiemService {
     }
 
     private void putIfPositive(Map<String, Double> m, String key, Number val) {
-        if (val != null && val.doubleValue() >= 0) m.put(key, val.doubleValue());
+        if (val != null && val.doubleValue() > 0) m.put(key, val.doubleValue());
     }
 
     /**

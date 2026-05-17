@@ -55,7 +55,7 @@ public class DiemThiXetTuyenDAO extends GenericDAO<DiemThiXetTuyen> {
                     }
                 }
 
-                hql.append(" ORDER BY d.id ASC ");
+                hql.append(" ORDER BY d.id DESC ");
 
                 Query<DiemThiXetTuyen> query = session.createQuery(hql.toString(), DiemThiXetTuyen.class);
                 if (hasKeyword) {
@@ -129,7 +129,7 @@ public class DiemThiXetTuyenDAO extends GenericDAO<DiemThiXetTuyen> {
         return CompletableFuture.supplyAsync(() -> {
             try (Session session = HibernateUtil.getSessionFactory().openSession()) {
                 return session.createQuery(
-                        "SELECT d FROM DiemThiXetTuyen d LEFT JOIN FETCH d.thiSinh ts ORDER BY d.id ASC",
+                        "SELECT d FROM DiemThiXetTuyen d LEFT JOIN FETCH d.thiSinh ts ORDER BY d.id DESC",
                                 DiemThiXetTuyen.class
                         )
                         .list();
@@ -159,10 +159,7 @@ public class DiemThiXetTuyenDAO extends GenericDAO<DiemThiXetTuyen> {
 
     private void appendMethodFilter(StringBuilder hql, String paramBase) {
         hql.append(" AND (d.dPhuongthuc = :").append(paramBase).append("Norm ")
-           .append("OR d.dPhuongthuc = :").append(paramBase).append("Legacy ")
-           .append("OR ( :").append(paramBase).append("Norm = 'DGNL' AND d.nl1 IS NOT NULL ) ")
-           .append("OR ( :").append(paramBase).append("Norm = 'VSAT' AND d.nk1 IS NOT NULL ) ")
-           .append(") ");
+           .append("OR d.dPhuongthuc = :").append(paramBase).append("Legacy) ");
     }
 
     private void bindMethodFilter(Query<?> query, Object rawMethod) {
@@ -175,30 +172,6 @@ public class DiemThiXetTuyenDAO extends GenericDAO<DiemThiXetTuyen> {
         };
         query.setParameter("dPhuongthucNorm", normalized);
         query.setParameter("dPhuongthucLegacy", legacy);
-    }
-
-    /**
-     * Override xóa trực tiếp bằng HQL DELETE để tránh lỗi constraint
-     * do quan hệ OneToOne với ThiSinh.
-     */
-    @Override
-    public CompletableFuture<Boolean> deleteByIdAsync(java.io.Serializable id) {
-        return CompletableFuture.supplyAsync(() -> {
-            org.hibernate.Transaction tx = null;
-            try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-                tx = session.beginTransaction();
-                int deleted = session.createMutationQuery(
-                    "DELETE FROM DiemThiXetTuyen d WHERE d.id = :id"
-                ).setParameter("id", id).executeUpdate();
-                tx.commit();
-                return deleted > 0;
-            } catch (Exception e) {
-                if (tx != null) tx.rollback();
-                System.err.println("[DiemThiXetTuyenDAO] deleteByIdAsync lỗi: " + e.getMessage());
-                e.printStackTrace();
-                return false;
-            }
-        });
     }
 
 }

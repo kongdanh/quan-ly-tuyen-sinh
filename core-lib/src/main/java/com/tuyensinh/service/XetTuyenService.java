@@ -285,8 +285,6 @@ public class XetTuyenService {
         List<DiemCong> dcUpserts = new ArrayList<>();
         Map<String, List<BangQuyDoi>> bqCache = new HashMap<>();
 
-        Set<String> missingBangQuyDoi = new HashSet<>();
-        
         int rowNum = 2;
         for (DgnlVsatRowDTO dto : rows) {
             String err = validateDgnlVsatRow(dto, "DGNL");
@@ -301,10 +299,11 @@ public class XetTuyenService {
             }
 
             String cccd = dto.getCmnd().trim();
-            if (!existsInDiemThi(cccd)) {
-                // errors.add("[DGNL SKIP] CCCD=" + cccd + " không tồn tại trong xt_diemthixettuyen.");
-                rowNum++;
-                continue;
+            BigDecimal diemTho = dto.getDiem();
+
+            List<String> rowErrors = buildDgnlCommands(cccd, diemTho, nl1Updates, dcUpserts, bqCache);
+            for (String re : rowErrors) {
+                errors.add("Dòng " + rowNum + " - " + re);
             }
             rowNum++;
         }
@@ -328,15 +327,18 @@ public class XetTuyenService {
         return errors;
     }
 
-                if (bp.isEmpty()) {
-                    missingBangQuyDoi.add(matohop);
-                    continue;
-                }
+    private List<String> buildDgnlCommands(String cccd, BigDecimal diemTho,
+            List<ScoreUpdateCmd> nl1Updates,
+            List<DiemCong> dcUpserts,
+            Map<String, List<BangQuyDoi>> bqCache) {
+        List<String> errors = new ArrayList<>();
+        if (!existsInDiemThi(cccd)) {
+            errors.add("[DGNL SKIP] CCCD=" + cccd + " không tồn tại trong xt_diemthixettuyen.");
+            return errors;
+        }
 
-                BigDecimal[] abcd = BangQuyDoiDAO.interpolateFromRows(bp, diemTho);
-                if (abcd == null) {
-                    continue;
-                }
+        diemTho = coalesceZero(diemTho);
+        nl1Updates.add(new ScoreUpdateCmd(cccd, "NL1", diemTho.setScale(2, RoundingMode.HALF_UP)));
 
         List<NganhToHop> toHopList = nguyenVongDAO.findNganhToHopByCccd(cccd);
         for (NganhToHop nth : toHopList) {
@@ -354,12 +356,6 @@ public class XetTuyenService {
                 errors.add("[DGNL] CCCD=" + cccd + " matohop=" + matohop + ": không có bảng quy đổi DGNL.");
                 continue;
             }
-            rowNum++;
-        }
-        
-        if (!missingBangQuyDoi.isEmpty()) {
-            errors.add("[CẢNH BÁO] Hệ thống chưa có cấu hình Bảng Quy Đổi DGNL cho các tổ hợp sau: " + String.join(", ", missingBangQuyDoi) + ". Điểm NL1 vẫn được lưu thành công, nhưng chưa thể quy đổi điểm xét tuyển cho các tổ hợp này.");
-        }
 
             BigDecimal[] abcd = BangQuyDoiDAO.interpolateFromRows(bp, diemTho);
             if (abcd == null) {

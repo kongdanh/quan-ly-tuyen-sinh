@@ -11,12 +11,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
 
 public class DiemThiFormDialog extends BaseFormDialog<DiemThiXetTuyen> {
 
@@ -28,16 +24,6 @@ public class DiemThiFormDialog extends BaseFormDialog<DiemThiXetTuyen> {
     private JComboBox<String> cbPhuongThuc;
 
     private final Map<String, RoundedTextField> scoreFields = new HashMap<>();
-
-    private static final Set<String> THPT_KEYS = new HashSet<>(Arrays.asList(
-        "TO","LI","HO","SI","VA","SU","DI","KTPL","N1_THI","N1_CC","TI","CNCN","CNNN","NK1","NK2"
-    ));
-    private static final Set<String> VSAT_KEYS = new HashSet<>(Arrays.asList(
-        "TO","LI","HO","SI","SU","DI","N1_THI","N1_CC"
-    ));
-    private static final Set<String> DGNL_KEYS = new HashSet<>(Arrays.asList(
-        "NL1"
-    ));
 
     public DiemThiFormDialog(Frame parent, DiemThiXetTuyen entity, boolean isAddNew) {
         super(parent, "Điểm thi xét tuyển", entity, isAddNew, 540, 760);
@@ -119,10 +105,8 @@ public class DiemThiFormDialog extends BaseFormDialog<DiemThiXetTuyen> {
     protected void collectData(DiemThiXetTuyen d) {
         String cccd = getText(txtCccd);
 
-        // Resolve ThiSinh — validate async đã đảm bảo CCCD tồn tại trước khi tới đây
-        Optional<ThiSinh> opt = thiSinhDAO.findByCccd(cccd);
-        ThiSinh thiSinh = opt.orElseThrow(() ->
-                new IllegalStateException("Không tìm thấy thí sinh CCCD: " + cccd));
+        ThiSinh thiSinh = thiSinhDAO.findByCccd(cccd)
+            .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy thí sinh với CCCD: " + cccd));
 
         d.setThiSinh(thiSinh);
         d.setSobaodanh(getText(txtSobaodanh).isEmpty() ? thiSinh.getSobaodanh() : getText(txtSobaodanh));
@@ -154,7 +138,14 @@ public class DiemThiFormDialog extends BaseFormDialog<DiemThiXetTuyen> {
             return "CCCD không được để trống.";
         }
 
-        // Kiểm tra định dạng điểm (local, không cần DB)
+        if (isAddNew && diemDAO.findByCccd(cccd).isPresent()) {
+            return "CCCD này đã có bản ghi điểm thi.";
+        }
+
+        if (thiSinhDAO.findByCccd(cccd).isEmpty()) {
+            return "CCCD chưa tồn tại trong danh sách thí sinh.";
+        }
+
         for (Map.Entry<String, RoundedTextField> entry : scoreFields.entrySet()) {
             String raw = entry.getValue().getText() == null ? "" : entry.getValue().getText().trim();
             if (raw.isEmpty()) {
@@ -169,34 +160,6 @@ public class DiemThiFormDialog extends BaseFormDialog<DiemThiXetTuyen> {
             } catch (NumberFormatException ex) {
                 return "Điểm " + entry.getKey() + " không đúng định dạng số.";
             }
-        }
-
-        String method = (String) cbPhuongThuc.getSelectedItem();
-        Set<String> allowed = allowedScoreKeys(method);
-        for (Map.Entry<String, RoundedTextField> entry : scoreFields.entrySet()) {
-            if (!allowed.contains(entry.getKey()) && hasScore(entry.getValue())) {
-                return "Môn " + entry.getKey() + " không hợp lệ với phương thức " + method + ".";
-            }
-        }
-
-        String ruleError = validateMethodRules(method, allowed);
-        if (ruleError != null) {
-            return ruleError;
-        }
-
-        return null;
-    }
-
-    @Override
-    protected String validateDataAsync() {
-        String cccd = getText(txtCccd);
-
-        if (isAddNew && diemDAO.findByCccd(cccd).isPresent()) {
-            return "CCCD này đã có bản ghi điểm thi.";
-        }
-
-        if (thiSinhDAO.findByCccd(cccd).isEmpty()) {
-            return "CCCD chưa tồn tại trong danh sách thí sinh.";
         }
 
         return null;
@@ -216,73 +179,12 @@ public class DiemThiFormDialog extends BaseFormDialog<DiemThiXetTuyen> {
         if (!isAddNew) {
             txtCccd.setEnabled(false);
         }
-        cbPhuongThuc.addActionListener(e -> applyMethodRules());
-        applyMethodRules();
     }
 
     private void addScoreField(String key, String label) {
         RoundedTextField field = new RoundedTextField("0.00");
         scoreFields.put(key, field);
         addField(label, field);
-    }
-
-    private void applyMethodRules() {
-        String method = (String) cbPhuongThuc.getSelectedItem();
-        Set<String> allowed = allowedScoreKeys(method);
-        for (Map.Entry<String, RoundedTextField> entry : scoreFields.entrySet()) {
-            boolean enabled = allowed.contains(entry.getKey());
-            entry.getValue().setEnabled(enabled);
-            if (!enabled) {
-                entry.getValue().setText("");
-            }
-        }
-    }
-
-    private Set<String> allowedScoreKeys(String method) {
-        if (DiemThiXetTuyenDAO.PT_VSAT.equals(method)) {
-            return VSAT_KEYS;
-        }
-        if (DiemThiXetTuyenDAO.PT_DGNL.equals(method)) {
-            return DGNL_KEYS;
-        }
-        return THPT_KEYS;
-    }
-
-    private boolean hasScore(RoundedTextField field) {
-        return field != null
-            && field.getText() != null
-            && !field.getText().trim().isEmpty();
-    }
-
-    private String validateMethodRules(String method, Set<String> allowed) {
-        if (DiemThiXetTuyenDAO.PT_DGNL.equals(method)) {
-            if (!hasScore(scoreFields.get("NL1"))) {
-                return "Phương thức DGNL cần có điểm NL1.";
-            }
-            return null;
-        }
-
-        if (DiemThiXetTuyenDAO.PT_VSAT.equals(method)) {
-            int count = 0;
-            for (String key : allowed) {
-                if (hasScore(scoreFields.get(key))) count++;
-            }
-            if (count < 1) {
-                return "Phương thức VSAT cần có điểm của ít nhất 1 môn học.";
-            }
-            return null;
-        }
-
-        int count = 0;
-        for (String key : allowed) {
-            if (hasScore(scoreFields.get(key))) {
-                count++;
-            }
-        }
-        if (count < 3) {
-            return "Phương thức THPT cần có ít nhất 3 môn.";
-        }
-        return null;
     }
 
     private BigDecimal parseScore(String key) {

@@ -22,10 +22,10 @@ import java.util.concurrent.CompletableFuture;
  * Panel Quản lý Điểm Thi – thiết kế Master-Detail.
  *
  * Giải pháp UX:
- * 1. Cột động theo phương thức (THPT / VSAT / DGNL / Tất cả).
- * 2. Tiêu đề cột tiếng Việt rõ nghĩa.
- * 3. Cột điểm căn phải, format 2 chữ số thập phân.
- * 4. Panel chi tiết bên dưới tự cập nhật khi chọn dòng.
+ *  1. Cột động theo phương thức (THPT / VSAT / DGNL / Tất cả).
+ *  2. Tiêu đề cột tiếng Việt rõ nghĩa.
+ *  3. Cột điểm căn phải, format 2 chữ số thập phân.
+ *  4. Panel chi tiết bên dưới tự cập nhật khi chọn dòng.
  */
 public class DiemThiPanel extends JPanel {
 
@@ -34,44 +34,40 @@ public class DiemThiPanel extends JPanel {
     // ----------------------------------------------------------------
     private static final Map<String, String> VI_LABEL = new LinkedHashMap<>();
     static {
-        VI_LABEL.put("ID", "ID");
-        VI_LABEL.put("CCCD", "CCCD");
-        VI_LABEL.put("SBD", "Số báo danh");
-        VI_LABEL.put("PT", "Phương thức");
-        VI_LABEL.put("TO", "Toán");
-        VI_LABEL.put("LI", "Vật lý");
-        VI_LABEL.put("HO", "Hóa học");
-        VI_LABEL.put("SI", "Sinh học");
-        VI_LABEL.put("SU", "Lịch sử");
-        VI_LABEL.put("DI", "Địa lý");
-        VI_LABEL.put("VA", "Ngữ văn");
-        VI_LABEL.put("N1_THI", "Ngoại ngữ (Thi)");
-        VI_LABEL.put("N1_CC", "Ngoại ngữ (CC)");
-        VI_LABEL.put("CNCN", "CN Công nghệ");
-        VI_LABEL.put("CNNN", "CN Nông nghiệp");
-        VI_LABEL.put("TI", "Tin học");
-        VI_LABEL.put("KTPL", "Kinh tế Pháp luật");
-        VI_LABEL.put("NL1", "Đánh giá NL");
-        VI_LABEL.put("NK1", "Năng khiếu 1");
-        VI_LABEL.put("NK2", "Năng khiếu 2");
-        VI_LABEL.put("ACTION", "Thao tác");
+        VI_LABEL.put("ID",          "ID");
+        VI_LABEL.put("CCCD",        "CCCD");
+        VI_LABEL.put("SBD",         "Số báo danh");
+        VI_LABEL.put("PT",          "Phương thức");
+        VI_LABEL.put("TO",          "Toán");
+        VI_LABEL.put("LI",          "Vật lý");
+        VI_LABEL.put("HO",          "Hóa học");
+        VI_LABEL.put("SI",          "Sinh học");
+        VI_LABEL.put("SU",          "Lịch sử");
+        VI_LABEL.put("DI",          "Địa lý");
+        VI_LABEL.put("VA",          "Ngữ văn");
+        VI_LABEL.put("N1_THI",      "Ngoại ngữ (Thi)");
+        VI_LABEL.put("N1_CC",       "Ngoại ngữ (CC)");
+        VI_LABEL.put("CNCN",        "CN Công nghệ");
+        VI_LABEL.put("CNNN",        "CN Nông nghiệp");
+        VI_LABEL.put("TI",          "Tin học");
+        VI_LABEL.put("KTPL",        "Kinh tế Pháp luật");
+        VI_LABEL.put("NL1",         "Đánh giá NL");
+        VI_LABEL.put("NK1",         "Năng khiếu 1");
+        VI_LABEL.put("NK2",         "Năng khiếu 2");
+        VI_LABEL.put("ACTION",      "Thao tác");
     }
 
     // ----------------------------------------------------------------
     // Cột hiển thị theo chế độ lọc
     // ----------------------------------------------------------------
     // Cột chung (luôn hiển thị)
-    private static final String[] COLS_BASE = { "ID", "CCCD", "SBD", "PT" };
+    private static final String[] COLS_BASE = {"ID", "CCCD", "SBD", "PT"};
 
     // Cột điểm theo từng phương thức
-    private static final String[] COLS_THPT = { "TO", "LI", "HO", "SI", "SU", "DI", "VA", "N1_THI", "N1_CC", "KTPL",
-            "TI", "CNCN", "CNNN", "NK1", "NK2" };
-    private static final String[] COLS_DGNL = { "NL1" };
-    private static final String[] COLS_VSAT = { "TO", "LI", "HO", "SI", "SU", "DI", "N1_THI", "N1_CC" };
-    private static final String[] COLS_ALL = {
-            "TO", "LI", "HO", "SI", "SU", "DI", "VA",
-            "N1_THI", "N1_CC", "CNCN", "CNNN", "TI", "KTPL", "NL1", "NK1", "NK2"
-    };
+    private static final String[] COLS_THPT  = {"TO","LI","HO","SI","SU","DI","VA","N1_THI","N1_CC","KTPL","TI"};
+    private static final String[] COLS_DGNL  = {"NL1","TI","KTPL","CNCN","CNNN"};
+    private static final String[] COLS_VSAT  = {"NK1","NK2","N1_THI","N1_CC","TI"};
+    private static final String[] COLS_ALL   = {"TO","VA","N1_THI","NL1","NK1"};
 
     // ----------------------------------------------------------------
     // State
@@ -79,29 +75,28 @@ public class DiemThiPanel extends JPanel {
     private final DiemThiXetTuyenDAO diemDAO = new DiemThiXetTuyenDAO();
 
     private List<DiemThiXetTuyen> currentPage = new ArrayList<>();
-    private String currentFilter = "Tất cả"; // "Tất cả" | "THPT" | "VSAT" | "DGNL"
+    private String currentFilter  = "Tất cả";   // "Tất cả" | "THPT" | "VSAT" | "DGNL"
     private String currentKeyword = "";
-    private int page = 1;
-    private int pageSize = UIConstants.PAGE_SIZE;
+    private int    page           = 1;
+    private int    pageSize       = UIConstants.PAGE_SIZE;
 
     // ----------------------------------------------------------------
     // UI – Master
     // ----------------------------------------------------------------
     private final DefaultTableModel tableModel = new DefaultTableModel() {
-        @Override
-        public boolean isCellEditable(int r, int c) {
+        @Override public boolean isCellEditable(int r, int c) {
             return c == getColumnCount() - 1;
         }
     };
-    private final CustomTable table = new CustomTable();
+    private final CustomTable   table        = new CustomTable();
     private final PaginationPanel pagination;
-    private final TableToolbar toolbar = new TableToolbar("Danh sách điểm thi 2026");
+    private final TableToolbar  toolbar      = new TableToolbar("Danh sách điểm thi 2026");
 
     // ----------------------------------------------------------------
     // UI – Detail panel
     // ----------------------------------------------------------------
     private final Map<String, JLabel> detailValues = new LinkedHashMap<>();
-    private final JLabel detailTitle = new JLabel("Chọn một thí sinh để xem chi tiết điểm");
+    private final JLabel              detailTitle   = new JLabel("Chọn một thí sinh để xem chi tiết điểm");
 
     // ----------------------------------------------------------------
     // Constructor
@@ -111,10 +106,11 @@ public class DiemThiPanel extends JPanel {
         setLayout(new BorderLayout());
         setBackground(Color.decode(UIConstants.DASH_CONTENT_BG));
         setBorder(new EmptyBorder(
-                UIConstants.SECTION_GAP,
-                UIConstants.SECTION_GAP + 10,
-                UIConstants.SECTION_GAP,
-                UIConstants.SECTION_GAP + 10));
+            UIConstants.SECTION_GAP,
+            UIConstants.SECTION_GAP + 10,
+            UIConstants.SECTION_GAP,
+            UIConstants.SECTION_GAP + 10
+        ));
 
         add(new HeaderPanel("Điểm thi", "Quản lý bảng điểm xét tuyển của thí sinh"), BorderLayout.NORTH);
 
@@ -139,14 +135,14 @@ public class DiemThiPanel extends JPanel {
 
         setupTable();
         JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0,
+        scrollPane.setBorder(BorderFactory.createMatteBorder(0,0,1,0,
                 Color.decode(UIConstants.COLOR_BORDER)));
         scrollPane.getViewport().setBackground(Color.WHITE);
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         masterPane.add(scrollPane, BorderLayout.CENTER);
 
         pagination = new PaginationPanel((newPage, newSize) -> {
-            page = newPage;
+            page     = newPage;
             pageSize = newSize;
             loadData();
         });
@@ -181,13 +177,14 @@ public class DiemThiPanel extends JPanel {
 
         // Filter theo phương thức – đổi cột hiển thị và reload data
         toolbar.addDynamicFilterCategory(
-                "Theo phương thức", 3,
-                Arrays.asList("Tất cả", "THPT", "VSAT", "DGNL"),
-                (col, val) -> {
-                    applyMode(val); // đổi cột
-                    page = 1; // reset về trang đầu
-                    loadData(); // reload data theo filter mới
-                });
+            "Theo phương thức", 3,
+            Arrays.asList("Tất cả", "THPT", "VSAT", "DGNL"),
+            (col, val) -> {
+                applyMode(val);   // đổi cột
+                page = 1;         // reset về trang đầu
+                loadData();       // reload data theo filter mới
+            }
+        );
 
         toolbar.getBtnImport().addActionListener(e -> {
             JPopupMenu menu = new JPopupMenu();
@@ -204,6 +201,7 @@ public class DiemThiPanel extends JPanel {
             menu.show(toolbar.getBtnImport(), 0, toolbar.getBtnImport().getHeight());
         });
     }
+
 
     // ================================================================
     // TABLE SETUP
@@ -225,10 +223,10 @@ public class DiemThiPanel extends JPanel {
 
         // Xác định cột điểm cần hiển thị
         String[] scoreCols = switch (mode) {
-            case "THPT" -> COLS_THPT;
-            case "DGNL" -> COLS_DGNL;
-            case "VSAT" -> COLS_VSAT;
-            default -> COLS_ALL;
+            case "THPT"   -> COLS_THPT;
+            case "DGNL"   -> COLS_DGNL;
+            case "VSAT"   -> COLS_VSAT;
+            default       -> COLS_ALL;
         };
 
         // Gộp cột
@@ -239,8 +237,8 @@ public class DiemThiPanel extends JPanel {
 
         // Rebuild model
         String[] headers = keys.stream()
-                .map(k -> VI_LABEL.getOrDefault(k, k))
-                .toArray(String[]::new);
+            .map(k -> VI_LABEL.getOrDefault(k, k))
+            .toArray(String[]::new);
 
         tableModel.setColumnIdentifiers(headers);
         tableModel.setRowCount(0);
@@ -251,20 +249,13 @@ public class DiemThiPanel extends JPanel {
         // Gắn lại action cell renderer/editor (cột cuối)
         int actionCol = keys.size() - 1;
         TableActionCell.TableActionEvent event = new TableActionCell.TableActionEvent() {
-            @Override
-            public void onEdit(int row) {
-                showEditDialog(row);
-            }
-
-            @Override
-            public void onDelete(int row) {
-                deleteRecord(row);
-            }
+            @Override public void onEdit(int row)   { showEditDialog(row); }
+            @Override public void onDelete(int row) { deleteRecord(row); }
         };
         table.getColumnModel().getColumn(actionCol)
-                .setCellRenderer(new TableActionCell.Renderer());
+             .setCellRenderer(new TableActionCell.Renderer());
         table.getColumnModel().getColumn(actionCol)
-                .setCellEditor(new TableActionCell.Editor(event));
+             .setCellEditor(new TableActionCell.Editor(event));
 
         // Tag mỗi cột với key để dùng khi fill row
         for (int i = 0; i < keys.size(); i++) {
@@ -273,8 +264,7 @@ public class DiemThiPanel extends JPanel {
     }
 
     private void configureDynamicColumns(List<String> keys) {
-        // Tự động giãn cột nếu số lượng ít (để không bị trắng 1 bên), cuộn ngang nếu
-        // nhiều cột
+        // Tự động giãn cột nếu số lượng ít (để không bị trắng 1 bên), cuộn ngang nếu nhiều cột
         if (keys.size() <= 10) {
             table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
         } else {
@@ -316,8 +306,9 @@ public class DiemThiPanel extends JPanel {
         };
 
         Set<String> scoreKeys = new HashSet<>(Arrays.asList(
-                "TO", "LI", "HO", "SI", "SU", "DI", "VA", "N1_THI", "N1_CC",
-                "CNCN", "CNNN", "TI", "KTPL", "NL1", "NK1", "NK2"));
+            "TO","LI","HO","SI","SU","DI","VA","N1_THI","N1_CC",
+            "CNCN","CNNN","TI","KTPL","NL1","NK1","NK2"
+        ));
 
         for (int i = 0; i < keys.size(); i++) {
             String key = keys.get(i);
@@ -365,9 +356,10 @@ public class DiemThiPanel extends JPanel {
             filters.put("dPhuongthuc", currentFilter);
         }
 
-        CompletableFuture<List<DiemThiXetTuyen>> dataFut = diemDAO.findPageForAdmin(currentKeyword, filters, page,
-                pageSize);
-        CompletableFuture<Long> countFut = diemDAO.countForAdmin(currentKeyword, filters);
+        CompletableFuture<List<DiemThiXetTuyen>> dataFut =
+            diemDAO.findPageForAdmin(currentKeyword, filters, page, pageSize);
+        CompletableFuture<Long> countFut =
+            diemDAO.countForAdmin(currentKeyword, filters);
 
         CompletableFuture.allOf(dataFut, countFut).thenAccept(v -> {
             try {
@@ -414,34 +406,28 @@ public class DiemThiPanel extends JPanel {
 
     private Object cellValue(DiemThiXetTuyen d, String key) {
         return switch (key) {
-            case "ID" -> d.getId();
-            case "CCCD" -> d.getThiSinh() != null ? d.getThiSinh().getCccd() : nvl(d.getCccd());
-            case "SBD" -> nvl(d.getSobaodanh());
-            case "PT" -> {
-                if ("DGNL".equals(currentFilter) && d.getNl1() != null)
-                    yield "DGNL";
-                if ("VSAT".equals(currentFilter) && d.getNk1() != null)
-                    yield "VSAT";
-                yield nvl(DiemThiXetTuyenDAO.normalizeMethod(d.getDPhuongthuc()));
-            }
-            case "TO" -> fmt(d.getTo());
-            case "LI" -> fmt(d.getLi());
-            case "HO" -> fmt(d.getHo());
-            case "SI" -> fmt(d.getSi());
-            case "SU" -> fmt(d.getSu());
-            case "DI" -> fmt(d.getDi());
-            case "VA" -> fmt(d.getVa());
+            case "ID"     -> d.getId();
+            case "CCCD"   -> d.getThiSinh() != null ? d.getThiSinh().getCccd() : nvl(d.getCccd());
+            case "SBD"    -> nvl(d.getSobaodanh());
+            case "PT"     -> nvl(DiemThiXetTuyenDAO.normalizeMethod(d.getDPhuongthuc()));
+            case "TO"     -> fmt(d.getTo());
+            case "LI"     -> fmt(d.getLi());
+            case "HO"     -> fmt(d.getHo());
+            case "SI"     -> fmt(d.getSi());
+            case "SU"     -> fmt(d.getSu());
+            case "DI"     -> fmt(d.getDi());
+            case "VA"     -> fmt(d.getVa());
             case "N1_THI" -> fmt(d.getN1Thi());
-            case "N1_CC" -> fmt(d.getN1Cc());
-            case "CNCN" -> fmt(d.getCncn());
-            case "CNNN" -> fmt(d.getCnnn());
-            case "TI" -> fmt(d.getTi());
-            case "KTPL" -> fmt(d.getKtpl());
-            case "NL1" -> fmt(d.getNl1());
-            case "NK1" -> fmt(d.getNk1());
-            case "NK2" -> fmt(d.getNk2());
+            case "N1_CC"  -> fmt(d.getN1Cc());
+            case "CNCN"   -> fmt(d.getCncn());
+            case "CNNN"   -> fmt(d.getCnnn());
+            case "TI"     -> fmt(d.getTi());
+            case "KTPL"   -> fmt(d.getKtpl());
+            case "NL1"    -> fmt(d.getNl1());
+            case "NK1"    -> fmt(d.getNk1());
+            case "NK2"    -> fmt(d.getNk2());
             case "ACTION" -> "";
-            default -> "";
+            default       -> "";
         };
     }
 
@@ -453,8 +439,9 @@ public class DiemThiPanel extends JPanel {
         JPanel pane = new JPanel(new BorderLayout());
         pane.setBackground(Color.decode(UIConstants.DASH_CONTENT_BG));
         pane.setBorder(new CompoundBorder(
-                new MatteBorder(1, 0, 0, 0, Color.decode(UIConstants.COLOR_BORDER)),
-                new EmptyBorder(10, 14, 10, 14)));
+            new MatteBorder(1, 0, 0, 0, Color.decode(UIConstants.COLOR_BORDER)),
+            new EmptyBorder(10, 14, 10, 14)
+        ));
 
         // Title row
         detailTitle.setFont(UIManager.getFont("defaultFont").deriveFont(Font.BOLD, 13f));
@@ -468,8 +455,8 @@ public class DiemThiPanel extends JPanel {
 
         // Tất cả các môn cần hiển thị trong detail
         String[] allScoreKeys = {
-                "TO", "LI", "HO", "SI", "SU", "DI", "VA",
-                "N1_THI", "N1_CC", "CNCN", "CNNN", "TI", "KTPL", "NL1", "NK1", "NK2"
+            "TO","LI","HO","SI","SU","DI","VA",
+            "N1_THI","N1_CC","CNCN","CNNN","TI","KTPL","NL1","NK1","NK2"
         };
 
         for (String key : allScoreKeys) {
@@ -503,8 +490,7 @@ public class DiemThiPanel extends JPanel {
     }
 
     private void onRowSelected(ListSelectionEvent e) {
-        if (e.getValueIsAdjusting())
-            return;
+        if (e.getValueIsAdjusting()) return;
         int row = table.getSelectedRow();
         if (row < 0 || row >= currentPage.size()) {
             clearDetail();
@@ -516,27 +502,39 @@ public class DiemThiPanel extends JPanel {
 
     private void updateDetail(DiemThiXetTuyen d) {
         String cccd = d.getThiSinh() != null ? d.getThiSinh().getCccd() : nvl(d.getCccd());
-        String pt = (String) cellValue(d, "PT");
+        String pt   = nvl(DiemThiXetTuyenDAO.normalizeMethod(d.getDPhuongthuc()));
         detailTitle.setText("Chi tiết: " + cccd + "  |  Phương thức: " + pt);
         detailTitle.setForeground(Color.decode(UIConstants.DASH_TEXT_DARK));
 
-        detailValues.get("TO").setText(fmt(d.getTo()));
-        detailValues.get("LI").setText(fmt(d.getLi()));
-        detailValues.get("HO").setText(fmt(d.getHo()));
-        detailValues.get("SI").setText(fmt(d.getSi()));
-        detailValues.get("SU").setText(fmt(d.getSu()));
-        detailValues.get("DI").setText(fmt(d.getDi()));
-        detailValues.get("VA").setText(fmt(d.getVa()));
+        detailValues.get("TO")    .setText(fmt(d.getTo()));
+        detailValues.get("LI")    .setText(fmt(d.getLi()));
+        detailValues.get("HO")    .setText(fmt(d.getHo()));
+        detailValues.get("SI")    .setText(fmt(d.getSi()));
+        detailValues.get("SU")    .setText(fmt(d.getSu()));
+        detailValues.get("DI")    .setText(fmt(d.getDi()));
+        detailValues.get("VA")    .setText(fmt(d.getVa()));
         detailValues.get("N1_THI").setText(fmt(d.getN1Thi()));
-        detailValues.get("N1_CC").setText(fmt(d.getN1Cc()));
-        detailValues.get("CNCN").setText(fmt(d.getCncn()));
-        detailValues.get("CNNN").setText(fmt(d.getCnnn()));
-        detailValues.get("TI").setText(fmt(d.getTi()));
-        detailValues.get("KTPL").setText(fmt(d.getKtpl()));
-        detailValues.get("NL1").setText(fmt(d.getNl1()));
-        detailValues.get("NK1").setText(fmt(d.getNk1()));
-        detailValues.get("NK2").setText(fmt(d.getNk2()));
+        detailValues.get("N1_CC") .setText(fmt(d.getN1Cc()));
+        detailValues.get("CNCN")  .setText(fmt(d.getCncn()));
+        detailValues.get("CNNN")  .setText(fmt(d.getCnnn()));
+        detailValues.get("TI")    .setText(fmt(d.getTi()));
+        detailValues.get("KTPL")  .setText(fmt(d.getKtpl()));
+        detailValues.get("NL1")   .setText(fmt(d.getNl1()));
+        detailValues.get("NK1")   .setText(fmt(d.getNk1()));
+        detailValues.get("NK2")   .setText(fmt(d.getNk2()));
 
+        // Tô màu cho điểm ĐGNL (thang khác)
+        colorScore(detailValues.get("NL1"), d.getNl1(), new BigDecimal("1200"), true);
+        colorScore(detailValues.get("TO"),  d.getTo(),  new BigDecimal("10"),   false);
+        colorScore(detailValues.get("VA"),  d.getVa(),  new BigDecimal("10"),   false);
+    }
+
+    private void colorScore(JLabel lbl, BigDecimal val, BigDecimal max, boolean isNl) {
+        if (val == null) { lbl.setForeground(Color.decode(UIConstants.COLOR_TEXT_MUTED)); return; }
+        double ratio = val.doubleValue() / max.doubleValue();
+        if (ratio >= 0.8)      lbl.setForeground(Color.decode(UIConstants.COLOR_SUCCESS));
+        else if (ratio >= 0.5) lbl.setForeground(Color.decode(UIConstants.COLOR_TEXT));
+        else                   lbl.setForeground(Color.decode(UIConstants.COLOR_DANGER));
     }
 
     private void clearDetail() {
@@ -555,46 +553,31 @@ public class DiemThiPanel extends JPanel {
     private void showAddDialog() {
         DiemThiFormDialog dlg = new DiemThiFormDialog(getParentFrame(), new DiemThiXetTuyen(), true);
         dlg.setVisible(true);
-        if (dlg.isSaved()) {
-            loadData();
-            showSuccess("Thêm điểm thi thành công!");
-        }
+        if (dlg.isSaved()) { loadData(); showSuccess("Thêm điểm thi thành công!"); }
     }
 
     private void showEditDialog(int row) {
         Object idObj = tableModel.getValueAt(row, 0);
-        if (idObj == null)
-            return;
-        int id = ((Number) idObj).intValue(); // safe: Hibernate có thể trả Integer hoặc Long
+        if (idObj == null) return;
+        int id = (int) idObj;
         diemDAO.findByIdForAdmin(id).thenAccept(diem -> SwingUtilities.invokeLater(() -> {
-            if (diem == null) {
-                showError("Không tìm thấy bản ghi.");
-                return;
-            }
+            if (diem == null) { showError("Không tìm thấy bản ghi."); return; }
             DiemThiFormDialog dlg = new DiemThiFormDialog(getParentFrame(), diem, false);
             dlg.setVisible(true);
-            if (dlg.isSaved()) {
-                loadData();
-                showSuccess("Cập nhật điểm thi thành công!");
-            }
+            if (dlg.isSaved()) { loadData(); showSuccess("Cập nhật điểm thi thành công!"); }
         }));
     }
 
     private void deleteRecord(int row) {
         Object cccdObj = tableModel.getValueAt(row, 1);
         String cccd = cccdObj != null ? cccdObj.toString() : "?";
-        if (!confirmDelete("Điểm thi CCCD " + cccd))
-            return;
+        if (!confirmDelete("Điểm thi CCCD " + cccd)) return;
         Object idObj = tableModel.getValueAt(row, 0);
-        if (idObj == null)
-            return;
-        int id = ((Number) idObj).intValue(); // safe: Hibernate có thể trả Integer hoặc Long
+        if (idObj == null) return;
+        int id = (int) idObj;
         diemDAO.deleteByIdAsync(id).thenAccept(ok -> SwingUtilities.invokeLater(() -> {
-            if (ok) {
-                loadData();
-                showSuccess("Đã xóa bản ghi của " + cccd);
-            } else
-                showError("Không thể xóa bản ghi.");
+            if (ok) { loadData(); showSuccess("Đã xóa bản ghi của " + cccd); }
+            else      showError("Không thể xóa bản ghi.");
         }));
     }
 
@@ -605,20 +588,18 @@ public class DiemThiPanel extends JPanel {
     private void handleImportExcel(String type) {
         JFileChooser fc = new JFileChooser();
         fc.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter(
-                "Excel Files (*.xlsx, *.xls)", "xlsx", "xls"));
-        if (fc.showOpenDialog(this) != JFileChooser.APPROVE_OPTION)
-            return;
+            "Excel Files (*.xlsx, *.xls)", "xlsx", "xls"));
+        if (fc.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) return;
 
         File file = fc.getSelectedFile();
         toolbar.getBtnImport().setEnabled(false);
         toolbar.getBtnImport().setText("Đang xử lý...");
 
         new SwingWorker<List<String>, Void>() {
-            @Override
-            protected List<String> doInBackground() {
+            @Override protected List<String> doInBackground() {
                 com.tuyensinh.service.XetTuyenService xtService = new com.tuyensinh.service.XetTuyenService();
                 if ("THPT".equals(type)) {
-                    return new ImportService().importDiemThi(file, "THPT");
+                    return new ImportService().importDiemThi(file);
                 } else if ("DGNL_VSAT".equals(type)) {
                     return xtService.processDgnlVsatImport(file);
                 } else if ("IELTS".equals(type)) {
@@ -626,18 +607,13 @@ public class DiemThiPanel extends JPanel {
                 }
                 return List.of();
             }
-
-            @Override
-            protected void done() {
+            @Override protected void done() {
                 toolbar.getBtnImport().setEnabled(true);
                 toolbar.getBtnImport().setText("Nhập Excel");
                 try {
                     List<String> errors = get();
-                    if (errors.isEmpty()) {
-                        loadData();
-                        showSuccess("Import điểm thi thành công!");
-                    } else
-                        showImportErrors(errors);
+                    if (errors.isEmpty()) { loadData(); showSuccess("Import điểm thi thành công!"); }
+                    else showImportErrors(errors);
                 } catch (Exception ex) {
                     showError("Lỗi không xác định khi import.");
                     ex.printStackTrace();
@@ -649,14 +625,10 @@ public class DiemThiPanel extends JPanel {
     private void showImportErrors(List<String> errors) {
         StringBuilder sb = new StringBuilder();
         int preview = Math.min(errors.size(), 12);
-        for (int i = 0; i < preview; i++)
-            sb.append("• ").append(errors.get(i)).append("\n");
-        if (errors.size() > preview)
-            sb.append("... và ").append(errors.size() - preview).append(" lỗi khác.");
+        for (int i = 0; i < preview; i++) sb.append("• ").append(errors.get(i)).append("\n");
+        if (errors.size() > preview) sb.append("... và ").append(errors.size() - preview).append(" lỗi khác.");
         JTextArea ta = new JTextArea(sb.toString());
-        ta.setEditable(false);
-        ta.setLineWrap(true);
-        ta.setWrapStyleWord(true);
+        ta.setEditable(false); ta.setLineWrap(true); ta.setWrapStyleWord(true);
         JScrollPane sp = new JScrollPane(ta);
         sp.setPreferredSize(new Dimension(560, 260));
         JOptionPane.showMessageDialog(this, sp, "Import có " + errors.size() + " lỗi", JOptionPane.ERROR_MESSAGE);
@@ -670,9 +642,7 @@ public class DiemThiPanel extends JPanel {
         return v == null ? "—" : String.format("%.2f", v);
     }
 
-    private String nvl(String s) {
-        return s == null ? "" : s;
-    }
+    private String nvl(String s) { return s == null ? "" : s; }
 
     private Frame getParentFrame() {
         return (Frame) SwingUtilities.getWindowAncestor(this);
@@ -680,8 +650,8 @@ public class DiemThiPanel extends JPanel {
 
     private boolean confirmDelete(String name) {
         return JOptionPane.showConfirmDialog(this,
-                "Bạn có chắc muốn xóa: " + name + "?", "Xác nhận xóa",
-                JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE) == JOptionPane.YES_OPTION;
+            "Bạn có chắc muốn xóa: " + name + "?", "Xác nhận xóa",
+            JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE) == JOptionPane.YES_OPTION;
     }
 
     private void showSuccess(String msg) {
@@ -693,6 +663,7 @@ public class DiemThiPanel extends JPanel {
     }
 
     protected String getModuleCode() {
-        return com.tuyensinh.util.Constants.QUYEN_DIEM_THI;
+        return com.tuyensinh.util.Constants.QUYEN_DIEM_THI; 
     }
 }
+
