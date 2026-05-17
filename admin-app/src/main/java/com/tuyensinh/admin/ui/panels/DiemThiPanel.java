@@ -64,10 +64,13 @@ public class DiemThiPanel extends JPanel {
     private static final String[] COLS_BASE = {"ID", "CCCD", "SBD", "PT"};
 
     // Cột điểm theo từng phương thức
-    private static final String[] COLS_THPT  = {"TO","LI","HO","SI","SU","DI","VA","N1_THI","N1_CC","KTPL","TI"};
-    private static final String[] COLS_DGNL  = {"NL1","TI","KTPL","CNCN","CNNN"};
-    private static final String[] COLS_VSAT  = {"NK1","NK2","N1_THI","N1_CC","TI"};
-    private static final String[] COLS_ALL   = {"TO","VA","N1_THI","NL1","NK1"};
+    private static final String[] COLS_THPT  = {"TO","LI","HO","SI","SU","DI","VA","N1_THI","N1_CC","KTPL","TI","CNCN","CNNN","NK1","NK2"};
+    private static final String[] COLS_DGNL  = {"NL1"};
+    private static final String[] COLS_VSAT  = {"TO","LI","HO","SI","SU","DI","N1_THI","N1_CC"};
+    private static final String[] COLS_ALL   = {
+        "TO","LI","HO","SI","SU","DI","VA",
+        "N1_THI","N1_CC","CNCN","CNNN","TI","KTPL","NL1","NK1","NK2"
+    };
 
     // ----------------------------------------------------------------
     // State
@@ -546,7 +549,7 @@ public class DiemThiPanel extends JPanel {
     private void showEditDialog(int row) {
         Object idObj = tableModel.getValueAt(row, 0);
         if (idObj == null) return;
-        int id = (int) idObj;
+        int id = ((Number) idObj).intValue();   // safe: Hibernate có thể trả Integer hoặc Long
         diemDAO.findByIdForAdmin(id).thenAccept(diem -> SwingUtilities.invokeLater(() -> {
             if (diem == null) { showError("Không tìm thấy bản ghi."); return; }
             DiemThiFormDialog dlg = new DiemThiFormDialog(getParentFrame(), diem, false);
@@ -561,7 +564,7 @@ public class DiemThiPanel extends JPanel {
         if (!confirmDelete("Điểm thi CCCD " + cccd)) return;
         Object idObj = tableModel.getValueAt(row, 0);
         if (idObj == null) return;
-        int id = (int) idObj;
+        int id = ((Number) idObj).intValue();   // safe: Hibernate có thể trả Integer hoặc Long
         diemDAO.deleteByIdAsync(id).thenAccept(ok -> SwingUtilities.invokeLater(() -> {
             if (ok) { loadData(); showSuccess("Đã xóa bản ghi của " + cccd); }
             else      showError("Không thể xóa bản ghi.");

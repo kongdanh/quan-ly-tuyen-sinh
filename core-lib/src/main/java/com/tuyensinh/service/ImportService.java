@@ -14,6 +14,7 @@ import org.hibernate.Transaction;
 import java.io.File;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -21,6 +22,16 @@ import java.util.Set;
 public class ImportService {
 
     private final BaseImportService<ThiSinhImportDTO, ThiSinh> baseImportService;
+
+    private static final Set<String> THPT_KEYS = new HashSet<>(Arrays.asList(
+        "TO","LI","HO","SI","VA","SU","DI","KTPL","N1_THI","N1_CC","TI"
+    ));
+    private static final Set<String> VSAT_KEYS = new HashSet<>(Arrays.asList(
+        "NK1","NK2","N1_THI","N1_CC","TI"
+    ));
+    private static final Set<String> DGNL_KEYS = new HashSet<>(Arrays.asList(
+        "NL1","TI","KTPL","CNCN","CNNN"
+    ));
 
     public ImportService() {
         this.baseImportService = new BaseImportService<>();
@@ -250,6 +261,11 @@ public class ImportService {
                     if (scoreError != null) {
                         return scoreError;
                     }
+
+                    String methodError = validateMethodRules(dto, pt);
+                    if (methodError != null) {
+                        return methodError;
+                    }
                     return null;
                 }
         );
@@ -340,6 +356,93 @@ public class ImportService {
             return null;
         }
         return value.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private String validateMethodRules(DiemThiImportDTO dto, String method) {
+        if (method == null) {
+            return null;
+        }
+
+        Set<String> allowed = allowedScoreKeys(method);
+        String disallowed = firstDisallowedKey(dto, allowed);
+        if (disallowed != null) {
+            return "Phương thức " + method + " không cho phép môn " + disallowed + ".";
+        }
+
+        if (DiemThiXetTuyenDAO.PT_DGNL.equals(method)) {
+            if (!hasScore(dto.getNl1())) {
+                return "Phương thức DGNL cần có điểm NL1.";
+            }
+            return null;
+        }
+
+        if (DiemThiXetTuyenDAO.PT_VSAT.equals(method)) {
+            if (!hasScore(dto.getNk1()) || !hasScore(dto.getNk2())) {
+                return "Phương thức VSAT cần có đủ Năng khiếu 1 và Năng khiếu 2.";
+            }
+            return null;
+        }
+
+        int count = countScores(dto, allowed);
+        if (count < 3) {
+            return "Phương thức THPT cần có ít nhất 3 môn.";
+        }
+        return null;
+    }
+
+    private Set<String> allowedScoreKeys(String method) {
+        if (DiemThiXetTuyenDAO.PT_VSAT.equals(method)) {
+            return VSAT_KEYS;
+        }
+        if (DiemThiXetTuyenDAO.PT_DGNL.equals(method)) {
+            return DGNL_KEYS;
+        }
+        return THPT_KEYS;
+    }
+
+    private int countScores(DiemThiImportDTO dto, Set<String> allowed) {
+        int count = 0;
+        if (allowed.contains("TO") && hasScore(dto.getTo())) count++;
+        if (allowed.contains("LI") && hasScore(dto.getLi())) count++;
+        if (allowed.contains("HO") && hasScore(dto.getHo())) count++;
+        if (allowed.contains("SI") && hasScore(dto.getSi())) count++;
+        if (allowed.contains("SU") && hasScore(dto.getSu())) count++;
+        if (allowed.contains("DI") && hasScore(dto.getDi())) count++;
+        if (allowed.contains("VA") && hasScore(dto.getVa())) count++;
+        if (allowed.contains("N1_THI") && hasScore(dto.getN1Thi())) count++;
+        if (allowed.contains("N1_CC") && hasScore(dto.getN1Cc())) count++;
+        if (allowed.contains("CNCN") && hasScore(dto.getCncn())) count++;
+        if (allowed.contains("CNNN") && hasScore(dto.getCnnn())) count++;
+        if (allowed.contains("TI") && hasScore(dto.getTi())) count++;
+        if (allowed.contains("KTPL") && hasScore(dto.getKtpl())) count++;
+        if (allowed.contains("NL1") && hasScore(dto.getNl1())) count++;
+        if (allowed.contains("NK1") && hasScore(dto.getNk1())) count++;
+        if (allowed.contains("NK2") && hasScore(dto.getNk2())) count++;
+        return count;
+    }
+
+    private String firstDisallowedKey(DiemThiImportDTO dto, Set<String> allowed) {
+        if (!allowed.contains("TO") && hasScore(dto.getTo())) return "TO";
+        if (!allowed.contains("LI") && hasScore(dto.getLi())) return "LI";
+        if (!allowed.contains("HO") && hasScore(dto.getHo())) return "HO";
+        if (!allowed.contains("SI") && hasScore(dto.getSi())) return "SI";
+        if (!allowed.contains("SU") && hasScore(dto.getSu())) return "SU";
+        if (!allowed.contains("DI") && hasScore(dto.getDi())) return "DI";
+        if (!allowed.contains("VA") && hasScore(dto.getVa())) return "VA";
+        if (!allowed.contains("N1_THI") && hasScore(dto.getN1Thi())) return "N1_THI";
+        if (!allowed.contains("N1_CC") && hasScore(dto.getN1Cc())) return "N1_CC";
+        if (!allowed.contains("CNCN") && hasScore(dto.getCncn())) return "CNCN";
+        if (!allowed.contains("CNNN") && hasScore(dto.getCnnn())) return "CNNN";
+        if (!allowed.contains("TI") && hasScore(dto.getTi())) return "TI";
+        if (!allowed.contains("KTPL") && hasScore(dto.getKtpl())) return "KTPL";
+        if (!allowed.contains("NL1") && hasScore(dto.getNl1())) return "NL1";
+        if (!allowed.contains("NK1") && hasScore(dto.getNk1())) return "NK1";
+        if (!allowed.contains("NK2") && hasScore(dto.getNk2())) return "NK2";
+        return null;
+    }
+
+    private boolean hasScore(BigDecimal value) {
+        return value != null;
     }
 
     private String validateScoreRange(DiemThiImportDTO dto) {

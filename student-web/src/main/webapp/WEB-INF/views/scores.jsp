@@ -48,15 +48,22 @@
                 <h3 style="margin: 0; font-size: 16px; color: #111827;">Các môn đã có điểm</h3>
             </div>
             <div style="padding: 8px;">
-                <c:if test="${not empty diem.to and diem.to > 0}"><div class="score-row"><span class="score-label">Toán học</span><span class="score-value">${diem.to}</span></div></c:if>
-                <c:if test="${not empty diem.li and diem.li > 0}"><div class="score-row"><span class="score-label">Vật lý</span><span class="score-value">${diem.li}</span></div></c:if>
-                <c:if test="${not empty diem.ho and diem.ho > 0}"><div class="score-row"><span class="score-label">Hóa học</span><span class="score-value">${diem.ho}</span></div></c:if>
-                <c:if test="${not empty diem.va and diem.va > 0}"><div class="score-row"><span class="score-label">Ngữ văn</span><span class="score-value">${diem.va}</span></div></c:if>
-                <c:if test="${not empty diem.su and diem.su > 0}"><div class="score-row"><span class="score-label">Lịch sử</span><span class="score-value">${diem.su}</span></div></c:if>
-                <c:if test="${not empty diem.di and diem.di > 0}"><div class="score-row"><span class="score-label">Địa lý</span><span class="score-value">${diem.di}</span></div></c:if>
-                <c:if test="${not empty diem.si and diem.si > 0}"><div class="score-row"><span class="score-label">Sinh học</span><span class="score-value">${diem.si}</span></div></c:if>
-                <c:if test="${not empty diem.n1Thi and diem.n1Thi > 0}"><div class="score-row"><span class="score-label">Ngoại ngữ</span><span class="score-value">${diem.n1Thi}</span></div></c:if>
-                <c:if test="${not empty diem.ktpl and diem.ktpl > 0}"><div class="score-row"><span class="score-label">Giáo dục CD (KTPL)</span><span class="score-value">${diem.ktpl}</span></div></c:if>
+                <c:if test="${diem.to != null}"><div class="score-row"><span class="score-label">Toán học</span><span class="score-value">${diem.to}</span></div></c:if>
+                <c:if test="${diem.li != null}"><div class="score-row"><span class="score-label">Vật lý</span><span class="score-value">${diem.li}</span></div></c:if>
+                <c:if test="${diem.ho != null}"><div class="score-row"><span class="score-label">Hóa học</span><span class="score-value">${diem.ho}</span></div></c:if>
+                <c:if test="${diem.va != null}"><div class="score-row"><span class="score-label">Ngữ văn</span><span class="score-value">${diem.va}</span></div></c:if>
+                <c:if test="${diem.su != null}"><div class="score-row"><span class="score-label">Lịch sử</span><span class="score-value">${diem.su}</span></div></c:if>
+                <c:if test="${diem.di != null}"><div class="score-row"><span class="score-label">Địa lý</span><span class="score-value">${diem.di}</span></div></c:if>
+                <c:if test="${diem.si != null}"><div class="score-row"><span class="score-label">Sinh học</span><span class="score-value">${diem.si}</span></div></c:if>
+                <c:if test="${diem.n1Thi != null}"><div class="score-row"><span class="score-label">Ngoại ngữ (Thi)</span><span class="score-value">${diem.n1Thi}</span></div></c:if>
+                <c:if test="${diem.n1Cc != null}"><div class="score-row"><span class="score-label">Ngoại ngữ (CC)</span><span class="score-value">${diem.n1Cc}</span></div></c:if>
+                <c:if test="${diem.ktpl != null}"><div class="score-row"><span class="score-label">Giáo dục CD (KTPL)</span><span class="score-value">${diem.ktpl}</span></div></c:if>
+                <c:if test="${diem.ti != null}"><div class="score-row"><span class="score-label">Tin học</span><span class="score-value">${diem.ti}</span></div></c:if>
+                <c:if test="${diem.cncn != null}"><div class="score-row"><span class="score-label">Công nghệ CN</span><span class="score-value">${diem.cncn}</span></div></c:if>
+                <c:if test="${diem.cnnn != null}"><div class="score-row"><span class="score-label">Công nghệ NN</span><span class="score-value">${diem.cnnn}</span></div></c:if>
+                <c:if test="${diem.nl1 != null}"><div class="score-row"><span class="score-label">ĐGNL</span><span class="score-value">${diem.nl1}</span></div></c:if>
+                <c:if test="${diem.nk1 != null}"><div class="score-row"><span class="score-label">Năng khiếu 1</span><span class="score-value">${diem.nk1}</span></div></c:if>
+                <c:if test="${diem.nk2 != null}"><div class="score-row"><span class="score-label">Năng khiếu 2</span><span class="score-value">${diem.nk2}</span></div></c:if>
             </div>
         </div>
 
