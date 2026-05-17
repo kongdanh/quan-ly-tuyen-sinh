@@ -35,6 +35,7 @@ public class SidebarPanel extends JPanel {
             new MenuDef("Ngành - Tổ hợp",      "icon_nganh_tohop.svg", Constants.QUYEN_NGANH_TOHOP),
 
             new MenuDef("QUẢN LÝ HỒ SƠ",       "HEADER", null),
+            new MenuDef("Quản lý thí sinh",    "icon_user.svg",        null),
             new MenuDef("Hồ sơ xét tuyển",     "icon_user.svg",        Constants.QUYEN_HO_SO),
             new MenuDef("Điểm thi",            "icon_diem.svg",        Constants.QUYEN_DIEM_THI),
             

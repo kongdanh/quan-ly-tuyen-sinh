@@ -15,13 +15,27 @@ import org.hibernate.Transaction;
 import java.io.File;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Map;
+import java.util.HashMap;
 
 public class ImportService {
 
     private final BaseImportService<ThiSinhImportDTO, ThiSinh> baseImportService;
+    private final Map<String, ThiSinh> thiSinhCache = new HashMap<>();
+
+    private static final Set<String> THPT_KEYS = new HashSet<>(Arrays.asList(
+        "TO","LI","HO","SI","VA","SU","DI","KTPL","N1_THI","N1_CC","TI"
+    ));
+    private static final Set<String> VSAT_KEYS = new HashSet<>(Arrays.asList(
+        "NK1","NK2","N1_THI","N1_CC","TI"
+    ));
+    private static final Set<String> DGNL_KEYS = new HashSet<>(Arrays.asList(
+        "NL1","TI","KTPL","CNCN","CNNN"
+    ));
 
     public ImportService() {
         this.baseImportService = new BaseImportService<>();
@@ -42,8 +56,22 @@ public class ImportService {
                     ThiSinh ts = new ThiSinh();
                     ts.setCccd(dto.getCccd());
                     ts.setSobaodanh(dto.getSoBaoDanh());
-                    ts.setHo(dto.getHo());
-                    ts.setTen(dto.getTen());
+                    
+                    if (dto.getHoTen() != null && !dto.getHoTen().trim().isEmpty()) {
+                        String fullName = dto.getHoTen().trim();
+                        int lastSpace = fullName.lastIndexOf(' ');
+                        if (lastSpace > 0) {
+                            ts.setHo(fullName.substring(0, lastSpace));
+                            ts.setTen(fullName.substring(lastSpace + 1));
+                        } else {
+                            ts.setHo("");
+                            ts.setTen(fullName);
+                        }
+                    } else {
+                        ts.setHo(dto.getHo());
+                        ts.setTen(dto.getTen());
+                    }
+                    
                     String ngaySinh = dto.getNgaySinh(); 
                     ts.setNgaySinh(ngaySinh);
                     ts.setDienThoai(dto.getDienThoai());
@@ -67,7 +95,24 @@ public class ImportService {
                         
                         int count = 0;
                         for (ThiSinh entity : entities) {
-                            session.persist(entity); 
+                            ThiSinh existing = session.createQuery(
+                                    "FROM ThiSinh t WHERE t.cccd = :cccd", ThiSinh.class)
+                                    .setParameter("cccd", entity.getCccd())
+                                    .uniqueResult();
+                            
+                            if (existing == null) {
+                                session.persist(entity);
+                            } else {
+                                existing.setSobaodanh(entity.getSobaodanh());
+                                existing.setHo(entity.getHo());
+                                existing.setTen(entity.getTen());
+                                existing.setNgaySinh(entity.getNgaySinh());
+                                existing.setDienThoai(entity.getDienThoai());
+                                existing.setGioiTinh(entity.getGioiTinh());
+                                existing.setEmail(entity.getEmail());
+                                session.merge(existing);
+                            }
+                            
                             if (++count % 50 == 0) {
                                 session.flush();
                                 session.clear();
@@ -100,7 +145,11 @@ public class ImportService {
                 
                 dto -> {
                     if (dto.getCccd() == null || dto.getCccd().trim().isEmpty()) return "Bat buoc phai co so CCCD";
-                    if (dto.getTen() == null || dto.getTen().trim().isEmpty()) return "Bat buoc phai co Ten";
+                    
+                    boolean hasTen = (dto.getTen() != null && !dto.getTen().trim().isEmpty());
+                    boolean hasHoTen = (dto.getHoTen() != null && !dto.getHoTen().trim().isEmpty());
+                    
+                    if (!hasTen && !hasHoTen) return "Bat buoc phai co Ten hoac Ho Ten";
                     return null; 
                 }
         );
@@ -117,7 +166,7 @@ public class ImportService {
      * Import diem thi tu file Excel.
      * Neu thi sinh da co diem thi cap nhat, chua co thi tao moi.
      */
-    public List<String> importDiemThi(File file) {
+    public List<String> importDiemThi(File file, String defaultMethod) {
         System.out.println("[ImportService] Bat dau import diem thi tu file: " + file.getName());
         BaseImportService<DiemThiImportDTO, DiemThiXetTuyen> diemImportService = new BaseImportService<>();
         Set<String> cccdSeen = new HashSet<>();
@@ -128,10 +177,15 @@ public class ImportService {
 
                 dto -> {
                     DiemThiXetTuyen diem = new DiemThiXetTuyen();
-                    ThiSinh ts = findThiSinhForImport(dto.getCccd(), dto.getSoBaoDanh());
+                    ThiSinh ts = findThiSinhForImportCached(dto.getCccd(), dto.getSoBaoDanh());
                     diem.setThiSinh(ts);
                     diem.setSobaodanh(emptyToNull(dto.getSoBaoDanh()));
-                    diem.setDPhuongthuc(DiemThiXetTuyenDAO.normalizeMethod(dto.getPhuongThuc()));
+                    
+                    String pt = dto.getPhuongThuc() != null && !dto.getPhuongThuc().trim().isEmpty() 
+                                ? DiemThiXetTuyenDAO.normalizeMethod(dto.getPhuongThuc()) 
+                                : defaultMethod;
+                    diem.setDPhuongthuc(pt);
+                    
                     diem.setTo(normalizeScore(dto.getTo()));
                     diem.setLi(normalizeScore(dto.getLi()));
                     diem.setHo(normalizeScore(dto.getHo()));
@@ -158,19 +212,22 @@ public class ImportService {
                         session = HibernateUtil.getSessionFactory().openSession();
                         tx = session.beginTransaction();
 
+                        // Tải sẵn toàn bộ ThiSinh và DiemThiXetTuyen vào bộ nhớ để Lookup O(1)
+                        System.out.println("[ImportService] Dang tai du lieu tu DB de toi uu hoa...");
+                        List<ThiSinh> allTs = session.createQuery("FROM ThiSinh", ThiSinh.class).list();
+                        Map<String, ThiSinh> dbThiSinhMap = new HashMap<>();
+                        for (ThiSinh t : allTs) dbThiSinhMap.put(t.getCccd(), t);
+
+                        List<DiemThiXetTuyen> allDt = session.createQuery("SELECT d FROM DiemThiXetTuyen d JOIN FETCH d.thiSinh ts", DiemThiXetTuyen.class).list();
+                        Map<String, DiemThiXetTuyen> dbDiemThiMap = new HashMap<>();
+                        for (DiemThiXetTuyen d : allDt) dbDiemThiMap.put(d.getThiSinh().getCccd(), d);
+                        System.out.println("[ImportService] Tai xong du lieu DB, tien hanh luu batch...");
+
                         int count = 0;
                         for (DiemThiXetTuyen entity : entities) {
                             String cccd = entity.getThiSinh().getCccd();
-                            ThiSinh managedThiSinh = session.createQuery(
-                                            "FROM ThiSinh t WHERE t.cccd = :cccd", ThiSinh.class)
-                                    .setParameter("cccd", cccd)
-                                    .uniqueResult();
-
-                            DiemThiXetTuyen existing = session.createQuery(
-                                            "SELECT d FROM DiemThiXetTuyen d JOIN FETCH d.thiSinh ts WHERE ts.cccd = :cccd",
-                                            DiemThiXetTuyen.class)
-                                    .setParameter("cccd", cccd)
-                                    .uniqueResult();
+                            ThiSinh managedThiSinh = dbThiSinhMap.get(cccd);
+                            DiemThiXetTuyen existing = dbDiemThiMap.get(cccd);
 
                             if (existing == null) {
                                 entity.setThiSinh(managedThiSinh);
@@ -236,11 +293,15 @@ public class ImportService {
                         return "CCCD bi trung trong file Excel: " + cccd;
                     }
                     try {
-                        findThiSinhForImport(dto.getCccd(), dto.getSoBaoDanh());
+                        findThiSinhForImportCached(dto.getCccd(), dto.getSoBaoDanh());
                     } catch (Exception e) {
                         return e.getMessage();
                     }
-                    String pt = DiemThiXetTuyenDAO.normalizeMethod(dto.getPhuongThuc());
+                    
+                    String pt = dto.getPhuongThuc() != null && !dto.getPhuongThuc().trim().isEmpty() 
+                                ? DiemThiXetTuyenDAO.normalizeMethod(dto.getPhuongThuc()) 
+                                : defaultMethod;
+                                
                     if (pt != null && !(DiemThiXetTuyenDAO.PT_THPT.equals(pt)
                             || DiemThiXetTuyenDAO.PT_VSAT.equals(pt)
                             || DiemThiXetTuyenDAO.PT_DGNL.equals(pt))) {
@@ -249,6 +310,11 @@ public class ImportService {
                     String scoreError = validateScoreRange(dto);
                     if (scoreError != null) {
                         return scoreError;
+                    }
+
+                    String methodError = validateMethodRules(dto, pt);
+                    if (methodError != null) {
+                        return methodError;
                     }
                     return null;
                 }
@@ -326,6 +392,16 @@ public class ImportService {
         }
     }
 
+    private ThiSinh findThiSinhForImportCached(String cccdOrCode, String soBaoDanh) {
+        String key = cccdOrCode != null ? cccdOrCode.trim() : "";
+        if (thiSinhCache.containsKey(key)) {
+            return thiSinhCache.get(key);
+        }
+        ThiSinh ts = findThiSinhForImport(cccdOrCode, soBaoDanh);
+        thiSinhCache.put(key, ts);
+        return ts;
+    }
+
     private String emptyToNull(String value) {
         if (value == null) return null;
         String trimmed = value.trim();
@@ -335,6 +411,91 @@ public class ImportService {
     private BigDecimal normalizeScore(BigDecimal value) {
         if (value == null) return null;
         return value.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private String validateMethodRules(DiemThiImportDTO dto, String method) {
+        if (method == null) {
+            return null;
+        }
+
+
+        Set<String> allowed = allowedScoreKeys(method);
+
+
+        if (DiemThiXetTuyenDAO.PT_DGNL.equals(method)) {
+            if (!hasScore(dto.getNl1())) {
+                return "Phương thức DGNL cần có điểm NL1.";
+            }
+            return null;
+        }
+
+        if (DiemThiXetTuyenDAO.PT_VSAT.equals(method)) {
+            if (!hasScore(dto.getNk1()) || !hasScore(dto.getNk2())) {
+                return "Phương thức VSAT cần có đủ Năng khiếu 1 và Năng khiếu 2.";
+            }
+            return null;
+        }
+
+        // int count = countScores(dto, allowed);
+        // if (count < 3) {
+        //     return "Phương thức THPT cần có ít nhất 3 môn.";
+        // }
+        return null;
+    }
+
+    private Set<String> allowedScoreKeys(String method) {
+        if (DiemThiXetTuyenDAO.PT_VSAT.equals(method)) {
+            return VSAT_KEYS;
+        }
+        if (DiemThiXetTuyenDAO.PT_DGNL.equals(method)) {
+            return DGNL_KEYS;
+        }
+        return THPT_KEYS;
+    }
+
+    private int countScores(DiemThiImportDTO dto, Set<String> allowed) {
+        int count = 0;
+        if (allowed.contains("TO") && hasScore(dto.getTo())) count++;
+        if (allowed.contains("LI") && hasScore(dto.getLi())) count++;
+        if (allowed.contains("HO") && hasScore(dto.getHo())) count++;
+        if (allowed.contains("SI") && hasScore(dto.getSi())) count++;
+        if (allowed.contains("SU") && hasScore(dto.getSu())) count++;
+        if (allowed.contains("DI") && hasScore(dto.getDi())) count++;
+        if (allowed.contains("VA") && hasScore(dto.getVa())) count++;
+        if (allowed.contains("N1_THI") && hasScore(dto.getN1Thi())) count++;
+        if (allowed.contains("N1_CC") && hasScore(dto.getN1Cc())) count++;
+        if (allowed.contains("CNCN") && hasScore(dto.getCncn())) count++;
+        if (allowed.contains("CNNN") && hasScore(dto.getCnnn())) count++;
+        if (allowed.contains("TI") && hasScore(dto.getTi())) count++;
+        if (allowed.contains("KTPL") && hasScore(dto.getKtpl())) count++;
+        if (allowed.contains("NL1") && hasScore(dto.getNl1())) count++;
+        if (allowed.contains("NK1") && hasScore(dto.getNk1())) count++;
+        if (allowed.contains("NK2") && hasScore(dto.getNk2())) count++;
+        return count;
+    }
+
+    private String firstDisallowedKey(DiemThiImportDTO dto, Set<String> allowed) {
+        if (!allowed.contains("TO") && hasScore(dto.getTo())) return "TO";
+        if (!allowed.contains("LI") && hasScore(dto.getLi())) return "LI";
+        if (!allowed.contains("HO") && hasScore(dto.getHo())) return "HO";
+        if (!allowed.contains("SI") && hasScore(dto.getSi())) return "SI";
+        if (!allowed.contains("SU") && hasScore(dto.getSu())) return "SU";
+        if (!allowed.contains("DI") && hasScore(dto.getDi())) return "DI";
+        if (!allowed.contains("VA") && hasScore(dto.getVa())) return "VA";
+        if (!allowed.contains("N1_THI") && hasScore(dto.getN1Thi())) return "N1_THI";
+        if (!allowed.contains("N1_CC") && hasScore(dto.getN1Cc())) return "N1_CC";
+        if (!allowed.contains("CNCN") && hasScore(dto.getCncn())) return "CNCN";
+        if (!allowed.contains("CNNN") && hasScore(dto.getCnnn())) return "CNNN";
+        if (!allowed.contains("TI") && hasScore(dto.getTi())) return "TI";
+        if (!allowed.contains("KTPL") && hasScore(dto.getKtpl())) return "KTPL";
+        if (!allowed.contains("NL1") && hasScore(dto.getNl1())) return "NL1";
+        if (!allowed.contains("NK1") && hasScore(dto.getNk1())) return "NK1";
+        if (!allowed.contains("NK2") && hasScore(dto.getNk2())) return "NK2";
+        return null;
+    }
+
+    private boolean hasScore(BigDecimal value) {
+        return value != null;
     }
 
     /**

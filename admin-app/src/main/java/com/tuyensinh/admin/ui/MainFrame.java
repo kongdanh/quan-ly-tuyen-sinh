@@ -48,6 +48,7 @@ public class MainFrame extends JFrame {
         contentPanel.add(new NganhToHopPanel(), "Ngành - Tổ hợp");
 
         // Quan ly ho so
+        contentPanel.add(new ThiSinhPanel(), "Quản lý thí sinh");
         contentPanel.add(new HoSoTuyenSinhPanel(), "Hồ sơ xét tuyển"); 
         
         contentPanel.add(new DiemThiPanel(), "Điểm thi"); 

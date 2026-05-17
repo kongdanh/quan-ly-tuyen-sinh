@@ -18,6 +18,9 @@ public class ThiSinhImportDTO {
     @ExcelColumn(value = "Tên", aliases = {"Ten"})
     private String ten;
 
+    @ExcelColumn(value = "Họ Tên", aliases = {"Ho Ten", "Họ và Tên", "Ho va Ten", "Họ tên"})
+    private String hoTen;
+
     @ExcelColumn(value = "Ngày Sinh", aliases = {"Ngay sinh"})
     private String ngaySinh;
 
