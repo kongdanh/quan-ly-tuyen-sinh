@@ -67,22 +67,22 @@ public class XetTuyenService {
     public void chayThuatToanXetTuyen(Integer idDot) {
         System.out.println("[XetTuyenService] Bat dau chay thuat toan xet tuyen cho Dot ID=" + idDot);
         SystemLogger.log(null, "System", "Bắt đầu chạy thuật toán xét tuyển cho Đợt ID=" + idDot, true);
-        
+
         Transaction transaction = null;
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             transaction = session.beginTransaction();
 
             session.createNativeMutationQuery(
-                "DELETE FROM xt_ket_qua_xet_tuyen WHERE id_ho_so IN (SELECT id FROM xt_ho_so_tuyen_sinh WHERE id_dot_tuyen_sinh = :idDot)")
-                   .setParameter("idDot", idDot)
-                   .executeUpdate();
+                    "DELETE FROM xt_ket_qua_xet_tuyen WHERE id_ho_so IN (SELECT id FROM xt_ho_so_tuyen_sinh WHERE id_dot_tuyen_sinh = :idDot)")
+                    .setParameter("idDot", idDot)
+                    .executeUpdate();
 
             Query<NguyenVong> query = session.createQuery(
-                "SELECT nv FROM NguyenVong nv JOIN FETCH nv.nganh JOIN FETCH nv.hoSoTuyenSinh hs JOIN FETCH nv.thiSinh t WHERE hs.dotTuyenSinh.id = :idDot AND hs.trangThai = 'HOP_LE' ORDER BY t.cccd, nv.nvTt ASC", 
-                NguyenVong.class);
+                    "SELECT nv FROM NguyenVong nv JOIN FETCH nv.nganh JOIN FETCH nv.hoSoTuyenSinh hs JOIN FETCH nv.thiSinh t WHERE hs.dotTuyenSinh.id = :idDot AND hs.trangThai = 'HOP_LE' ORDER BY t.cccd, nv.nvTt ASC",
+                    NguyenVong.class);
             query.setParameter("idDot", idDot);
             List<NguyenVong> listNV = query.getResultList();
-            
+
             System.out.println("[XetTuyenService] Tim thay " + listNV.size() + " nguyen vong can xet");
 
             Map<String, List<NguyenVong>> mapThiSinh = listNV.stream()
@@ -101,12 +101,12 @@ public class XetTuyenService {
                     }
 
                     BigDecimal bdDiemChuan = (BigDecimal) session.createQuery(
-                        "SELECT dc.diemChuan FROM DiemChuanDot dc " +
-                        "WHERE dc.dotTuyenSinh.id = :idDot AND dc.nganhToHop.manganh = :maNganh AND dc.nganhToHop.matohop = :maTh")
-                        .setParameter("idDot", idDot)
-                        .setParameter("maNganh", nv.getNganh().getManganh())
-                        .setParameter("maTh", nv.getTtThm())
-                        .uniqueResult();
+                            "SELECT dc.diemChuan FROM DiemChuanDot dc " +
+                                    "WHERE dc.dotTuyenSinh.id = :idDot AND dc.nganhToHop.manganh = :maNganh AND dc.nganhToHop.matohop = :maTh")
+                            .setParameter("idDot", idDot)
+                            .setParameter("maNganh", nv.getNganh().getManganh())
+                            .setParameter("maTh", nv.getTtThm())
+                            .uniqueResult();
 
                     Double diemChuan = (bdDiemChuan != null) ? bdDiemChuan.doubleValue() : 999.0;
                     Double diemThiSinh = nv.getDiemXettuyen() != null ? nv.getDiemXettuyen() : 0.0;
@@ -134,15 +134,20 @@ public class XetTuyenService {
                 }
             }
             transaction.commit();
-            
-            System.out.println("[XetTuyenService] Hoan thanh xet tuyen Dot ID=" + idDot + ": " + soTrungTuyen + " trung tuyen, " + soRot + " rot");
-            SystemLogger.log(null, "System", "Hoàn thành xét tuyển Đợt ID=" + idDot + ": " + soTrungTuyen + " trúng tuyển, " + soRot + " rớt", true);
-            
+
+            System.out.println("[XetTuyenService] Hoan thanh xet tuyen Dot ID=" + idDot + ": " + soTrungTuyen
+                    + " trung tuyen, " + soRot + " rot");
+            SystemLogger.log(null, "System",
+                    "Hoàn thành xét tuyển Đợt ID=" + idDot + ": " + soTrungTuyen + " trúng tuyển, " + soRot + " rớt",
+                    true);
+
         } catch (Exception e) {
-            if (transaction != null) transaction.rollback();
+            if (transaction != null)
+                transaction.rollback();
             System.err.println("[XetTuyenService] Loi chay thuat toan xet tuyen: " + e.getMessage());
             e.printStackTrace();
-            SystemLogger.log(null, "System", "Lỗi chạy thuật toán xét tuyển Đợt ID=" + idDot + ": " + e.getMessage(), false);
+            SystemLogger.log(null, "System", "Lỗi chạy thuật toán xét tuyển Đợt ID=" + idDot + ": " + e.getMessage(),
+                    false);
             throw new RuntimeException("Loi chay thuat toan: " + e.getMessage());
         }
     }
@@ -167,52 +172,68 @@ public class XetTuyenService {
         if (!parseErrors.isEmpty())
             return parseErrors;
 
-        List<N1UpdateCommand> n1Updates  = new ArrayList<>();
-        List<DiemCong>        dcUpserts  = new ArrayList<>();
-
-        final String IELTS_PHUONG_THUC = "IELTS";
-        final String IELTS_MA_MON      = "N1";
+        List<N1UpdateCommand> n1Updates = new ArrayList<>();
+        List<DiemCong> dcUpserts = new ArrayList<>();
 
         for (IeltsImportDTO dto : rows) {
             String cccd = dto.getCccd().trim();
-            Optional<DiemThiXetTuyen> optDiem = diemThiDAO.findByCccd(cccd);
-            if (optDiem.isEmpty()) {
-                errors.add("[IELTS SKIP] CCCD=" + cccd + " không tồn tại trong xt_diemthixettuyen.");
-                continue;
-            }
-            List<NganhToHop> toHopList = nguyenVongDAO.findNganhToHopByCccd(cccd);
-            if (toHopList.isEmpty()) {
-                errors.add("[IELTS SKIP] CCCD=" + cccd + " không có nguyện vọng trong xt_nguyenvongxettuyen.");
-                continue;
-            }
-
-            BigDecimal diemTho = coalesceZero(dto.getDiemQd());
-            BigDecimal diemCC  = bangQuyDoiDAO.lookupDiemb(IELTS_PHUONG_THUC, IELTS_MA_MON, diemTho);
-            if (diemCC == null) {
-                diemCC = coalesceZero(dto.getDiemCong());
-            }
-            diemCC = diemCC.setScale(2, RoundingMode.HALF_UP);
-
-            DiemThiXetTuyen dt = optDiem.get();
-
-            for (NganhToHop nth : toHopList) {
-                if (!passesSubsetCheck(dt, nth))
-                    continue;
-                String manganh = nth.getNganh().getManganh();
-                String matohop = nth.getToHopMon().getMatohop();
-
-                if (Boolean.TRUE.equals(nth.getN1())) {
-                    n1Updates.add(new N1UpdateCommand(cccd, coalesceZero(dto.getDiemQd())));
-                }
-                String dcKey = cccd + "_" + manganh + "_" + matohop;
-                dcUpserts.add(buildDiemCong(dt.getThiSinh(), manganh, matohop, diemCC, dcKey));
-            }
+            List<String> rowErrors = buildIeltsCommands(cccd, dto.getDiemQd(), dto.getDiemCong(), n1Updates, dcUpserts);
+            errors.addAll(rowErrors);
         }
 
         if (!n1Updates.isEmpty())
             errors.addAll(flushN1Updates(n1Updates));
         if (!dcUpserts.isEmpty())
             errors.addAll(flushDiemCongUpserts(dcUpserts));
+        return errors;
+    }
+
+    public List<String> processSingleIelts(String cccd, BigDecimal diemTho) {
+        List<N1UpdateCommand> n1Updates = new ArrayList<>();
+        List<DiemCong> dcUpserts = new ArrayList<>();
+        List<String> errors = buildIeltsCommands(cccd, diemTho, null, n1Updates, dcUpserts);
+        if (!n1Updates.isEmpty())
+            errors.addAll(flushN1Updates(n1Updates));
+        if (!dcUpserts.isEmpty())
+            errors.addAll(flushDiemCongUpserts(dcUpserts));
+        return errors;
+    }
+
+    private List<String> buildIeltsCommands(String cccd, BigDecimal diemQd, BigDecimal diemCongOriginal,
+            List<N1UpdateCommand> n1Updates, List<DiemCong> dcUpserts) {
+        List<String> errors = new ArrayList<>();
+        Optional<DiemThiXetTuyen> optDiem = diemThiDAO.findByCccd(cccd);
+        if (optDiem.isEmpty()) {
+            errors.add("[IELTS SKIP] CCCD=" + cccd + " không tồn tại trong xt_diemthixettuyen.");
+            return errors;
+        }
+        List<NganhToHop> toHopList = nguyenVongDAO.findNganhToHopByCccd(cccd);
+        if (toHopList.isEmpty()) {
+            errors.add("[IELTS SKIP] CCCD=" + cccd + " không có nguyện vọng trong xt_nguyenvongxettuyen.");
+            return errors;
+        }
+
+        BigDecimal diemTho = coalesceZero(diemQd);
+        BigDecimal diemCC = bangQuyDoiDAO.lookupDiemb("IELTS", "N1", diemTho);
+        if (diemCC == null) {
+            diemCC = coalesceZero(diemCongOriginal);
+        }
+        diemCC = diemCC.setScale(2, RoundingMode.HALF_UP);
+
+        DiemThiXetTuyen dt = optDiem.get();
+
+        for (NganhToHop nth : toHopList) {
+            if (!passesSubsetCheck(dt, nth))
+                continue;
+            String manganh = nth.getNganh().getManganh();
+            String matohop = nth.getToHopMon().getMatohop();
+
+            if (Boolean.TRUE.equals(nth.getN1())) {
+                n1Updates.add(new N1UpdateCommand(cccd, diemCC));
+            }
+            String dcKey = cccd + "_" + manganh + "_" + matohop;
+            dcUpserts.add(buildDiemCong(dt.getThiSinh(), manganh, matohop, diemCC, dcKey));
+        }
         return errors;
     }
 
@@ -261,8 +282,7 @@ public class XetTuyenService {
     List<String> processDgnlSheet(List<DgnlVsatRowDTO> rows) {
         List<String> errors = new ArrayList<>();
         List<ScoreUpdateCmd> nl1Updates = new ArrayList<>();
-        List<DiemCong>       dcUpserts  = new ArrayList<>();
-        final String DGNL_PT = "DGNL";
+        List<DiemCong> dcUpserts = new ArrayList<>();
         Map<String, List<BangQuyDoi>> bqCache = new HashMap<>();
 
         int rowNum = 2;
@@ -279,52 +299,84 @@ public class XetTuyenService {
             }
 
             String cccd = dto.getCmnd().trim();
-            if (!existsInDiemThi(cccd)) {
-                errors.add("[DGNL SKIP] CCCD=" + cccd + " không tồn tại trong xt_diemthixettuyen.");
-                rowNum++;
-                continue;
-            }
+            BigDecimal diemTho = dto.getDiem();
 
-            BigDecimal diemTho = coalesceZero(dto.getDiem());
-            nl1Updates.add(new ScoreUpdateCmd(cccd, "NL1", diemTho.setScale(2, RoundingMode.HALF_UP)));
-
-            List<NganhToHop> toHopList = nguyenVongDAO.findNganhToHopByCccd(cccd);
-            for (NganhToHop nth : toHopList) {
-                String manganh = nth.getNganh().getManganh();
-                String matohop = nth.getToHopMon().getMatohop();
-
-                List<BangQuyDoi> bp = bqCache.computeIfAbsent(
-                        matohop, k -> bangQuyDoiDAO.findAllByPhuongThucAndMon(DGNL_PT, k));
-
-                if (bp.isEmpty()) {
-                    errors.add("[DGNL] CCCD=" + cccd + " matohop=" + matohop + ": không có bảng quy đổi DGNL.");
-                    continue;
-                }
-
-                BigDecimal[] abcd = BangQuyDoiDAO.interpolateFromRows(bp, diemTho);
-                if (abcd == null) {
-                    errors.add("[DGNL] CCCD=" + cccd + " matohop=" + matohop + ": không tìm được khoảng nội suy.");
-                    continue;
-                }
-
-                BigDecimal y = interpolate(diemTho, abcd[0], abcd[1], abcd[2], abcd[3]);
-                DiemThiXetTuyen dtXt = diemThiDAO.findByCccd(cccd).orElse(null);
-                if (dtXt == null) continue;
-
-                String dcKey = cccd + "_" + manganh + "_" + matohop;
-                dcUpserts.add(buildDiemCong(dtXt.getThiSinh(), manganh, matohop, y, dcKey));
+            List<String> rowErrors = buildDgnlCommands(cccd, diemTho, nl1Updates, dcUpserts, bqCache);
+            for (String re : rowErrors) {
+                errors.add("Dòng " + rowNum + " - " + re);
             }
             rowNum++;
         }
 
-        if (!nl1Updates.isEmpty()) errors.addAll(flushColumnUpdates(nl1Updates, "DGNL-NL1"));
-        if (!dcUpserts.isEmpty()) errors.addAll(flushDiemCongUpserts(dcUpserts));
+        if (!nl1Updates.isEmpty())
+            errors.addAll(flushColumnUpdates(nl1Updates, "DGNL-NL1"));
+        if (!dcUpserts.isEmpty())
+            errors.addAll(flushDiemCongUpserts(dcUpserts));
+        return errors;
+    }
+
+    public List<String> processSingleDgnl(String cccd, BigDecimal diemTho) {
+        List<ScoreUpdateCmd> nl1Updates = new ArrayList<>();
+        List<DiemCong> dcUpserts = new ArrayList<>();
+        List<String> errors = buildDgnlCommands(cccd, diemTho, nl1Updates, dcUpserts, null);
+
+        if (!nl1Updates.isEmpty())
+            errors.addAll(flushColumnUpdates(nl1Updates, "DGNL-NL1"));
+        if (!dcUpserts.isEmpty())
+            errors.addAll(flushDiemCongUpserts(dcUpserts));
+        return errors;
+    }
+
+    private List<String> buildDgnlCommands(String cccd, BigDecimal diemTho,
+            List<ScoreUpdateCmd> nl1Updates,
+            List<DiemCong> dcUpserts,
+            Map<String, List<BangQuyDoi>> bqCache) {
+        List<String> errors = new ArrayList<>();
+        if (!existsInDiemThi(cccd)) {
+            errors.add("[DGNL SKIP] CCCD=" + cccd + " không tồn tại trong xt_diemthixettuyen.");
+            return errors;
+        }
+
+        diemTho = coalesceZero(diemTho);
+        nl1Updates.add(new ScoreUpdateCmd(cccd, "NL1", diemTho.setScale(2, RoundingMode.HALF_UP)));
+
+        List<NganhToHop> toHopList = nguyenVongDAO.findNganhToHopByCccd(cccd);
+        for (NganhToHop nth : toHopList) {
+            String manganh = nth.getNganh().getManganh();
+            String matohop = nth.getToHopMon().getMatohop();
+
+            List<BangQuyDoi> bp;
+            if (bqCache != null) {
+                bp = bqCache.computeIfAbsent(matohop, k -> bangQuyDoiDAO.findAllByPhuongThucAndMon("DGNL", k));
+            } else {
+                bp = bangQuyDoiDAO.findAllByPhuongThucAndMon("DGNL", matohop);
+            }
+
+            if (bp.isEmpty()) {
+                errors.add("[DGNL] CCCD=" + cccd + " matohop=" + matohop + ": không có bảng quy đổi DGNL.");
+                continue;
+            }
+
+            BigDecimal[] abcd = BangQuyDoiDAO.interpolateFromRows(bp, diemTho);
+            if (abcd == null) {
+                errors.add("[DGNL] CCCD=" + cccd + " matohop=" + matohop + ": không tìm được khoảng nội suy.");
+                continue;
+            }
+
+            BigDecimal y = interpolate(diemTho, abcd[0], abcd[1], abcd[2], abcd[3]);
+            DiemThiXetTuyen dtXt = diemThiDAO.findByCccd(cccd).orElse(null);
+            if (dtXt == null)
+                continue;
+
+            String dcKey = cccd + "_" + manganh + "_" + matohop;
+            dcUpserts.add(buildDiemCong(dtXt.getThiSinh(), manganh, matohop, y, dcKey));
+        }
         return errors;
     }
 
     List<String> processVsatSheet(List<DgnlVsatRowDTO> rows) {
         List<String> errors = new ArrayList<>();
-        List<ScoreUpdateCmd> cmds  = new ArrayList<>();
+        List<ScoreUpdateCmd> cmds = new ArrayList<>();
         Map<String, List<BangQuyDoi>> bqdCache = bangQuyDoiDAO.loadAllAsCache();
 
         int rowNum = 2;
@@ -336,41 +388,66 @@ public class XetTuyenService {
                 continue;
             }
 
-            String maMon = dto.getMamonthi() == null ? "" : dto.getMamonthi().trim().toUpperCase();
-            String dbCol = VSAT_MON_MAP.get(maMon);
-            if (dbCol == null) {
-                rowNum++;
-                continue;
-            }
-
+            String maMon = dto.getMamonthi();
             String cccd = dto.getCmnd().trim();
-            if (!existsInDiemThi(cccd)) {
-                errors.add("[VSAT SKIP] CCCD=" + cccd + " không tồn tại trong xt_diemthixettuyen.");
-                rowNum++;
-                continue;
+            BigDecimal diemTho = dto.getDiem();
+
+            List<String> rowErrors = buildVsatCommands(cccd, maMon, diemTho, cmds, bqdCache);
+            for (String re : rowErrors) {
+                errors.add("Dòng " + rowNum + " - " + re);
             }
-
-            List<BangQuyDoi> breakpoints = BangQuyDoiDAO.lookupFromCache(bqdCache, maMon);
-            if (breakpoints.isEmpty()) {
-                rowNum++;
-                continue;
-            }
-
-            BigDecimal diemTho = coalesceZero(dto.getDiem());
-            BigDecimal[] abcd  = BangQuyDoiDAO.interpolateFromRows(breakpoints, diemTho);
-
-            if (abcd == null) {
-                errors.add("[VSAT] Dòng " + rowNum + " CCCD=" + cccd + ": Không tìm được khoảng nội suy.");
-                rowNum++;
-                continue;
-            }
-
-            BigDecimal y = interpolate(diemTho, abcd[0], abcd[1], abcd[2], abcd[3]);
-            cmds.add(new ScoreUpdateCmd(cccd, dbCol, y));
             rowNum++;
         }
 
-        if (!cmds.isEmpty()) errors.addAll(flushColumnUpdates(cmds, "VSAT"));
+        if (!cmds.isEmpty())
+            errors.addAll(flushColumnUpdates(cmds, "VSAT"));
+        return errors;
+    }
+
+    public List<String> processSingleVsat(String cccd, String maMon, BigDecimal diemTho) {
+        List<ScoreUpdateCmd> cmds = new ArrayList<>();
+        List<String> errors = buildVsatCommands(cccd, maMon, diemTho, cmds, null);
+        if (!cmds.isEmpty())
+            errors.addAll(flushColumnUpdates(cmds, "VSAT"));
+        return errors;
+    }
+
+    private List<String> buildVsatCommands(String cccd, String maMon, BigDecimal diemTho,
+            List<ScoreUpdateCmd> cmds,
+            Map<String, List<BangQuyDoi>> bqdCache) {
+        List<String> errors = new ArrayList<>();
+        maMon = maMon == null ? "" : maMon.trim().toUpperCase();
+        String dbCol = VSAT_MON_MAP.get(maMon);
+        if (dbCol == null) {
+            return errors;
+        }
+
+        if (!existsInDiemThi(cccd)) {
+            errors.add("[VSAT SKIP] CCCD=" + cccd + " không tồn tại trong xt_diemthixettuyen.");
+            return errors;
+        }
+
+        List<BangQuyDoi> breakpoints;
+        if (bqdCache != null) {
+            breakpoints = BangQuyDoiDAO.lookupFromCache(bqdCache, maMon);
+        } else {
+            breakpoints = bangQuyDoiDAO.findAllByPhuongThucAndMon("VSAT", maMon);
+        }
+
+        if (breakpoints.isEmpty()) {
+            return errors;
+        }
+
+        diemTho = coalesceZero(diemTho);
+        BigDecimal[] abcd = BangQuyDoiDAO.interpolateFromRows(breakpoints, diemTho);
+
+        if (abcd == null) {
+            errors.add("[VSAT] CCCD=" + cccd + ": Không tìm được khoảng nội suy cho môn " + maMon + ".");
+            return errors;
+        }
+
+        BigDecimal y = interpolate(diemTho, abcd[0], abcd[1], abcd[2], abcd[3]);
+        cmds.add(new ScoreUpdateCmd(cccd, dbCol, y));
         return errors;
     }
 
@@ -385,11 +462,13 @@ public class XetTuyenService {
             int count = 0;
             for (ScoreUpdateCmd cmd : cmds) {
                 String colSafe = "`" + cmd.dbCol() + "`";
-                session.createNativeMutationQuery("UPDATE xt_diemthixettuyen SET " + colSafe + " = GREATEST(COALESCE(" + colSafe + ", 0), :diem) WHERE cccd = :cccd")
+                session.createNativeMutationQuery("UPDATE xt_diemthixettuyen SET " + colSafe + " = GREATEST(COALESCE("
+                        + colSafe + ", 0), :diem) WHERE cccd = :cccd")
                         .setParameter("diem", cmd.diem())
                         .setParameter("cccd", cmd.cccd())
                         .executeUpdate();
-                if (++count % BATCH_SIZE == 0) session.flush();
+                if (++count % BATCH_SIZE == 0)
+                    session.flush();
             }
             tx.commit();
         } catch (Exception e) {
@@ -404,11 +483,13 @@ public class XetTuyenService {
             Transaction tx = session.beginTransaction();
             int count = 0;
             for (N1UpdateCommand cmd : commands) {
-                session.createNativeMutationQuery("UPDATE xt_diemthixettuyen SET N1_CC = GREATEST(COALESCE(N1_THI, 0), :diemQd) WHERE cccd = :cccd")
+                session.createNativeMutationQuery(
+                        "UPDATE xt_diemthixettuyen SET N1_CC = GREATEST(COALESCE(N1_CC, 0), :diemQd) WHERE cccd = :cccd")
                         .setParameter("diemQd", cmd.diemQd())
                         .setParameter("cccd", cmd.cccd())
                         .executeUpdate();
-                if (++count % BATCH_SIZE == 0) session.flush();
+                if (++count % BATCH_SIZE == 0)
+                    session.flush();
             }
             tx.commit();
         } catch (Exception e) {
@@ -423,14 +504,16 @@ public class XetTuyenService {
             Transaction tx = session.beginTransaction();
             int count = 0;
             for (DiemCong dc : entities) {
-                session.createNativeMutationQuery("INSERT INTO xt_diemcongxetuyen (ts_cccd, manganh, matohop, diemCC, dc_keys) VALUES (:cccd, :manganh, :matohop, :diemCC, :dcKeys) ON DUPLICATE KEY UPDATE diemCC = VALUES(diemCC)")
+                session.createNativeMutationQuery(
+                        "INSERT INTO xt_diemcongxetuyen (ts_cccd, manganh, matohop, diemCC, dc_keys) VALUES (:cccd, :manganh, :matohop, :diemCC, :dcKeys) ON DUPLICATE KEY UPDATE diemCC = VALUES(diemCC)")
                         .setParameter("cccd", dc.getThiSinh().getCccd())
                         .setParameter("manganh", dc.getManganh())
                         .setParameter("matohop", dc.getMatohop())
                         .setParameter("diemCC", dc.getDiemCC())
                         .setParameter("dcKeys", dc.getDcKeys())
                         .executeUpdate();
-                if (++count % BATCH_SIZE == 0) session.flush();
+                if (++count % BATCH_SIZE == 0)
+                    session.flush();
             }
             tx.commit();
         } catch (Exception e) {
@@ -440,13 +523,16 @@ public class XetTuyenService {
     }
 
     private String validateIeltsRow(IeltsImportDTO dto) {
-        if (dto.getCccd() == null || dto.getCccd().trim().isEmpty()) return "Bắt buộc phải có CCCD";
+        if (dto.getCccd() == null || dto.getCccd().trim().isEmpty())
+            return "Bắt buộc phải có CCCD";
         return null;
     }
 
     private String validateDgnlVsatRow(DgnlVsatRowDTO dto, String source) {
-        if (dto.getCmnd() == null || dto.getCmnd().trim().isEmpty()) return "Bắt buộc phải có CMND/CCCD";
-        if (dto.getDiem() == null) return "Bắt buộc phải có DIEM";
+        if (dto.getCmnd() == null || dto.getCmnd().trim().isEmpty())
+            return "Bắt buộc phải có CMND/CCCD";
+        if (dto.getDiem() == null)
+            return "Bắt buộc phải có DIEM";
         return null;
     }
 
@@ -474,12 +560,16 @@ public class XetTuyenService {
 
     private BigDecimal interpolate(BigDecimal x, BigDecimal a, BigDecimal b, BigDecimal c, BigDecimal d) {
         BigDecimal rangeIn = b.subtract(a);
-        if (rangeIn.compareTo(BigDecimal.ZERO) == 0) return c.setScale(2, RoundingMode.HALF_UP);
+        if (rangeIn.compareTo(BigDecimal.ZERO) == 0)
+            return c.setScale(2, RoundingMode.HALF_UP);
         BigDecimal relativePos = x.subtract(a).divide(rangeIn, 10, RoundingMode.HALF_UP);
         BigDecimal rangeOut = d.subtract(c);
         return c.add(relativePos.multiply(rangeOut)).setScale(2, RoundingMode.HALF_UP);
     }
 
-    private record ScoreUpdateCmd(String cccd, String dbCol, BigDecimal diem) {}
-    private record N1UpdateCommand(String cccd, BigDecimal diemQd) {}
+    private record ScoreUpdateCmd(String cccd, String dbCol, BigDecimal diem) {
+    }
+
+    private record N1UpdateCommand(String cccd, BigDecimal diemQd) {
+    }
 }
