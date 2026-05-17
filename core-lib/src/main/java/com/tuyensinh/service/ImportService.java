@@ -19,10 +19,13 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Map;
+import java.util.HashMap;
 
 public class ImportService {
 
     private final BaseImportService<ThiSinhImportDTO, ThiSinh> baseImportService;
+    private final Map<String, ThiSinh> thiSinhCache = new HashMap<>();
 
     private static final Set<String> THPT_KEYS = new HashSet<>(Arrays.asList(
         "TO","LI","HO","SI","VA","SU","DI","KTPL","N1_THI","N1_CC","TI"
@@ -53,8 +56,22 @@ public class ImportService {
                     ThiSinh ts = new ThiSinh();
                     ts.setCccd(dto.getCccd());
                     ts.setSobaodanh(dto.getSoBaoDanh());
-                    ts.setHo(dto.getHo());
-                    ts.setTen(dto.getTen());
+                    
+                    if (dto.getHoTen() != null && !dto.getHoTen().trim().isEmpty()) {
+                        String fullName = dto.getHoTen().trim();
+                        int lastSpace = fullName.lastIndexOf(' ');
+                        if (lastSpace > 0) {
+                            ts.setHo(fullName.substring(0, lastSpace));
+                            ts.setTen(fullName.substring(lastSpace + 1));
+                        } else {
+                            ts.setHo("");
+                            ts.setTen(fullName);
+                        }
+                    } else {
+                        ts.setHo(dto.getHo());
+                        ts.setTen(dto.getTen());
+                    }
+                    
                     String ngaySinh = dto.getNgaySinh(); 
                     ts.setNgaySinh(ngaySinh);
                     ts.setDienThoai(dto.getDienThoai());
@@ -78,7 +95,24 @@ public class ImportService {
                         
                         int count = 0;
                         for (ThiSinh entity : entities) {
-                            session.persist(entity); 
+                            ThiSinh existing = session.createQuery(
+                                    "FROM ThiSinh t WHERE t.cccd = :cccd", ThiSinh.class)
+                                    .setParameter("cccd", entity.getCccd())
+                                    .uniqueResult();
+                            
+                            if (existing == null) {
+                                session.persist(entity);
+                            } else {
+                                existing.setSobaodanh(entity.getSobaodanh());
+                                existing.setHo(entity.getHo());
+                                existing.setTen(entity.getTen());
+                                existing.setNgaySinh(entity.getNgaySinh());
+                                existing.setDienThoai(entity.getDienThoai());
+                                existing.setGioiTinh(entity.getGioiTinh());
+                                existing.setEmail(entity.getEmail());
+                                session.merge(existing);
+                            }
+                            
                             if (++count % 50 == 0) {
                                 session.flush();
                                 session.clear();
@@ -111,7 +145,11 @@ public class ImportService {
                 
                 dto -> {
                     if (dto.getCccd() == null || dto.getCccd().trim().isEmpty()) return "Bat buoc phai co so CCCD";
-                    if (dto.getTen() == null || dto.getTen().trim().isEmpty()) return "Bat buoc phai co Ten";
+                    
+                    boolean hasTen = (dto.getTen() != null && !dto.getTen().trim().isEmpty());
+                    boolean hasHoTen = (dto.getHoTen() != null && !dto.getHoTen().trim().isEmpty());
+                    
+                    if (!hasTen && !hasHoTen) return "Bat buoc phai co Ten hoac Ho Ten";
                     return null; 
                 }
         );
@@ -128,7 +166,7 @@ public class ImportService {
      * Import diem thi tu file Excel.
      * Neu thi sinh da co diem thi cap nhat, chua co thi tao moi.
      */
-    public List<String> importDiemThi(File file) {
+    public List<String> importDiemThi(File file, String defaultMethod) {
         System.out.println("[ImportService] Bat dau import diem thi tu file: " + file.getName());
         BaseImportService<DiemThiImportDTO, DiemThiXetTuyen> diemImportService = new BaseImportService<>();
         Set<String> cccdSeen = new HashSet<>();
@@ -139,10 +177,15 @@ public class ImportService {
 
                 dto -> {
                     DiemThiXetTuyen diem = new DiemThiXetTuyen();
-                    ThiSinh ts = findThiSinhForImport(dto.getCccd(), dto.getSoBaoDanh());
+                    ThiSinh ts = findThiSinhForImportCached(dto.getCccd(), dto.getSoBaoDanh());
                     diem.setThiSinh(ts);
                     diem.setSobaodanh(emptyToNull(dto.getSoBaoDanh()));
-                    diem.setDPhuongthuc(DiemThiXetTuyenDAO.normalizeMethod(dto.getPhuongThuc()));
+                    
+                    String pt = dto.getPhuongThuc() != null && !dto.getPhuongThuc().trim().isEmpty() 
+                                ? DiemThiXetTuyenDAO.normalizeMethod(dto.getPhuongThuc()) 
+                                : defaultMethod;
+                    diem.setDPhuongthuc(pt);
+                    
                     diem.setTo(normalizeScore(dto.getTo()));
                     diem.setLi(normalizeScore(dto.getLi()));
                     diem.setHo(normalizeScore(dto.getHo()));
@@ -169,19 +212,22 @@ public class ImportService {
                         session = HibernateUtil.getSessionFactory().openSession();
                         tx = session.beginTransaction();
 
+                        // Tải sẵn toàn bộ ThiSinh và DiemThiXetTuyen vào bộ nhớ để Lookup O(1)
+                        System.out.println("[ImportService] Dang tai du lieu tu DB de toi uu hoa...");
+                        List<ThiSinh> allTs = session.createQuery("FROM ThiSinh", ThiSinh.class).list();
+                        Map<String, ThiSinh> dbThiSinhMap = new HashMap<>();
+                        for (ThiSinh t : allTs) dbThiSinhMap.put(t.getCccd(), t);
+
+                        List<DiemThiXetTuyen> allDt = session.createQuery("SELECT d FROM DiemThiXetTuyen d JOIN FETCH d.thiSinh ts", DiemThiXetTuyen.class).list();
+                        Map<String, DiemThiXetTuyen> dbDiemThiMap = new HashMap<>();
+                        for (DiemThiXetTuyen d : allDt) dbDiemThiMap.put(d.getThiSinh().getCccd(), d);
+                        System.out.println("[ImportService] Tai xong du lieu DB, tien hanh luu batch...");
+
                         int count = 0;
                         for (DiemThiXetTuyen entity : entities) {
                             String cccd = entity.getThiSinh().getCccd();
-                            ThiSinh managedThiSinh = session.createQuery(
-                                            "FROM ThiSinh t WHERE t.cccd = :cccd", ThiSinh.class)
-                                    .setParameter("cccd", cccd)
-                                    .uniqueResult();
-
-                            DiemThiXetTuyen existing = session.createQuery(
-                                            "SELECT d FROM DiemThiXetTuyen d JOIN FETCH d.thiSinh ts WHERE ts.cccd = :cccd",
-                                            DiemThiXetTuyen.class)
-                                    .setParameter("cccd", cccd)
-                                    .uniqueResult();
+                            ThiSinh managedThiSinh = dbThiSinhMap.get(cccd);
+                            DiemThiXetTuyen existing = dbDiemThiMap.get(cccd);
 
                             if (existing == null) {
                                 entity.setThiSinh(managedThiSinh);
@@ -247,11 +293,15 @@ public class ImportService {
                         return "CCCD bi trung trong file Excel: " + cccd;
                     }
                     try {
-                        findThiSinhForImport(dto.getCccd(), dto.getSoBaoDanh());
+                        findThiSinhForImportCached(dto.getCccd(), dto.getSoBaoDanh());
                     } catch (Exception e) {
                         return e.getMessage();
                     }
-                    String pt = DiemThiXetTuyenDAO.normalizeMethod(dto.getPhuongThuc());
+                    
+                    String pt = dto.getPhuongThuc() != null && !dto.getPhuongThuc().trim().isEmpty() 
+                                ? DiemThiXetTuyenDAO.normalizeMethod(dto.getPhuongThuc()) 
+                                : defaultMethod;
+                                
                     if (pt != null && !(DiemThiXetTuyenDAO.PT_THPT.equals(pt)
                             || DiemThiXetTuyenDAO.PT_VSAT.equals(pt)
                             || DiemThiXetTuyenDAO.PT_DGNL.equals(pt))) {
@@ -342,6 +392,16 @@ public class ImportService {
         }
     }
 
+    private ThiSinh findThiSinhForImportCached(String cccdOrCode, String soBaoDanh) {
+        String key = cccdOrCode != null ? cccdOrCode.trim() : "";
+        if (thiSinhCache.containsKey(key)) {
+            return thiSinhCache.get(key);
+        }
+        ThiSinh ts = findThiSinhForImport(cccdOrCode, soBaoDanh);
+        thiSinhCache.put(key, ts);
+        return ts;
+    }
+
     private String emptyToNull(String value) {
         if (value == null) return null;
         String trimmed = value.trim();
@@ -358,11 +418,9 @@ public class ImportService {
             return null;
         }
 
+
         Set<String> allowed = allowedScoreKeys(method);
-        String disallowed = firstDisallowedKey(dto, allowed);
-        if (disallowed != null) {
-            return "Phương thức " + method + " không cho phép môn " + disallowed + ".";
-        }
+
 
         if (DiemThiXetTuyenDAO.PT_DGNL.equals(method)) {
             if (!hasScore(dto.getNl1())) {
@@ -378,10 +436,10 @@ public class ImportService {
             return null;
         }
 
-        int count = countScores(dto, allowed);
-        if (count < 3) {
-            return "Phương thức THPT cần có ít nhất 3 môn.";
-        }
+        // int count = countScores(dto, allowed);
+        // if (count < 3) {
+        //     return "Phương thức THPT cần có ít nhất 3 môn.";
+        // }
         return null;
     }
 

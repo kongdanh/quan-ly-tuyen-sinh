@@ -265,6 +265,8 @@ public class XetTuyenService {
         final String DGNL_PT = "DGNL";
         Map<String, List<BangQuyDoi>> bqCache = new HashMap<>();
 
+        Set<String> missingBangQuyDoi = new HashSet<>();
+        
         int rowNum = 2;
         for (DgnlVsatRowDTO dto : rows) {
             String err = validateDgnlVsatRow(dto, "DGNL");
@@ -280,7 +282,7 @@ public class XetTuyenService {
 
             String cccd = dto.getCmnd().trim();
             if (!existsInDiemThi(cccd)) {
-                errors.add("[DGNL SKIP] CCCD=" + cccd + " không tồn tại trong xt_diemthixettuyen.");
+                // errors.add("[DGNL SKIP] CCCD=" + cccd + " không tồn tại trong xt_diemthixettuyen.");
                 rowNum++;
                 continue;
             }
@@ -297,13 +299,12 @@ public class XetTuyenService {
                         matohop, k -> bangQuyDoiDAO.findAllByPhuongThucAndMon(DGNL_PT, k));
 
                 if (bp.isEmpty()) {
-                    errors.add("[DGNL] CCCD=" + cccd + " matohop=" + matohop + ": không có bảng quy đổi DGNL.");
+                    missingBangQuyDoi.add(matohop);
                     continue;
                 }
 
                 BigDecimal[] abcd = BangQuyDoiDAO.interpolateFromRows(bp, diemTho);
                 if (abcd == null) {
-                    errors.add("[DGNL] CCCD=" + cccd + " matohop=" + matohop + ": không tìm được khoảng nội suy.");
                     continue;
                 }
 
@@ -315,6 +316,10 @@ public class XetTuyenService {
                 dcUpserts.add(buildDiemCong(dtXt.getThiSinh(), manganh, matohop, y, dcKey));
             }
             rowNum++;
+        }
+        
+        if (!missingBangQuyDoi.isEmpty()) {
+            errors.add("[CẢNH BÁO] Hệ thống chưa có cấu hình Bảng Quy Đổi DGNL cho các tổ hợp sau: " + String.join(", ", missingBangQuyDoi) + ". Điểm NL1 vẫn được lưu thành công, nhưng chưa thể quy đổi điểm xét tuyển cho các tổ hợp này.");
         }
 
         if (!nl1Updates.isEmpty()) errors.addAll(flushColumnUpdates(nl1Updates, "DGNL-NL1"));
