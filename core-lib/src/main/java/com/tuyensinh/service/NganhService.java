@@ -4,6 +4,8 @@ import com.tuyensinh.dao.NganhDAO;
 import com.tuyensinh.dto.NganhDTO;
 import com.tuyensinh.mapper.NganhMapper;
 import com.tuyensinh.model.Nganh;
+import com.tuyensinh.util.HibernateUtil;
+import com.tuyensinh.util.SystemLogger;
 
 import java.io.Serializable;
 import java.util.List;
@@ -11,36 +13,47 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
+import org.hibernate.Session;
+
 public class NganhService {
 
     private final NganhDAO nganhDAO = new NganhDAO();
 
-    // ================================================================
-    // READ
-    // ================================================================
-
-    public List<Nganh> getAll()                        { return nganhDAO.getAll(); }
-    public List<Nganh> getAllForComboBox()              { return nganhDAO.getAllForComboBox(); }
-    public CompletableFuture<Nganh> findByIdAsync(Serializable id) { return nganhDAO.findByIdAsync(id); }
-    public Optional<Nganh> findByMaNganh(String maNganh) { return nganhDAO.findByMaNganh(maNganh); }
+    /**
+     * Lay toan bo danh sach nganh
+     */
+    public List<Nganh> getAll() { return nganhDAO.getAll(); }
 
     /**
-     * Sử dụng Try-Catch để bảo vệ UI khỏi lỗi sập DB.
-     * @return List<Nganh> (Trả về list rỗng nếu có lỗi)
+     * Lay danh sach nganh cho ComboBox (chi lay truong can thiet)
+     */
+    public List<Nganh> getAllForComboBox() { return nganhDAO.getAllForComboBox(); }
+
+    public CompletableFuture<Nganh> findByIdAsync(Serializable id) { return nganhDAO.findByIdAsync(id); }
+
+    public Optional<Nganh> findByMaNganh(String maNganh) { return nganhDAO.findByMaNganh(maNganh); }
+    /**
+     * Lấy số lượng đăng ký thực tế từ bảng nguyện vọng.
+     * Trả về Map<maNganh, count> — gọi 1 lần cho toàn bộ danh sách.
+     */
+    public CompletableFuture<Map<String, Long>> fetchDangKyCountMap() {
+        return CompletableFuture.supplyAsync(() -> nganhDAO.countDangKyByMaNganh());
+    }
+    /**
+     * Lay danh sach nganh dong bo, bao ve UI khoi loi DB
      */
     public List<Nganh> findAllSync() {
         try {
             return nganhDAO.findAllSync();
         } catch (Exception e) {
-            System.err.println("[NganhService] Lỗi lấy danh sách ngành: " + e.getMessage());
+            System.err.println("[NganhService] Loi lay danh sach nganh: " + e.getMessage());
             return java.util.Collections.emptyList();
         }
     }
 
-    // ================================================================
-    // SEARCH + PAGINATION
-    // ================================================================
-
+    /**
+     * Tim kiem va phan trang danh sach nganh
+     */
     public CompletableFuture<List<Nganh>> findPageWithFilters(
             String keyword, List<String> searchFields,
             Map<String, Object> filters, int pageIndex, int pageSize) {
@@ -49,39 +62,51 @@ public class NganhService {
                 .thenApply(list -> applyPostFilters(list, filters));
     }
 
+    /**
+     * Dem tong so ban ghi nganh theo bo loc
+     */
     public CompletableFuture<Long> countWithFiltersAsync(
             String keyword, List<String> searchFields, Map<String, Object> filters) {
         return nganhDAO.countWithFiltersAsync(keyword, searchFields,
                 toHibernateFilters(filters));
     }
 
-    // ================================================================
-    // CREATE / UPDATE
-    // ================================================================
-
+    /**
+     * Them nganh moi (kiem tra trung ma nganh truoc khi luu)
+     */
     public void save(Nganh nganh) {
+        System.out.println("[NganhService] Them nganh moi: " + nganh.getManganh() + " - " + nganh.getTennganh());
         if (nganhDAO.existsByMaNganh(nganh.getManganh())) {
             throw new IllegalArgumentException(
-                    "Mã ngành \"" + nganh.getManganh() + "\" đã tồn tại trong hệ thống.");
+                    "Ma nganh \"" + nganh.getManganh() + "\" da ton tai trong he thong.");
         }
         nganhDAO.save(nganh);
+        System.out.println("[NganhService] Them nganh thanh cong: " + nganh.getManganh());
+        SystemLogger.log(null, "System", "Thêm ngành: " + nganh.getManganh() + " - " + nganh.getTennganh(), true);
     }
 
-    public void update(Nganh nganh) { nganhDAO.update(nganh); }
+    /**
+     * Cap nhat thong tin nganh
+     */
+    public void update(Nganh nganh) { 
+        System.out.println("[NganhService] Cap nhat nganh: " + nganh.getManganh());
+        nganhDAO.update(nganh); 
+        System.out.println("[NganhService] Cap nhat nganh thanh cong: " + nganh.getManganh());
+        SystemLogger.log(null, "System", "Cập nhật ngành: " + nganh.getManganh() + " - " + nganh.getTennganh(), true);
+    }
 
-    // ================================================================
-    // DELETE
-    // ================================================================
-
-    /** Xóa đơn giản - gọi khi checkDeleteDependencies trả về danh sách rỗng */
+    /**
+     * Xoa nganh don gian (chi goi khi khong con du lieu phu thuoc)
+     */
     public CompletableFuture<Boolean> deleteByIdAsync(Serializable id) {
+        System.out.println("[NganhService] Xoa nganh ID=" + id);
+        SystemLogger.log(null, "System", "Xóa ngành ID=" + id, true);
         return nganhDAO.deleteByIdAsync(id);
     }
 
     /**
-     * Kiểm tra các bảng con còn dữ liệu trước khi xóa.
-     * Trả về danh sách mô tả; rỗng = an toàn xóa trực tiếp.
-     * VD: ["Tổ hợp xét tuyển: 3 bản ghi", "Nguyện vọng đăng ký: 12 bản ghi"]
+     * Kiem tra cac bang con phu thuoc truoc khi xoa.
+     * Tra ve danh sach mo ta; rong = an toan xoa truc tiep.
      */
     public CompletableFuture<List<String>> checkDeleteDependencies(int idNganh, String maNganh) {
         return CompletableFuture.supplyAsync(() ->
@@ -90,49 +115,50 @@ public class NganhService {
     }
 
     /**
-     * Xóa ngành VÀ toàn bộ dữ liệu con (cascade).
-     * Chỉ gọi sau khi user đã xác nhận đồng ý xóa hết.
+     * Xoa nganh va toan bo du lieu con (cascade).
+     * Chi goi sau khi user xac nhan dong y xoa het.
      */
     public CompletableFuture<Boolean> deleteCascadeAsync(int idNganh, String maNganh) {
+        System.out.println("[NganhService] Xoa cascade nganh ID=" + idNganh + " ma=" + maNganh);
+        SystemLogger.log(null, "System", "Xóa cascade ngành: " + maNganh + " (ID=" + idNganh + ")", true);
         return nganhDAO.deleteCascadeAsync(idNganh, maNganh);
     }
 
-    // ================================================================
-    // BATCH IMPORT
-    // ================================================================
-
+    /**
+     * Import hang loat nganh tu file Excel (them moi hoac cap nhat neu da ton tai)
+     */
     public CompletableFuture<Void> saveOrUpdateAll(List<Nganh> nganhList) {
+        System.out.println("[NganhService] Import batch " + nganhList.size() + " nganh");
         return CompletableFuture.runAsync(() -> {
+            int created = 0, updated = 0;
             for (Nganh n : nganhList) {
                 if (nganhDAO.existsByMaNganh(n.getManganh())) {
                     nganhDAO.findByMaNganh(n.getManganh()).ifPresent(existing -> {
                         n.setId(existing.getId());
                         nganhDAO.update(n);
                     });
+                    updated++;
                 } else {
                     nganhDAO.save(n);
+                    created++;
                 }
             }
+            System.out.println("[NganhService] Import batch hoan thanh: " + created + " tao moi, " + updated + " cap nhat");
+            SystemLogger.log(null, "System", "Import batch ngành: " + created + " tạo mới, " + updated + " cập nhật", true);
         });
     }
 
-    // ================================================================
-    // STATISTICS
-    // ================================================================
-
+    /**
+     * Thong ke so luong dang ky theo nganh
+     */
     public List<Object[]> getThongKeDangKy() { return nganhDAO.getThongKeDangKy(); }
-
-    // ================================================================
-    // DTO CONVERSION
-    // ================================================================
 
     public NganhDTO toDTO(Nganh nganh)     { return NganhMapper.toDTO(nganh); }
     public Nganh    toEntity(NganhDTO dto) { return NganhMapper.toEntity(dto); }
 
-    // ================================================================
-    // PRIVATE HELPERS
-    // ================================================================
-
+    /**
+     * Chuyen doi filter UI sang filter HQL
+     */
     private Map<String, Object> toHibernateFilters(Map<String, Object> uiFilters) {
         Map<String, Object> hqlFilters = new java.util.HashMap<>();
         if (uiFilters == null) return hqlFilters;
@@ -147,6 +173,9 @@ public class NganhService {
         return hqlFilters;
     }
 
+    /**
+     * Loc bo sung phia service (khoa, trang thai, chi tieu, phan tram)
+     */
     private List<Nganh> applyPostFilters(List<Nganh> list, Map<String, Object> filters) {
         if (filters == null || filters.isEmpty()) return list;
 
@@ -186,7 +215,14 @@ public class NganhService {
         }
         return result;
     }
+    /**
+     * Lấy số lượng đăng ký thực tế từ bảng nguyện vọng.
+     * Trả về Map<maNganh, count> — gọi 1 lần cho toàn bộ danh sách.
+     */
 
+    /**
+     * Tinh tong so luong dang ky tu tat ca phuong thuc
+     */
     private int tinhTongDangKy(Nganh n) {
         int total = 0;
         if (n.getSlXtt()  != null) total += n.getSlXtt();
@@ -198,6 +234,9 @@ public class NganhService {
         return total;
     }
 
+    /**
+     * Xac dinh khoa dua tren tien to ma nganh
+     */
     private String resolveKhoa(String maNganh) {
         if (maNganh == null) return "—";
         String m = maNganh.toUpperCase();
@@ -208,6 +247,9 @@ public class NganhService {
         return "—";
     }
 
+    /**
+     * Xac dinh trang thai tuyen sinh cua nganh
+     */
     private String resolveTrangThai(Nganh n, int phanTram) {
         if ("0".equals(n.getNTuyenthang()) && "0".equals(n.getNDgnl())
                 && "0".equals(n.getNThpt()) && "0".equals(n.getNVsat()))
@@ -221,4 +263,27 @@ public class NganhService {
         try { return Integer.parseInt(val.toString()); }
         catch (NumberFormatException e) { return null; }
     }
+
+    /**
+     * Kiem tra nganh con chi tieu hay khong (dem so trung tuyen so voi chi tieu)
+     */
+    public boolean conChiTieu(Nganh nganh) {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Long daTrungTuyen = session.createQuery(
+                "SELECT count(k) FROM KetQuaXetTuyen k WHERE k.nganh.id = :idNganh", Long.class)
+                .setParameter("idNganh", nganh.getId())
+                .uniqueResult();
+            return daTrungTuyen < nganh.getNChitieu();
+        } catch (Exception e) {
+            System.err.println("[NganhService] Loi kiem tra chi tieu nganh ID=" + nganh.getId() + ": " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Giam chi tieu - khong can xu ly truc tiep vi dem dong qua bang KetQua
+     */
+    public void giamChiTieu(Nganh nganh) {
+    }
+
 }

@@ -12,7 +12,6 @@ import java.awt.Font;
 
 public class Main {
     public static void main(String[] args) {
-        
         try {
             //setup font
             FlatRobotoFont.install();

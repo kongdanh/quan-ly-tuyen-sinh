@@ -10,7 +10,7 @@
             jdbc:mysql://localhost:3306/xettuyen2026?rewriteBatchedStatements=true&amp;useSSL=false&amp;allowPublicKeyRetrieval=true&amp;serverTimezone=UTC&amp;characterEncoding=UTF-8
         </property>
         <property name="hibernate.connection.username">root</property>
-        <property name="hibernate.connection.password">123456</property>
+        <property name="hibernate.connection.password"></property>
 
         <!-- Hibernate settings -->
         <property name="hibernate.dialect">org.hibernate.dialect.MySQLDialect</property>
@@ -64,6 +64,8 @@
     <mapping class="com.tuyensinh.model.NhatKyHoatDong"/>
     <mapping class="com.tuyensinh.model.DotTuyenSinh"/>
     <mapping class="com.tuyensinh.model.HoSoTuyenSinh"/>
-
+    <mapping class="com.tuyensinh.model.KetQuaXetTuyen"/>
+    <mapping class="com.tuyensinh.model.DiemChuanDot"/>
+    
     </session-factory>
 </hibernate-configuration>

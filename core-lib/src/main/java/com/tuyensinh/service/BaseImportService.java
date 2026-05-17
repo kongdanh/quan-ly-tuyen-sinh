@@ -11,7 +11,8 @@ import java.util.function.Function;
 public class BaseImportService<D, E> {
 
     /**
-     * Import dữ liệu từ file Excel (ALL-OR-NOTHING)
+     * Import du lieu tu file Excel theo co che ALL-OR-NOTHING.
+     * Tat ca dong phai hop le moi luu vao database, neu co bat ky loi nao thi khong luu dong nao.
      */
     public List<String> importFromExcel(File file, Class<D> dtoClass,
                                         Function<D, E> mapper,
@@ -20,7 +21,6 @@ public class BaseImportService<D, E> {
         List<String> errors = new ArrayList<>();
 
         try {
-            // Đọc file Excel
             List<D> dtoList = ExcelReaderUtil.readExcel(file, dtoClass);
 
             int rowNumber = 2;
@@ -28,17 +28,15 @@ public class BaseImportService<D, E> {
 
             for (D dto : dtoList) {
                 try {
-                    // Validate Logic
                     String validationError = validateFunction.apply(dto);
                     if (validationError != null) {
-                        errors.add("Dòng " + rowNumber + ": " + validationError);
+                        errors.add("Dong " + rowNumber + ": " + validationError);
                     } else {
-                        // Convert sang entity
                         E entity = mapper.apply(dto);
                         entities.add(entity);
                     }
                 } catch (Exception e) {
-                    errors.add("Dòng " + rowNumber + ": Lỗi định dạng dữ liệu - " + e.getMessage());
+                    errors.add("Dong " + rowNumber + ": Loi dinh dang du lieu - " + e.getMessage());
                 }
                 rowNumber++;
             }
@@ -50,7 +48,7 @@ public class BaseImportService<D, E> {
             saveConsumer.accept(entities);
 
         } catch (Exception e) {
-            errors.add("Lỗi hệ thống: " + e.getMessage());
+            errors.add("Loi he thong: " + e.getMessage());
         }
 
         return errors;

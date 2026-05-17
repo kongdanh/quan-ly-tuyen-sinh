@@ -70,14 +70,14 @@ public class LoginForm extends JFrame {
                     UIConstants.LOGIN_ICON_SIZE, UIConstants.LOGIN_ICON_SIZE);
             left.add(new JLabel(icon), gbc);
         } catch (Exception e) {
-            JLabel fb = new JLabel("🎓");
-            fb.setFont(UIManager.getFont("defaultFont").deriveFont(Font.PLAIN, 80f));
+            JLabel fb = new JLabel("SGU");
+            fb.setFont(UIManager.getFont("defaultFont").deriveFont(Font.BOLD, 64f));
             fb.setForeground(Color.WHITE);
             left.add(fb, gbc);
         }
 
         gbc.gridy = 1;
-        JLabel lblUni = new JLabel(Constants.APP_UNIVERSITY); // APP_UNIVERSITY nằm ở Constants
+        JLabel lblUni = new JLabel(Constants.APP_UNIVERSITY);
         lblUni.setFont(UIManager.getFont("defaultFont").deriveFont(Font.BOLD, 32f));
         lblUni.setForeground(Color.WHITE);
         left.add(lblUni, gbc);

@@ -40,10 +40,23 @@ public class NhomQuyenPanel extends JPanel {
 
     // Danh sách các chức năng hệ thống cần phân quyền
     private final String[] DANH_SACH_CHUC_NANG = {
-        Constants.QUYEN_THI_SINH, Constants.QUYEN_DIEM_THI, Constants.QUYEN_NGUYEN_VONG,
-        Constants.QUYEN_NGANH, Constants.QUYEN_TOHOP, Constants.QUYEN_NGANH_TOHOP,
-        Constants.QUYEN_DIEM_CONG, Constants.QUYEN_BANG_QUY_DOI, Constants.QUYEN_THONG_KE,
-        Constants.QUYEN_PHAN_QUYEN, Constants.QUYEN_CAU_HINH
+        Constants.QUYEN_CAU_HINH,      // Hệ thống
+        Constants.QUYEN_BANG_QUY_DOI,
+        Constants.QUYEN_DIEM_CONG,
+
+        Constants.QUYEN_DIEM_CHUAN,    // Điểm chuẩn
+        Constants.QUYEN_NGANH,         
+        Constants.QUYEN_TOHOP, 
+        Constants.QUYEN_NGANH_TOHOP,
+        
+        Constants.QUYEN_HO_SO,         // Hồ sơ
+        Constants.QUYEN_DIEM_THI, 
+        
+        Constants.QUYEN_NGUYEN_VONG,   // Kết quả
+        Constants.QUYEN_THONG_KE,
+        
+        Constants.QUYEN_NGUOI_DUNG,   // Phân quyền
+        Constants.QUYEN_PHAN_QUYEN
     };
 
     public NhomQuyenPanel() {

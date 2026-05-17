@@ -8,6 +8,7 @@ import com.tuyensinh.model.ThiSinh;
 import com.tuyensinh.model.ThiSinhAccount;
 import com.tuyensinh.util.HibernateUtil;
 import com.tuyensinh.util.PasswordUtil;
+import com.tuyensinh.util.SystemLogger;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 
@@ -37,109 +38,111 @@ public class ImportService {
         this.baseImportService = new BaseImportService<>();
     }
 
+    /**
+     * Import danh sach thi sinh tu file Excel.
+     * Tu dong tao tai khoan voi mat khau mac dinh la ngay sinh.
+     */
     public List<String> importThiSinh(File file) {
-        return baseImportService.importFromExcel(
+        System.out.println("[ImportService] Bat dau import thi sinh tu file: " + file.getName());
+        
+        List<String> errors = baseImportService.importFromExcel(
                 file,
                 ThiSinhImportDTO.class,
                 
-                // 1. MAPPER
                 dto -> {
                     ThiSinh ts = new ThiSinh();
-                    
                     ts.setCccd(dto.getCccd());
                     ts.setSobaodanh(dto.getSoBaoDanh());
                     ts.setHo(dto.getHo());
                     ts.setTen(dto.getTen());
-                    
                     String ngaySinh = dto.getNgaySinh(); 
                     ts.setNgaySinh(ngaySinh);
-                    
                     ts.setDienThoai(dto.getDienThoai());
                     ts.setGioiTinh(dto.getGioiTinh());
                     ts.setEmail(dto.getEmail());
 
-                    // Tạo Account
                     ThiSinhAccount account = new ThiSinhAccount();
                     String rawPassword = (ngaySinh != null && !ngaySinh.isEmpty()) ? ngaySinh : "123456"; 
                     account.setPasswordHash(PasswordUtil.hash(rawPassword)); 
-
                     account.setThiSinh(ts);
                     ts.setAccount(account);
-
                     return ts;
                 },
                 
-                // 2. SAVE CONSUMER
                 entities -> {
                     Session session = null;
                     Transaction tx = null;
                     try {
-                        // Mở Session thủ công, KHÔNG dùng try-with-resources
                         session = HibernateUtil.getSessionFactory().openSession();
                         tx = session.beginTransaction();
                         
                         int count = 0;
                         for (ThiSinh entity : entities) {
                             session.persist(entity); 
-                            
-                            // Batch processing
                             if (++count % 50 == 0) {
                                 session.flush();
                                 session.clear();
                             }
                         }
                         
-                        // Nếu vòng lặp chạy ok -> Chốt lưu
                         tx.commit(); 
+                        System.out.println("[ImportService] Import thanh cong " + entities.size() + " thi sinh");
+                        SystemLogger.log(null, "System", "Import " + entities.size() + " thí sinh từ file Excel", true);
                         
                     } catch (Exception e) {
-                        // Xảy ra lỗi -> Rollback ngay lập tức KHI SESSION VẪN CÒN ĐANG MỞ
                         if (tx != null && tx.isActive()) {
                             try {
                                 tx.rollback();
                             } catch (Exception rollbackEx) {
-                                // Bắt luôn lỗi rác nếu rollback thất bại để không đè mất lỗi chính
-                                System.err.println("Lỗi Rollback: " + rollbackEx.getMessage());
+                                System.err.println("[ImportService] Loi rollback: " + rollbackEx.getMessage());
                             }
                         }
-                        
-                        // Ném lỗi GỐC ra ngoài để UI hiển thị. (In thêm StackTrace ra console để bạn dễ debug)
+                        System.err.println("[ImportService] Loi import thi sinh: " + e.getMessage());
                         e.printStackTrace(); 
-                        throw new RuntimeException("Lỗi lưu Database (Đã Rollback an toàn): " + e.getMessage());
+                        SystemLogger.log(null, "System", "Lỗi import thí sinh: " + e.getMessage(), false);
+                        throw new RuntimeException("Loi luu Database (Da Rollback an toan): " + e.getMessage());
                         
                     } finally {
-                        // Dọn dẹp: Đảm bảo Session LÀ THỨ CUỐI CÙNG bị đóng
                         if (session != null && session.isOpen()) {
                             session.close();
                         }
                     }
                 },
                 
-                // 3. VALIDATOR
                 dto -> {
-                    if (dto.getCccd() == null || dto.getCccd().trim().isEmpty()) return "Bắt buộc phải có số CCCD";
-                    if (dto.getTen() == null || dto.getTen().trim().isEmpty()) return "Bắt buộc phải có Tên";
+                    if (dto.getCccd() == null || dto.getCccd().trim().isEmpty()) return "Bat buoc phai co so CCCD";
+                    if (dto.getTen() == null || dto.getTen().trim().isEmpty()) return "Bat buoc phai co Ten";
                     return null; 
                 }
         );
+        
+        if (errors.isEmpty()) {
+            System.out.println("[ImportService] Import thi sinh hoan thanh, khong co loi");
+        } else {
+            System.out.println("[ImportService] Import thi sinh co " + errors.size() + " loi");
+        }
+        return errors;
     }
 
+    /**
+     * Import diem thi tu file Excel.
+     * Neu thi sinh da co diem thi cap nhat, chua co thi tao moi.
+     */
     public List<String> importDiemThi(File file) {
+        System.out.println("[ImportService] Bat dau import diem thi tu file: " + file.getName());
         BaseImportService<DiemThiImportDTO, DiemThiXetTuyen> diemImportService = new BaseImportService<>();
         Set<String> cccdSeen = new HashSet<>();
 
-        return diemImportService.importFromExcel(
+        List<String> errors = diemImportService.importFromExcel(
                 file,
                 DiemThiImportDTO.class,
 
                 dto -> {
                     DiemThiXetTuyen diem = new DiemThiXetTuyen();
                     ThiSinh ts = findThiSinhForImport(dto.getCccd(), dto.getSoBaoDanh());
-
                     diem.setThiSinh(ts);
                     diem.setSobaodanh(emptyToNull(dto.getSoBaoDanh()));
                     diem.setDPhuongthuc(DiemThiXetTuyenDAO.normalizeMethod(dto.getPhuongThuc()));
-
                     diem.setTo(normalizeScore(dto.getTo()));
                     diem.setLi(normalizeScore(dto.getLi()));
                     diem.setHo(normalizeScore(dto.getHo()));
@@ -170,16 +173,13 @@ public class ImportService {
                         for (DiemThiXetTuyen entity : entities) {
                             String cccd = entity.getThiSinh().getCccd();
                             ThiSinh managedThiSinh = session.createQuery(
-                                            "FROM ThiSinh t WHERE t.cccd = :cccd",
-                                            ThiSinh.class
-                                    )
+                                            "FROM ThiSinh t WHERE t.cccd = :cccd", ThiSinh.class)
                                     .setParameter("cccd", cccd)
                                     .uniqueResult();
 
                             DiemThiXetTuyen existing = session.createQuery(
                                             "SELECT d FROM DiemThiXetTuyen d JOIN FETCH d.thiSinh ts WHERE ts.cccd = :cccd",
-                                            DiemThiXetTuyen.class
-                                    )
+                                            DiemThiXetTuyen.class)
                                     .setParameter("cccd", cccd)
                                     .uniqueResult();
 
@@ -215,17 +215,21 @@ public class ImportService {
                         }
 
                         tx.commit();
+                        System.out.println("[ImportService] Import thanh cong diem thi cho " + entities.size() + " thi sinh");
+                        SystemLogger.log(null, "System", "Import điểm thi cho " + entities.size() + " thí sinh từ file Excel", true);
 
                     } catch (Exception e) {
                         if (tx != null && tx.isActive()) {
                             try {
                                 tx.rollback();
                             } catch (Exception rollbackEx) {
-                                System.err.println("Lỗi Rollback: " + rollbackEx.getMessage());
+                                System.err.println("[ImportService] Loi rollback: " + rollbackEx.getMessage());
                             }
                         }
+                        System.err.println("[ImportService] Loi import diem thi: " + e.getMessage());
                         e.printStackTrace();
-                        throw new RuntimeException("Lỗi lưu điểm thi (Đã Rollback an toàn): " + e.getMessage());
+                        SystemLogger.log(null, "System", "Lỗi import điểm thi: " + e.getMessage(), false);
+                        throw new RuntimeException("Loi luu diem thi (Da Rollback an toan): " + e.getMessage());
 
                     } finally {
                         if (session != null && session.isOpen()) {
@@ -237,26 +241,22 @@ public class ImportService {
                 dto -> {
                     String cccd = dto.getCccd() != null ? dto.getCccd().trim() : "";
                     if (cccd.isEmpty()) {
-                        return "Bắt buộc phải có CCCD";
+                        return "Bat buoc phai co CCCD";
                     }
-
                     if (!cccdSeen.add(cccd)) {
-                        return "CCCD bị trùng trong file Excel: " + cccd;
+                        return "CCCD bi trung trong file Excel: " + cccd;
                     }
-
                     try {
                         findThiSinhForImport(dto.getCccd(), dto.getSoBaoDanh());
                     } catch (Exception e) {
                         return e.getMessage();
                     }
-
                     String pt = DiemThiXetTuyenDAO.normalizeMethod(dto.getPhuongThuc());
                     if (pt != null && !(DiemThiXetTuyenDAO.PT_THPT.equals(pt)
                             || DiemThiXetTuyenDAO.PT_VSAT.equals(pt)
                             || DiemThiXetTuyenDAO.PT_DGNL.equals(pt))) {
-                        return "Phương thức không hợp lệ: " + pt + " (chỉ chấp nhận THPT/VSAT/DGNL)";
+                        return "Phuong thuc khong hop le: " + pt + " (chi chap nhan THPT/VSAT/DGNL)";
                     }
-
                     String scoreError = validateScoreRange(dto);
                     if (scoreError != null) {
                         return scoreError;
@@ -269,20 +269,27 @@ public class ImportService {
                     return null;
                 }
         );
+        
+        if (errors.isEmpty()) {
+            System.out.println("[ImportService] Import diem thi hoan thanh, khong co loi");
+        } else {
+            System.out.println("[ImportService] Import diem thi co " + errors.size() + " loi");
+        }
+        return errors;
     }
 
+    /**
+     * Tim thi sinh theo CCCD
+     */
     private ThiSinh findThiSinhByCccd(String cccd) {
         Session session = null;
         try {
             session = HibernateUtil.getSessionFactory().openSession();
-            ThiSinh ts = session.createQuery(
-                            "FROM ThiSinh t WHERE t.cccd = :cccd",
-                            ThiSinh.class
-                    )
+            ThiSinh ts = session.createQuery("FROM ThiSinh t WHERE t.cccd = :cccd", ThiSinh.class)
                     .setParameter("cccd", cccd)
                     .uniqueResult();
             if (ts == null) {
-                throw new IllegalArgumentException("Không tìm thấy thí sinh với CCCD: " + cccd);
+                throw new IllegalArgumentException("Khong tim thay thi sinh voi CCCD: " + cccd);
             }
             return ts;
         } finally {
@@ -292,50 +299,42 @@ public class ImportService {
         }
     }
 
+    /**
+     * Tim thi sinh theo CCCD hoac So bao danh (uu tien CCCD)
+     */
     private ThiSinh findThiSinhForImport(String cccdOrCode, String soBaoDanh) {
         String key = cccdOrCode != null ? cccdOrCode.trim() : "";
         String sbd = soBaoDanh != null ? soBaoDanh.trim() : "";
 
         if (key.isEmpty() && sbd.isEmpty()) {
-            throw new IllegalArgumentException("Thiếu cả CCCD và SBD để đối chiếu thí sinh");
+            throw new IllegalArgumentException("Thieu ca CCCD va SBD de doi chieu thi sinh");
         }
 
         Session session = null;
         try {
             session = HibernateUtil.getSessionFactory().openSession();
 
-            // Ưu tiên khớp trực tiếp theo khóa chính đầu vào
             if (!key.isEmpty()) {
                 ThiSinh byKey = session.createQuery(
-                                "FROM ThiSinh t WHERE t.cccd = :key OR t.sobaodanh = :key",
-                                ThiSinh.class
-                        )
+                                "FROM ThiSinh t WHERE t.cccd = :key OR t.sobaodanh = :key", ThiSinh.class)
                         .setParameter("key", key)
                         .setMaxResults(1)
                         .uniqueResult();
-                if (byKey != null) {
-                    return byKey;
-                }
+                if (byKey != null) return byKey;
             }
 
-            // Fallback theo SBD từ file điểm (nếu có)
             if (!sbd.isEmpty()) {
                 ThiSinh bySbd = session.createQuery(
-                                "FROM ThiSinh t WHERE t.sobaodanh = :sbd OR t.cccd = :sbd",
-                                ThiSinh.class
-                        )
+                                "FROM ThiSinh t WHERE t.sobaodanh = :sbd OR t.cccd = :sbd", ThiSinh.class)
                         .setParameter("sbd", sbd)
                         .setMaxResults(1)
                         .uniqueResult();
-                if (bySbd != null) {
-                    return bySbd;
-                }
+                if (bySbd != null) return bySbd;
             }
 
             throw new IllegalArgumentException(
-                    "Không tìm thấy thí sinh với khóa: " + (!key.isEmpty() ? key : sbd) +
-                    " (đã thử khớp theo cả CCCD và SBD)"
-            );
+                    "Khong tim thay thi sinh voi khoa: " + (!key.isEmpty() ? key : sbd) +
+                    " (da thu khop theo ca CCCD va SBD)");
         } finally {
             if (session != null && session.isOpen()) {
                 session.close();
@@ -344,17 +343,13 @@ public class ImportService {
     }
 
     private String emptyToNull(String value) {
-        if (value == null) {
-            return null;
-        }
+        if (value == null) return null;
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
     }
 
     private BigDecimal normalizeScore(BigDecimal value) {
-        if (value == null) {
-            return null;
-        }
+        if (value == null) return null;
         return value.setScale(2, RoundingMode.HALF_UP);
     }
 
@@ -445,6 +440,9 @@ public class ImportService {
         return value != null;
     }
 
+    /**
+     * Kiem tra khoang hop le cua diem thi
+     */
     private String validateScoreRange(DiemThiImportDTO dto) {
         String err;
         err = checkScore("TO", dto.getTo()); if (err != null) return err;
@@ -467,13 +465,73 @@ public class ImportService {
     }
 
     private String checkScore(String mon, BigDecimal value) {
-        if (value == null) {
-            return null;
-        }
+        if (value == null) return null;
         BigDecimal max = "NL1".equals(mon) ? new BigDecimal("1200") : new BigDecimal("10");
         if (value.compareTo(BigDecimal.ZERO) < 0 || value.compareTo(max) > 0) {
-            return "Điểm " + mon + " phải nằm trong khoảng 0 - " + max.stripTrailingZeros().toPlainString();
+            return "Diem " + mon + " phai nam trong khoang 0 - " + max.stripTrailingZeros().toPlainString();
         }
         return null;
+    }
+    public List<String> importToHopMon(File file) {
+        BaseImportService<com.tuyensinh.dto.ToHopMonImportDTO, com.tuyensinh.model.ToHopMon> baseService = new BaseImportService<>();
+        return baseService.importFromExcel(
+                file,
+                com.tuyensinh.dto.ToHopMonImportDTO.class,
+                dto -> {
+                    com.tuyensinh.model.ToHopMon entity = new com.tuyensinh.model.ToHopMon();
+                    entity.setMatohop(dto.getMatohop());
+                    entity.setTentohop(dto.getTentohop());
+                    entity.setMon1(dto.getMon1());
+                    entity.setMon2(dto.getMon2());
+                    entity.setMon3(dto.getMon3());
+                    return entity;
+                },
+                entities -> {
+                    Session session = null;
+                    Transaction tx = null;
+                    try {
+                        session = HibernateUtil.getSessionFactory().openSession();
+                        tx = session.beginTransaction();
+                        int count = 0;
+                        for (com.tuyensinh.model.ToHopMon entity : entities) {
+                            // Check existence
+                            com.tuyensinh.model.ToHopMon existing = session.createQuery(
+                                "FROM ToHopMon t WHERE t.matohop = :ma", com.tuyensinh.model.ToHopMon.class)
+                                .setParameter("ma", entity.getMatohop())
+                                .uniqueResult();
+                            
+                            if (existing == null) {
+                                session.persist(entity);
+                            } else {
+                                existing.setTentohop(entity.getTentohop());
+                                existing.setMon1(entity.getMon1());
+                                existing.setMon2(entity.getMon2());
+                                existing.setMon3(entity.getMon3());
+                                session.merge(existing);
+                            }
+
+                            if (++count % 50 == 0) {
+                                session.flush();
+                                session.clear();
+                            }
+                        }
+                        tx.commit();
+                    } catch (Exception e) {
+                        if (tx != null && tx.isActive()) {
+                            try { tx.rollback(); } catch (Exception ignored) {}
+                        }
+                        throw new RuntimeException("Lỗi lưu tổ hợp môn: " + e.getMessage());
+                    } finally {
+                        if (session != null && session.isOpen()) session.close();
+                    }
+                },
+                dto -> {
+                    if (dto.getMatohop() == null || dto.getMatohop().trim().isEmpty()) return "Mã tổ hợp không được trống";
+                    if (dto.getMon1() == null || dto.getMon1().trim().isEmpty()) return "Môn 1 không được trống";
+                    if (dto.getMon2() == null || dto.getMon2().trim().isEmpty()) return "Môn 2 không được trống";
+                    if (dto.getMon3() == null || dto.getMon3().trim().isEmpty()) return "Môn 3 không được trống";
+                    return null;
+                }
+        );
     }
 }

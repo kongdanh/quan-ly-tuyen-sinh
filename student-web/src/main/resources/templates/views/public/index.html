@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Cổng Tuyển sinh SGU 2026 - Đại học Sài Gòn</title>
+    <link rel="stylesheet" th:href="@{/assets/css/global.css}">
+    <link rel="stylesheet" th:href="@{/assets/css/applicant.css}">
+    <style>
+        .hero {
+            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('/assets/images/canhquan.jpg') no-repeat center center/cover;
+            height: 70vh; display: flex; align-items: center; justify-content: center; text-align: center; color: white;
+        }
+    </style>
+</head>
+<body style="background: #f8fafc; font-family: 'Inter', system-ui, -apple-system, sans-serif;">
+
+    <div th:replace="~{fragments/public_navbar :: navbar('home')}"></div>
+
+    <header class="hero" style="background: linear-gradient(135deg, rgba(30, 58, 138, 0.85), rgba(37, 99, 235, 0.7)), url('/assets/images/canhquan.jpg') no-repeat center center/cover; position: relative; overflow: hidden; height: 75vh; display: flex; align-items: center; justify-content: center; text-align: center; color: white;">
+        <div style="position: absolute; bottom: -50px; left: 0; width: 100%; height: 100px; background: #f8fafc; border-top-left-radius: 100%; border-top-right-radius: 100%;"></div>
+        <div class="container" style="z-index: 10;">
+            <div style="display: inline-block; padding: 6px 16px; background: rgba(255,255,255,0.2); backdrop-filter: blur(4px); border-radius: 100px; color: white; font-size: 14px; font-weight: 600; margin-bottom: 24px; border: 1px solid rgba(255,255,255,0.3);">
+                ✨ Tuyển sinh Đại học Chính quy 2026
+            </div>
+            <h1 style="font-size: 4rem; margin-bottom: 20px; font-weight: 900; line-height: 1.1; letter-spacing: -2px;">Khai Phá Tiềm Năng<br><span style="color: #60a5fa;">Cùng SGU</span></h1>
+            <p style="font-size: 1.4rem; margin-bottom: 40px; opacity: 0.95; max-width: 700px; margin-left: auto; margin-right: auto; line-height: 1.6;">Chào mừng bạn đến với Cổng thông tin tuyển sinh chính thức của Đại học Sài Gòn. Nơi bắt đầu hành trình chinh phục tri thức của bạn.</p>
+            <div style="display: flex; gap: 16px; justify-content: center;">
+                <a th:href="@{/register}" class="btn" style="background: white; color: #2563eb; padding: 18px 48px; font-size: 1.1rem; border-radius: 12px; font-weight: 700; box-shadow: 0 10px 25px rgba(0,0,0,0.15); transition: all 0.3s; text-decoration: none;">Đăng ký ngay</a>
+                <a th:href="@{/thisinh/tracuu/dgnl}" class="btn" style="background: rgba(255,255,255,0.1); color: white; padding: 18px 48px; font-size: 1.1rem; border-radius: 12px; font-weight: 700; border: 1px solid rgba(255,255,255,0.4); backdrop-filter: blur(10px); text-decoration: none;">Tra cứu điểm</a>
+            </div>
+        </div>
+    </header>
+
+    <section class="container" style="padding: 100px 0;">
+        <div style="text-align: center; margin-bottom: 60px;">
+            <h2 style="font-size: 36px; color: #1e3a8a; font-weight: 800; margin-bottom: 16px;">Tin tức & Thông báo</h2>
+            <div style="width: 80px; height: 5px; background: #2563eb; margin: 0 auto; border-radius: 10px;"></div>
+        </div>
+        <div class="grid-2" style="gap: 32px;">
+            <div class="card" style="padding: 32px; border-radius: 20px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.03); background: white; border-top: 5px solid #2563eb;">
+                <div style="font-size: 12px; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 12px;">Hệ thống • 12/05/2026</div>
+                <h3 style="margin-top: 0; color: #1e293b; font-size: 22px; margin-bottom: 16px;">Mở cổng đăng ký xét tuyển đợt 1</h3>
+                <p style="color: #64748b; font-size: 16px; line-height: 1.6; margin-bottom: 24px;">Cổng đăng ký chính thức hoạt động từ nay đến hết tháng 5. Thí sinh cần chuẩn bị bản scan CCCD và các minh chứng giải thưởng liên quan.</p>
+                <a href="#" style="color: #2563eb; font-weight: 600; text-decoration: none; display: flex; align-items: center; gap: 4px;">Chi tiết <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg></a>
+            </div>
+            <div class="card" style="padding: 32px; border-radius: 20px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.03); background: white; border-top: 5px solid #eab308;">
+                <div style="font-size: 12px; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 12px;">Quy định • 10/05/2026</div>
+                <h3 style="margin-top: 0; color: #1e293b; font-size: 22px; margin-bottom: 16px;">Công bố bảng quy đổi điểm ngoại ngữ</h3>
+                <p style="color: #64748b; font-size: 16px; line-height: 1.6; margin-bottom: 24px;">Áp dụng cho các chứng chỉ IELTS, TOEFL iBT. Điểm quy đổi sẽ được cộng trực tiếp vào tổng điểm xét tuyển theo các tổ hợp tương ứng.</p>
+                <a href="#" style="color: #2563eb; font-weight: 600; text-decoration: none; display: flex; align-items: center; gap: 4px;">Chi tiết <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg></a>
+            </div>
+        </div>
+    </section>
+
+</body>
+</html>

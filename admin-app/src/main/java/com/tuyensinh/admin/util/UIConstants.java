@@ -132,6 +132,8 @@ public class UIConstants {
     public static final String COLOR_NAVY_LIGHT = "#2a4a7f";
     public static final String COLOR_BLUE = "#2563eb";
     public static final String COLOR_BLUE_LIGHT = "#3b82f6";
+    public static final String COLOR_PRIMARY = "#2C3E50";
+    public static final String COLOR_TEXT_DARK = "#333333";
     public static final String COLOR_SUCCESS = "#16a34a";
     public static final String COLOR_WARNING = "#d97706";
     public static final String COLOR_DANGER = "#dc2626";

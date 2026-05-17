@@ -35,20 +35,30 @@ public class MainFrame extends JFrame {
         contentPanel = new JPanel(cardLayout);
         contentPanel.setOpaque(false);
 
+        // He thong va cau hinh
         contentPanel.add(new DashboardPanel(), "Dashboard");
+        contentPanel.add(new CauHinhPanel(), "Đợt tuyển sinh");
+        contentPanel.add(new BangQuyDoiPanel(), "Bảng quy đổi");
+        contentPanel.add(new DiemCongPanel(), "Điểm cộng");
+
+        // Danh muc xet tuyen
+        contentPanel.add(new DiemChuanPanel(), "Quản lý điểm chuẩn");
         contentPanel.add(new NganhPanel(), "Ngành tuyển sinh");
         contentPanel.add(new ToHopMonPanel(), "Tổ hợp môn");
         contentPanel.add(new NganhToHopPanel(), "Ngành - Tổ hợp");
-        contentPanel.add(new ThiSinhPanel(), "Quản lý thí sinh");
-        contentPanel.add(new DiemThiPanel(), "Điểm thi");
-        contentPanel.add(new DiemCongPanel(), "Điểm cộng");
-        contentPanel.add(new NguyenVongPanel(), "Nguyện vọng");
-        contentPanel.add(new BangQuyDoiPanel(), "Bảng quy đổi");
+
+        // Quan ly ho so
+        contentPanel.add(new HoSoTuyenSinhPanel(), "Hồ sơ xét tuyển"); 
+        
+        contentPanel.add(new DiemThiPanel(), "Điểm thi"); 
+
+        // Xu ly ket qua
+        contentPanel.add(new QuanLyXetTuyenPanel(), "Quản lý xét tuyển");
         contentPanel.add(new ThongKePanel(), "Thống kê");
+
+        // Phan quyen
         contentPanel.add(new UserPanel(), "Người dùng");
         contentPanel.add(new NhomQuyenPanel(), "Nhóm quyền");
-        contentPanel.add(new QuyenChucNangPanel(), "Quyền chức năng");
-        contentPanel.add(new CauHinhPanel(), "Cấu hình hệ thống");
 
         JPanel right = new JPanel(new BorderLayout());
         right.setOpaque(false);

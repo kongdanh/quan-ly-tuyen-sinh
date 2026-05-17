@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Xác thực OTP - SGU</title>
+    <link rel="stylesheet" th:href="@{/assets/css/global.css}">
+    <link rel="stylesheet" th:href="@{/assets/css/login.css}">
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo-placeholder">
+            <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="color: #2563eb;"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"/></svg>
+        </div>
+        <h2>Xác Thực Email</h2>
+        <p class="subtitle">Chúng tôi đã gửi một mã OTP gồm 6 số vào Email của bạn.</p>
+        
+        <div class="alert" th:if="${error != null}">
+            <strong>Lỗi:</strong> <span th:text="${error}"></span>
+        </div>
+
+        <form th:action="@{/verify-otp}" method="POST" class="login-form">
+            <div class="form-group">
+                <label style="text-align: center;">MÃ OTP</label>
+                <input type="text" name="otp" placeholder="Nhập 6 số OTP" style="text-align: center; font-size: 24px; letter-spacing: 4px;" maxlength="6" required autofocus>
+            </div>
+            <button type="submit" style="background: #10b981;">Xác thực & Kích hoạt tài khoản</button>
+        </form>
+    </div>
+</body>
+</html>

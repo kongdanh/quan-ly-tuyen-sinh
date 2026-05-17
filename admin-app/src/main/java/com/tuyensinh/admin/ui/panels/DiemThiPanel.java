@@ -189,7 +189,20 @@ public class DiemThiPanel extends JPanel {
             }
         );
 
-        toolbar.getBtnImport().addActionListener(e -> handleImportExcel());
+        toolbar.getBtnImport().addActionListener(e -> {
+            JPopupMenu menu = new JPopupMenu();
+            JMenuItem mnuThpt = new JMenuItem("Nhập điểm THPT");
+            mnuThpt.addActionListener(ev -> handleImportExcel("THPT"));
+            JMenuItem mnuDgnlVsat = new JMenuItem("Nhập điểm DGNL/VSAT");
+            mnuDgnlVsat.addActionListener(ev -> handleImportExcel("DGNL_VSAT"));
+            JMenuItem mnuIelts = new JMenuItem("Nhập điểm IELTS");
+            mnuIelts.addActionListener(ev -> handleImportExcel("IELTS"));
+
+            menu.add(mnuThpt);
+            menu.add(mnuDgnlVsat);
+            menu.add(mnuIelts);
+            menu.show(toolbar.getBtnImport(), 0, toolbar.getBtnImport().getHeight());
+        });
     }
 
 
@@ -575,7 +588,7 @@ public class DiemThiPanel extends JPanel {
     // IMPORT EXCEL
     // ================================================================
 
-    private void handleImportExcel() {
+    private void handleImportExcel(String type) {
         JFileChooser fc = new JFileChooser();
         fc.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter(
             "Excel Files (*.xlsx, *.xls)", "xlsx", "xls"));
@@ -587,7 +600,15 @@ public class DiemThiPanel extends JPanel {
 
         new SwingWorker<List<String>, Void>() {
             @Override protected List<String> doInBackground() {
-                return new ImportService().importDiemThi(file);
+                com.tuyensinh.service.XetTuyenService xtService = new com.tuyensinh.service.XetTuyenService();
+                if ("THPT".equals(type)) {
+                    return new ImportService().importDiemThi(file);
+                } else if ("DGNL_VSAT".equals(type)) {
+                    return xtService.processDgnlVsatImport(file);
+                } else if ("IELTS".equals(type)) {
+                    return xtService.processIELTSImport(file);
+                }
+                return List.of();
             }
             @Override protected void done() {
                 toolbar.getBtnImport().setEnabled(true);
@@ -642,6 +663,10 @@ public class DiemThiPanel extends JPanel {
 
     private void showError(String msg) {
         JOptionPane.showMessageDialog(this, msg, "Lỗi", JOptionPane.ERROR_MESSAGE);
+    }
+
+    protected String getModuleCode() {
+        return com.tuyensinh.util.Constants.QUYEN_DIEM_THI; 
     }
 }
 

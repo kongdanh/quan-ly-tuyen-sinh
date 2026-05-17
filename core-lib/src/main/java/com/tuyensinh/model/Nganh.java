@@ -71,4 +71,7 @@ public class Nganh {
     public String toString() {
         return manganh + " - " + tennganh;
     }
+
+    public Integer getChiTieu() { return this.nChitieu; }
+    public Integer getId() { return this.id; }
 }

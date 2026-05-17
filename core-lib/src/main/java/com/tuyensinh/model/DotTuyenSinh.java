@@ -33,4 +33,13 @@ public class DotTuyenSinh implements Serializable {
 
     @Column(name = "ngay_tao")
     private LocalDateTime ngayTao;
+
+    @Column(name = "ma_phuong_thuc", length = 20)
+    private String maPhuongThuc = "THPT";
+
+    // debug tí...
+    @Override
+    public String toString() {
+        return "[" + id + "] " + tenDot + " (" + maPhuongThuc + ")";
+    }
 }

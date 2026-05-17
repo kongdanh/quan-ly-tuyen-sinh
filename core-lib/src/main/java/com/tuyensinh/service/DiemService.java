@@ -1,4 +1,3 @@
-// core-lib/src/main/java/com/tuyensinh/service/DiemService.java
 package com.tuyensinh.service;
 
 import com.tuyensinh.model.DiemThiXetTuyen;
@@ -8,22 +7,22 @@ import java.util.*;
 
 public class DiemService {
 
+    /**
+     * Tap hop cac to hop mon xet tuyen chuan: ma to hop, 3 mon, mo ta
+     */
     private static final String[][] TAP_TO_HOP = {
-        {"A00", "TO", "LI", "HO",   "Toán, Vật lý, Hóa học"},
-        {"A01", "TO", "LI", "N1",   "Toán, Vật lý, Tiếng Anh"},
-        {"B00", "TO", "HO", "SI",   "Toán, Hóa học, Sinh học"},
-        {"C00", "VA", "SU", "DI",   "Ngữ văn, Lịch sử, Địa lý"},
-        {"C01", "TO", "VA", "LI",   "Toán, Ngữ văn, Vật lý"},
-        {"D01", "TO", "VA", "N1",   "Toán, Ngữ văn, Tiếng Anh"},
-        {"C14", "VA", "TO", "KTPL", "Ngữ văn, Toán, GDCD"},
+        {"A00", "TO", "LI", "HO",   "Toan, Vat ly, Hoa hoc"},
+        {"A01", "TO", "LI", "N1",   "Toan, Vat ly, Tieng Anh"},
+        {"B00", "TO", "HO", "SI",   "Toan, Hoa hoc, Sinh hoc"},
+        {"C00", "VA", "SU", "DI",   "Ngu van, Lich su, Dia ly"},
+        {"C01", "TO", "VA", "LI",   "Toan, Ngu van, Vat ly"},
+        {"D01", "TO", "VA", "N1",   "Toan, Ngu van, Tieng Anh"},
+        {"C14", "VA", "TO", "KTPL", "Ngu van, Toan, GDCD"},
     };
 
-    // PUBLIC API
-
     /**
-     * Chuyển entity DiemThiXetTuyen thành Map[MaMon -> Diem].
-     * Ngoại ngữ lấy max(thi, chứng chỉ quy đổi).
-     * Dùng chung cho tất cả các nơi cần tính điểm.
+     * Chuyen entity DiemThiXetTuyen thanh Map[MaMon -> Diem].
+     * Ngoai ngu lay max(thi, chung chi quy doi).
      */
     public Map<String, Double> buildScoreMap(DiemThiXetTuyen d) {
         if (d == null) return Collections.emptyMap();
@@ -46,9 +45,9 @@ public class DiemService {
     }
 
     /**
-     * Tính điểm xét tuyển cho 1 tổ hợp cụ thể của 1 ngành.
-     * Có tính hệ số môn và độ lệch (điểm cộng khu vực/đối tượng).
-     * @return điểm xét, hoặc -1 nếu thí sinh thiếu môn trong tổ hợp
+     * Tinh diem xet tuyen cho 1 to hop cu the cua 1 nganh.
+     * Co tinh he so mon va do lech (diem cong khu vuc/doi tuong).
+     * @return diem xet, hoac -1 neu thi sinh thieu mon trong to hop
      */
     public double tinhDiemXet(Map<String, Double> scoreMap, NganhToHop th) {
         String mon1 = th.getThMon1();
@@ -71,9 +70,9 @@ public class DiemService {
     }
 
     /**
-     * Tính tất cả tổ hợp khả dụng của thí sinh (đủ điểm 3 môn).
-     * Dùng cho trang Điểm thi — hiển thị bảng tổ hợp.
-     * @return List các Map có key: name, total, totalStr, desc, detail
+     * Tinh tat ca to hop kha dung cua thi sinh (du diem 3 mon).
+     * Dung cho trang Diem thi - hien thi bang to hop.
+     * @return List cac Map co key: name, total, totalStr, desc, detail
      */
     public List<Map<String, Object>> tinhListToHop(DiemThiXetTuyen diem) {
         List<Map<String, Object>> list = new ArrayList<>();
@@ -98,9 +97,8 @@ public class DiemService {
     }
 
     /**
-     * Trả về tổ hợp có tổng điểm cao nhất.
-     * Dùng cho Dashboard và card tóm tắt điểm.
-     * @return Map tổ hợp tối ưu, hoặc null nếu không có tổ hợp nào
+     * Tra ve to hop co tong diem cao nhat.
+     * Dung cho Dashboard va card tom tat diem.
      */
     public Map<String, Object> tinhMaxToHop(DiemThiXetTuyen diem) {
         return tinhListToHop(diem).stream()
@@ -108,15 +106,48 @@ public class DiemService {
             .orElse(null);
     }
 
-    // PRIVATE HELPERS
-
     private void putIfPositive(Map<String, Double> m, String key, Number val) {
         if (val != null && val.doubleValue() >= 0) m.put(key, val.doubleValue());
     }
 
+    /**
+     * Tim diem thi cua thi sinh theo CCCD
+     */
     public java.util.Optional<com.tuyensinh.model.DiemThiXetTuyen> findByCccd(String cccd) {
         if (cccd == null || cccd.isBlank()) return java.util.Optional.empty();
         return new com.tuyensinh.dao.DiemThiXetTuyenDAO().findByCccd(cccd);
+    }
+
+    /**
+     * Tao bang diem rong cho thi sinh (khi ho so duoc duyet HOP_LE)
+     */
+    public void taoDiemRong(com.tuyensinh.model.ThiSinh ts) {
+        if (ts == null) return;
+        com.tuyensinh.dao.DiemThiXetTuyenDAO diemDAO = new com.tuyensinh.dao.DiemThiXetTuyenDAO();
+        
+        if (diemDAO.findByCccd(ts.getCccd()).isEmpty()) {
+            DiemThiXetTuyen d = new DiemThiXetTuyen();
+            d.setCccd(ts.getCccd());
+            d.setThiSinh(ts);
+            
+            java.math.BigDecimal zero = java.math.BigDecimal.ZERO;
+            d.setTo(zero); 
+            d.setLi(zero); 
+            d.setHo(zero); 
+            d.setVa(zero); 
+            d.setSu(zero); 
+            d.setDi(zero); 
+            d.setSi(zero); 
+            d.setN1Thi(zero); 
+            d.setKtpl(zero);
+            
+            try {
+                diemDAO.save(d);
+                System.out.println("[DiemService] Khoi tao bang diem rong cho CCCD=" + ts.getCccd());
+            } catch(Exception e) {
+                System.err.println("[DiemService] Loi khoi tao diem rong: " + e.getMessage());
+            }
+        }
     }
 
 }

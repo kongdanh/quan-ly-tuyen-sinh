@@ -30,6 +30,10 @@ public class NganhDAO extends GenericDAO<Nganh> {
             return new ArrayList<>();
         }
     }
+    /**
+     * Đếm số nguyện vọng đang ký thực tế từ bảng xt_nguyenvong.
+     * Trả về Map<maNganh, soLuong> cho toàn bộ danh sách.
+     */
 
     public Optional<Nganh> findByMaNganh(String maNganh) {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
@@ -42,7 +46,27 @@ public class NganhDAO extends GenericDAO<Nganh> {
             return Optional.empty();
         }
     }
-
+    /**
+     * Đếm số nguyện vọng đang ký thực tế từ bảng xt_nguyenvong.
+     * Trả về Map<maNganh, soLuong> cho toàn bộ danh sách.
+     */
+    public Map<String, Long> countDangKyByMaNganh() {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            @SuppressWarnings("unchecked")
+            List<Object[]> rows = session.createNativeQuery(
+                            "SELECT nv_manganh, COUNT(*) FROM xt_nguyenvongxettuyen GROUP BY nv_manganh")
+                    .getResultList();
+            Map<String, Long> result = new java.util.HashMap<>();
+            for (Object[] row : rows) {
+                if (row[0] != null)
+                    result.put(row[0].toString(), ((Number) row[1]).longValue());
+            }
+            return result;
+        } catch (Exception e) {
+            System.err.println("[NganhDAO] countDangKyByMaNganh: " + e.getMessage());
+            return java.util.Collections.emptyMap();
+        }
+    }
     public boolean existsByMaNganh(String maNganh) {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Long count = session.createQuery(
@@ -124,7 +148,7 @@ public class NganhDAO extends GenericDAO<Nganh> {
         // Thu theo cot nv_manganh truoc
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Object result = session.createNativeQuery(
-                            "SELECT COUNT(*) FROM xt_nguyenvong WHERE nv_manganh = :ma")
+                            "SELECT COUNT(*) FROM xt_nguyenvongxettuyen WHERE nv_manganh = :ma")
                     .setParameter("ma", maNganh)
                     .getSingleResult();
             return result instanceof Number ? ((Number) result).longValue() : 0L;
@@ -132,7 +156,7 @@ public class NganhDAO extends GenericDAO<Nganh> {
             // Thu theo cot idnganh
             try (Session session = HibernateUtil.getSessionFactory().openSession()) {
                 Object result = session.createNativeQuery(
-                                "SELECT COUNT(*) FROM xt_nguyenvong WHERE idnganh = :id")
+                                "SELECT COUNT(*) FROM xt_nguyenvongxettuyen WHERE idnganh = :id")
                         .setParameter("id", idNganh)
                         .getSingleResult();
                 return result instanceof Number ? ((Number) result).longValue() : 0L;

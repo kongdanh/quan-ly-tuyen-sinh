@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Tra cứu điểm tổng hợp - SGU</title>
+    <link rel="stylesheet" th:href="@{/assets/css/global.css}">
+    <link rel="stylesheet" th:href="@{/assets/css/applicant.css}">
+    <style>
+        .tab-container { display: flex; gap: 10px; border-bottom: 2px solid #e2e8f0; margin-bottom: 24px; }
+        .tab-item { padding: 12px 24px; text-decoration: none; color: #64748b; font-weight: 500; font-size: 15px; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.2s; }
+        .tab-item:hover { color: #2563eb; }
+        .tab-item.active { color: #2563eb; border-bottom-color: #2563eb; background: #eff6ff; border-top-left-radius: 8px; border-top-right-radius: 8px;}
+        .data-table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .data-table th, .data-table td { padding: 14px 16px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        .data-table th { background-color: #f8fafc; font-weight: 600; color: #475569; font-size: 14px; }
+        .data-table tbody tr:hover { background-color: #f1f5f9; }
+        .status-badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .status-CHO { background: #fef3c7; color: #d97706; }
+        .status-DAU { background: #dcfce7; color: #16a34a; }
+        .status-ROT { background: #fee2e2; color: #dc2626; }
+        .status-HUY { background: #f1f5f9; color: #64748b; }
+    </style>
+</head>
+<body>
+
+<div th:replace="${session.thisinh != null} ? ~{fragments/navbar :: navbar('tracuu')} : ~{fragments/public_navbar :: navbar('tracuu')}"></div>
+
+<main class="container">
+    <div class="page-header">
+        <h1 class="page-title">
+            Tra cứu thông tin xét tuyển
+        </h1>
+    </div>
+
+    <div class="tab-container">
+        <a th:href="@{/thisinh/tracuu/dgnl}" class="tab-item">Đánh giá năng lực</a>
+        <a th:href="@{/thisinh/tracuu/vsat}" class="tab-item">V-SAT / THPT</a>
+        <a th:href="@{/thisinh/tracuu/tonghop}" class="tab-item active">Tra cứu tổng hợp (CCCD)</a>
+    </div>
+
+    <div class="card" style="max-width: 800px; margin: 0 auto 30px auto;">
+        <h3 class="card-header">Nhập thông tin để tra cứu</h3>
+        <form th:action="@{/thisinh/tracuu/tonghop}" method="POST" style="padding: 20px;">
+            <div class="grid-2" style="gap: 20px;">
+                <div class="form-group">
+                    <label style="display:block; margin-bottom: 6px; font-weight: 500;">Số Căn cước công dân</label>
+                    <input type="text" name="cccd" placeholder="Nhập số CCCD của bạn" required 
+                           th:value="${cccd}" class="form-control" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ccc;">
+                </div>
+                <div class="form-group">
+                    <label style="display:block; margin-bottom: 6px; font-weight: 500;">Ngày sinh (dd/MM/yyyy)</label>
+                    <input type="text" name="ngaySinh" placeholder="Ví dụ: 15/08/2006" required 
+                           th:value="${ngaySinh}" class="form-control" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ccc;">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary" style="margin-top: 20px; width: 100%; padding: 12px; font-weight: bold; cursor: pointer;">Tra cứu kết quả</button>
+        </form>
+    </div>
+
+    <div th:if="${error != null}" class="alert-box alert-red" style="padding: 16px; background: #fee2e2; color: #dc2626; border-radius: 8px; margin-bottom: 24px;">
+        <strong th:text="${error}"></strong>
+    </div>
+
+    <th:block th:if="${listNv != null and not #lists.isEmpty(listNv)}">
+        <div class="card" style="padding: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 16px; margin-bottom: 20px;">
+                <div>
+                    <h3 style="margin: 0; color: #0f172a; font-size: 20px;">Kết quả tra cứu nguyện vọng</h3>
+                    <p style="margin: 4px 0 0 0; color: #64748b; font-size: 14px;">Thí sinh: <strong th:text="${thiSinh.ho + ' ' + thiSinh.ten}"></strong> | CCCD: <strong th:text="${thiSinh.cccd}"></strong></p>
+                </div>
+            </div>
+
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th style="width: 5%">NV</th>
+                        <th style="width: 25%">Ngành học</th>
+                        <th style="width: 15%">Phương thức</th>
+                        <th style="width: 15%">Tổ hợp môn</th>
+                        <th style="width: 25%">Chi tiết điểm</th>
+                        <th style="width: 15%">Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="nv : ${listNv}">
+                        <td style="text-align: center; font-weight: bold;" th:text="${nv.nvTt}"></td>
+                        <td>
+                            <strong th:text="${nv.nganh.tennganh}" style="color: #1e40af; display: block;"></strong>
+                            <span style="font-size: 12px; color: #64748b;" th:text="${nv.nganh.manganh}"></span>
+                        </td>
+                        <td th:text="${nv.ttPhuongthuc}"></td>
+                        <td>
+                            <span th:text="${nv.ttThm}" style="font-weight: 500;"></span>
+                            <div th:if="${nv.ttPhuongthuc == 'DGNL' or nv.ttPhuongthuc == 'VSAT'}" style="font-size: 12px; color: #16a34a; margin-top: 4px;">
+                                <th:block th:if="${nv.ttPhuongthuc == 'DGNL' or nv.ttPhuongthuc == 'VSAT'}">Quy đổi 30: <span th:text="${mapDiemQD[nv.id] != null ? #numbers.formatDecimal(mapDiemQD[nv.id], 1, 2) : '0.00'}"></span></th:block>
+                            </div>
+                        </td>
+                        <td style="font-size: 13px; line-height: 1.5;">
+                            <div>Điểm THM: <strong th:text="${nv.diemThxt}"></strong></div>
+                            <div>Điểm ƯT: <strong th:text="${nv.diemUtqd}"></strong></div>
+                            <div>Điểm Cộng: <strong th:text="${nv.diemCong}"></strong></div>
+                            <div style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed #cbd5e1;">
+                                Điểm XT: <strong style="color: #dc2626; font-size: 15px;" th:text="${nv.diemXettuyen}"></strong>
+                            </div>
+                        </td>
+                        <td>
+                            <span th:class="'status-badge status-' + ${nv.nvKetqua}" 
+                                  th:text="${nv.nvKetqua == 'CHO' ? 'Chờ xét duyệt' : (nv.nvKetqua == 'DAU' ? 'Trúng tuyển' : (nv.nvKetqua == 'ROT' ? 'Không trúng tuyển' : 'Đã hủy'))}">
+                            </span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </th:block>
+
+</main>
+</body>
+</html>

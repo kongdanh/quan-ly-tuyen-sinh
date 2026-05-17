@@ -167,11 +167,17 @@ public abstract class GenericDAO<T> {
                 // 2. Gắn điều kiện Lọc (Filter)
                 if (hasFilters) {
                     for (String key : filters.keySet()) {
-                        hql.append(" AND e.").append(key).append(" = :").append(key);
+                        String paramName = key.replace(".", "_");
+                        hql.append(" AND e.").append(key).append(" = :").append(paramName);
                     }
                 }
 
-                Query<T> query = session.createQuery(hql.toString(), entityClass);
+                String hqlString = hql.toString();
+                System.out.println("[GenericDAO] HQL: " + hqlString);
+                System.out.println("   Filters: " + filters);
+                System.out.println("   Page: " + pageIndex + ", Size: " + pageSize);
+                
+                Query<T> query = session.createQuery(hqlString, entityClass);
 
                 // 3. Truyền giá trị vào tham số
                 if (hasSearch) {
@@ -179,13 +185,20 @@ public abstract class GenericDAO<T> {
                 }
                 if (hasFilters) {
                     for (Map.Entry<String, Object> entry : filters.entrySet()) {
-                        query.setParameter(entry.getKey(), entry.getValue());
+                        String paramName = entry.getKey().replace(".", "_");
+                        query.setParameter(paramName, entry.getValue());
                     }
                 }
                 
                 query.setFirstResult((pageIndex - 1) * pageSize);
                 query.setMaxResults(pageSize);
-                return query.list();
+                List<T> result = query.list();
+                System.out.println("[GenericDAO] Query returned " + result.size() + " results for " + entityClass.getSimpleName());
+                return result;
+            } catch (Exception e) {
+                System.err.println("[GenericDAO] findPageWithFilters exception: " + e.getMessage());
+                e.printStackTrace();
+                throw e;
             }
         }, dbThreadPool);
     }
@@ -212,22 +225,34 @@ public abstract class GenericDAO<T> {
 
                 if (hasFilters) {
                     for (String key : filters.keySet()) {
-                        hql.append(" AND e.").append(key).append(" = :").append(key);
+                        String paramName = key.replace(".", "_");
+                        hql.append(" AND e.").append(key).append(" = :").append(paramName);
                     }
                 }
 
-                Query<Long> query = session.createQuery(hql.toString(), Long.class);
+                String hqlString = hql.toString();
+                System.out.println("[GenericDAO] COUNT HQL: " + hqlString);
+                System.out.println("   Filters: " + filters);
+                
+                Query<Long> query = session.createQuery(hqlString, Long.class);
 
                 if (hasSearch) {
                     query.setParameter("kw", "%" + keyword.trim() + "%");
                 }
                 if (hasFilters) {
                     for (Map.Entry<String, Object> entry : filters.entrySet()) {
-                        query.setParameter(entry.getKey(), entry.getValue());
+                        String paramName = entry.getKey().replace(".", "_");
+                        query.setParameter(paramName, entry.getValue());
                     }
                 }
                 
-                return query.uniqueResult();
+                Long count = query.uniqueResult();
+                System.out.println("[GenericDAO] COUNT returned " + count + " total records for " + entityClass.getSimpleName());
+                return count != null ? count : 0L;
+            } catch (Exception e) {
+                System.err.println("[GenericDAO] countWithFiltersAsync exception: " + e.getMessage());
+                e.printStackTrace();
+                throw e;
             }
         }, dbThreadPool);
     }

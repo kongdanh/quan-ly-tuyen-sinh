@@ -22,9 +22,10 @@ public class Constants {
 
     // 13. MÃ CHỨC NĂNG
     public static final String QUYEN_NGANH = "NGANH";
+    public static final String QUYEN_DIEM_CHUAN = "DIEM_CHUAN";
     public static final String QUYEN_TOHOP = "TOHOP";
     public static final String QUYEN_NGANH_TOHOP = "NGANH_TOHOP";
-    public static final String QUYEN_THI_SINH = "THI_SINH";
+    public static final String QUYEN_HO_SO = "HO_SO";
     public static final String QUYEN_DIEM_THI = "DIEM_THI";
     public static final String QUYEN_DIEM_CONG = "DIEM_CONG";
     public static final String QUYEN_NGUYEN_VONG = "NGUYEN_VONG";
@@ -32,7 +33,8 @@ public class Constants {
     public static final String QUYEN_THONG_KE = "THONG_KE";
     public static final String QUYEN_PHAN_QUYEN = "PHAN_QUYEN";
     public static final String QUYEN_CAU_HINH     = "QL_CAU_HINH";
-
+    public static final String QUYEN_NGUOI_DUNG = "NGUOI_DUNG";
+    
     // 14. TRẠNG THÁI TÀI KHOẢN
     public static final String ACCOUNT_ACTIVE = "HOAT_DONG";
     public static final String ACCOUNT_LOCKED = "BI_KHOA";

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Hướng dẫn Đăng ký - SGU</title>
+    <link rel="stylesheet" th:href="@{/assets/css/global.css}">
+    <link rel="stylesheet" th:href="@{/assets/css/applicant.css}">
+</head>
+<body style="background: #f8fafc;">
+
+    <div th:replace="~{fragments/public_navbar :: navbar('huongdan')}"></div>
+
+    <main class="container" style="padding: 60px 0; min-height: 70vh; max-width: 800px;">
+        <h1 style="color: #1e3a8a; text-align: center; margin-bottom: 40px;">Hướng dẫn sử dụng Cổng Tuyển Sinh</h1>
+
+        <div class="card" style="margin-bottom: 20px;">
+            <h3 style="margin-top: 0; color: #2563eb;">1. Hướng dẫn tạo tài khoản</h3>
+            <p style="color: #4b5563; line-height: 1.6;">Bạn cần một Email thật để nhận mã OTP 6 chữ số. Mật khẩu mặc định sau khi tạo (nếu được cấp lại) là ngày sinh của bạn (dd/mm/yyyy).</p>
+        </div>
+
+        <div class="card" style="margin-bottom: 20px;">
+            <h3 style="margin-top: 0; color: #2563eb;">2. Yêu cầu Minh chứng Hồ sơ</h3>
+            <p style="color: #4b5563; line-height: 1.6;">
+                - File định dạng: JPG, PNG, PDF (Dung lượng < 5MB).<br>
+                - Ảnh chụp CCCD phải rõ nét, không bị lóa sáng, thấy rõ 4 góc.<br>
+                - Học bạ cần chụp đủ các trang có mộc đỏ xác nhận của trường THPT.
+            </p>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-top: 0; color: #2563eb;">3. Cách sắp xếp Nguyện vọng thông minh</h3>
+            <p style="color: #4b5563; line-height: 1.6;">Thuật toán "Trượt thác" sẽ xét từ NV1 xuống. Ngành nào bạn thích nhất, hãy đặt ở NV1, không cần quan tâm điểm sàn ngành đó cao hay thấp. Hãy dùng tính năng <strong>Kéo & Thả (☰)</strong> trong trang Nguyện Vọng để xếp lại thứ tự ưu tiên.</p>
+        </div>
+    </main>
+
+</body>
+</html>

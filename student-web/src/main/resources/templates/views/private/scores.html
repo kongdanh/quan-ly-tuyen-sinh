@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Điểm thi của tôi - SGU</title>
+    <link rel="stylesheet" th:href="@{/assets/css/global.css}">
+    <link rel="stylesheet" th:href="@{/assets/css/applicant.css}">
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar :: navbar('scores')}"></div>
+
+<main class="container">
+    <div class="page-header">
+        <h1 class="page-title">Điểm thi của tôi</h1>
+        <p class="page-subtitle">Phương thức xét tuyển: <strong th:text="${diem != null ? diem.DPhuongthuc : 'Chưa có dữ liệu'}"></strong></p>
+    </div>
+
+    <div class="card bg-purple-gradient" style="padding: 32px; margin-bottom: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <p class="text-light-blue" style="font-size: 14px; margin: 0 0 8px 0; text-transform: uppercase; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 18px; height: 18px;">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z" />
+                    </svg>
+                    Tổ hợp tối ưu nhất <span th:if="${maxToHop != null}" th:text="'(' + ${maxToHop.name} + ')'"></span>
+                </p>
+                <p class="text-white" style="font-size: 48px; font-weight: 700; margin: 0;" th:text="${maxToHop != null ? maxToHop.totalStr : '0.00'}"></p>
+            </div>
+            <div style="width: 64px; height: 64px; opacity: 0.15; color: white;">
+                <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 3L1 9l11 6l9-4.91V17h2V9L12 3zM3.89 9L12 4.57L20.11 9L12 13.43L3.89 9zM12 17a10.65 10.65 0 0 1-5.18-1.39l-1.33 1.5A12.63 12.63 0 0 0 12 19a12.63 12.63 0 0 0 6.51-1.89l-1.33-1.5A10.65 10.65 0 0 1 12 17z"/></svg>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <div class="card" style="padding: 0; overflow: hidden;">
+            <div style="padding: 20px 24px; background: #f9fafb; border-bottom: 1px solid #e5e7eb;">
+                <h3 style="margin: 0; font-size: 16px; color: #111827;">Các môn đã có điểm</h3>
+            </div>
+            <div style="padding: 8px;" th:if="${diem != null}">
+                <div th:if="${diem.to != null and diem.to > 0}" class="score-row"><span class="score-label">Toán học</span><span class="score-value" th:text="${diem.to}"></span></div>
+                <div th:if="${diem.li != null and diem.li > 0}" class="score-row"><span class="score-label">Vật lý</span><span class="score-value" th:text="${diem.li}"></span></div>
+                <div th:if="${diem.ho != null and diem.ho > 0}" class="score-row"><span class="score-label">Hóa học</span><span class="score-value" th:text="${diem.ho}"></span></div>
+                <div th:if="${diem.va != null and diem.va > 0}" class="score-row"><span class="score-label">Ngữ văn</span><span class="score-value" th:text="${diem.va}"></span></div>
+                <div th:if="${diem.su != null and diem.su > 0}" class="score-row"><span class="score-label">Lịch sử</span><span class="score-value" th:text="${diem.su}"></span></div>
+                <div th:if="${diem.di != null and diem.di > 0}" class="score-row"><span class="score-label">Địa lý</span><span class="score-value" th:text="${diem.di}"></span></div>
+                <div th:if="${diem.si != null and diem.si > 0}" class="score-row"><span class="score-label">Sinh học</span><span class="score-value" th:text="${diem.si}"></span></div>
+                <div th:if="${diem.n1Thi != null and diem.n1Thi > 0}" class="score-row"><span class="score-label">Ngoại ngữ (Thi)</span><span class="score-value" th:text="${diem.n1Thi}"></span></div>
+                <div th:if="${diem.n1Cc != null and diem.n1Cc > 0}" class="score-row"><span class="score-label">Ngoại ngữ (CC)</span><span class="score-value" th:text="${diem.n1Cc}"></span></div>
+                <div th:if="${diem.ktpl != null and diem.ktpl > 0}" class="score-row"><span class="score-label">Giáo dục CD (KTPL)</span><span class="score-value" th:text="${diem.ktpl}"></span></div>
+                <div th:if="${diem.ti != null and diem.ti > 0}" class="score-row"><span class="score-label">Tin học</span><span class="score-value" th:text="${diem.ti}"></span></div>
+                <div th:if="${diem.cncn != null and diem.cncn > 0}" class="score-row"><span class="score-label">Công nghệ CN</span><span class="score-value" th:text="${diem.cncn}"></span></div>
+                <div th:if="${diem.cnnn != null and diem.cnnn > 0}" class="score-row"><span class="score-label">Công nghệ NN</span><span class="score-value" th:text="${diem.cnnn}"></span></div>
+                <div th:if="${diem.nl1 != null and diem.nl1 > 0}" class="score-row"><span class="score-label">ĐGNL</span><span class="score-value" th:text="${diem.nl1}"></span></div>
+                <div th:if="${diem.nk1 != null and diem.nk1 > 0}" class="score-row"><span class="score-label">Năng khiếu 1</span><span class="score-value" th:text="${diem.nk1}"></span></div>
+                <div th:if="${diem.nk2 != null and diem.nk2 > 0}" class="score-row"><span class="score-label">Năng khiếu 2</span><span class="score-value" th:text="${diem.nk2}"></span></div>
+            </div>
+        </div>
+
+        <div class="card" style="background: transparent; border: none; padding: 0; box-shadow: none;">
+            <h3 style="font-size: 16px; color: #111827; margin: 0 0 16px 0;">Danh sách tổ hợp khả dụng</h3>
+            
+            <th:block th:if="${listToHop != null and !listToHop.isEmpty()}">
+                <div th:each="th : ${listToHop}" class="tohop-card" th:classappend="${maxToHop != null and th.name == maxToHop.name} ? 'tohop-highest' : ''">
+                    <div>
+                        <div style="font-weight: 600; color: #111827; margin-bottom: 4px; font-size: 15px; display: flex; align-items: center; gap: 8px;">
+                            <span>Tổ hợp <span th:text="${th.name}"></span></span>
+                            
+                            <span th:if="${maxToHop != null and th.name == maxToHop.name}" class="badge badge-success" style="padding: 2px 8px; font-size: 11px; display: inline-flex; align-items: center; gap: 4px;">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 14px; height: 14px;">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z" />
+                                </svg>
+                                Tối ưu nhất
+                            </span>
+                        </div>
+                        <div style="font-size: 12px; color: #6b7280; margin-bottom: 2px;" th:text="${th.desc}"></div>
+                        <div style="font-size: 12px; color: #9ca3af; font-family: monospace;" th:text="'[ ' + ${th.detail} + ' ]'"></div>
+                    </div>
+                    <div style="font-size: 20px; font-weight: bold;" 
+                         th:style="${maxToHop != null and th.name == maxToHop.name} ? 'color: #2563eb;' : 'color: #374151;'"
+                         th:text="${th.totalStr}">
+                    </div>
+                </div>
+            </th:block>
+            
+            <th:block th:unless="${listToHop != null and !listToHop.isEmpty()}">
+                <div class="alert-warning" style="background: white;">Chưa có đủ điểm 3 môn để tạo thành tổ hợp xét tuyển.</div>
+            </th:block>
+        </div>
+    </div>
+</main>
+</body>
+</html>

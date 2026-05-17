@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -40,4 +41,29 @@ public class HoSoTuyenSinh implements Serializable {
 
     @Column(name = "ngay_nop")
     private LocalDateTime ngayNop;
+
+    @OneToMany(mappedBy = "hoSoTuyenSinh", fetch = FetchType.EAGER)
+    private List<NguyenVong> nguyenVongs;
+    
+    private Double diemThi;
+    private Double diemCong;
+
+    public Double getTongDiem() {
+        return (this.diemThi != null ? this.diemThi : 0.0) + 
+               (this.diemCong != null ? this.diemCong : 0.0);
+    }
+    
+    public List<NguyenVong> getNguyenVongs() { return this.nguyenVongs; }
+
+    // Trong file HoSoTuyenSinh.java
+    public Double getTongDiemXetTuyen() {
+        if (this.nguyenVongs == null || this.nguyenVongs.isEmpty()) {
+            return 0.0;
+        }
+        // Lấy điểm cao nhất trong tất cả các nguyện vọng của thí sinh
+        return this.nguyenVongs.stream()
+                .mapToDouble(nv -> nv.getDiemXettuyen() != null ? nv.getDiemXettuyen() : 0.0)
+                .max()
+                .orElse(0.0);
+    }
 }

@@ -8,6 +8,9 @@ import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 import java.awt.event.ActionListener;
 
+/**
+ * Cell hanh dong (Sua / Xoa) cho bang du lieu, hien thi nut text thay vi icon
+ */
 public class TableActionCell {
 
     public interface TableActionEvent {
