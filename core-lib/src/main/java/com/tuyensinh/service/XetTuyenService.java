@@ -68,37 +68,64 @@ public class XetTuyenService {
     public void chayThuatToanXetTuyen(Integer idDot) {
         System.out.println("[XetTuyenService] Bat dau chay thuat toan xet tuyen cho Dot ID=" + idDot);
         SystemLogger.log(null, "System", "Bắt đầu chạy thuật toán xét tuyển cho Đợt ID=" + idDot, true);
-        
+
         Session session = HibernateUtil.getSessionFactory().openSession();
         Transaction transaction = null;
         try {
             transaction = session.beginTransaction();
 
+            // 1. Xóa kết quả xét tuyển cũ của đợt này
             session.createNativeMutationQuery(
-                    "DELETE FROM xt_ket_qua_xet_tuyen WHERE id_ho_so IN (SELECT id FROM xt_ho_so_tuyen_sinh WHERE id_dot_tuyen_sinh = :idDot)")
+                            "DELETE FROM xt_ket_qua_xet_tuyen WHERE id_ho_so IN (SELECT id FROM xt_ho_so_tuyen_sinh WHERE id_dot_tuyen_sinh = :idDot)")
                     .setParameter("idDot", idDot)
                     .executeUpdate();
 
-            // Lấy danh sách Nguyện vọng cần xét (Kết hợp cả hai cách)
+            // 2. Lấy danh sách Nguyện vọng hợp lệ
             Query<NguyenVong> query = session.createQuery(
-                "SELECT nv FROM NguyenVong nv WHERE nv.hoSoTuyenSinh.dotTuyenSinh.id = :idDot AND nv.hoSoTuyenSinh.trangThai = 'HOP_LE' ORDER BY nv.hoSoTuyenSinh.thiSinh.cccd, nv.nvTt ASC", 
-                NguyenVong.class);
+                    "SELECT nv FROM NguyenVong nv WHERE nv.hoSoTuyenSinh.dotTuyenSinh.id = :idDot AND nv.hoSoTuyenSinh.trangThai = 'HOP_LE' ORDER BY nv.hoSoTuyenSinh.thiSinh.cccd, nv.nvTt ASC",
+                    NguyenVong.class);
             query.setParameter("idDot", idDot);
             List<NguyenVong> listNV = query.getResultList();
-            
+
             System.out.println("[XetTuyenService] Tim thay " + listNV.size() + " nguyen vong can xet");
-            
-            // Force init các relationship (tránh lỗi Lazy loading)
+
+            // Force init mối quan hệ (tránh LazyInitializationException)
             for (NguyenVong nv : listNV) {
                 if (nv.getNganh() != null) nv.getNganh().getId();
                 if (nv.getHoSoTuyenSinh() != null) nv.getHoSoTuyenSinh().getId();
                 if (nv.getThiSinh() != null) nv.getThiSinh().getId();
             }
 
+            // Nhóm nguyện vọng theo CCCD của Thí sinh
             Map<String, List<NguyenVong>> mapThiSinh = listNV.stream()
                     .collect(Collectors.groupingBy(nv -> nv.getThiSinh().getCccd()));
 
-            // LẤY ĐIỂM CHUẨN (Đã fix lỗi 999.0)
+            // ─── TỐI ƯU HIỆU NĂNG: CACHE DỮ LIỆU ĐỂ TRÁNH QUÉT DƯỚI VÒNG LẶP N+1 ───
+            Set<String> cccdSet = mapThiSinh.keySet();
+
+            // Nạp trước bảng điểm thi của các thí sinh trong đợt này
+            Map<String, DiemThiXetTuyen> diemThiMap = new HashMap<>();
+            if (!cccdSet.isEmpty()) {
+                List<DiemThiXetTuyen> allDiemThi = session.createQuery("FROM DiemThiXetTuyen WHERE cccd IN :cccds", DiemThiXetTuyen.class)
+                        .setParameter("cccds", cccdSet).getResultList();
+                diemThiMap = allDiemThi.stream().collect(Collectors.toMap(dt -> dt.getCccd().trim(), dt -> dt, (a, b) -> a));
+            }
+
+            // Nạp trước bảng điểm cộng/điểm ưu tiên theo nguyện vọng
+            Map<String, DiemCong> diemCongMap = new HashMap<>();
+            if (!cccdSet.isEmpty()) {
+                List<DiemCong> allDiemCong = session.createQuery("FROM DiemCong WHERE ts_cccd IN :cccds", DiemCong.class)
+                        .setParameter("cccds", cccdSet).getResultList();
+                diemCongMap = allDiemCong.stream().collect(Collectors.toMap(DiemCong::getDcKeys, dc -> dc, (a, b) -> a));
+            }
+
+            // Nạp trước danh mục cấu hình tổ hợp môn của các ngành
+            List<NganhToHop> allNganhToHop = session.createQuery("FROM NganhToHop", NganhToHop.class).getResultList();
+            Map<String, NganhToHop> nthMap = allNganhToHop.stream()
+                    .collect(Collectors.toMap(nth -> nth.getNganh().getManganh().toUpperCase() + "|" + nth.getToHopMon().getMatohop().toUpperCase(), nth -> nth, (a, b) -> a));
+            // ─────────────────────────────────────────────────────────────────────
+
+            // Lấy danh sách cấu hình Điểm chuẩn
             List<com.tuyensinh.model.DiemChuanDot> diemChuanDots = session.createQuery(
                     "SELECT dc FROM DiemChuanDot dc WHERE dc.dotTuyenSinh.id = :idDot",
                     com.tuyensinh.model.DiemChuanDot.class
@@ -112,28 +139,15 @@ public class XetTuyenService {
             for (com.tuyensinh.model.DiemChuanDot dc : diemChuanDots) {
                 if (dc.getDiemChuan() == null) continue;
                 Double score = dc.getDiemChuan().doubleValue();
-                
-                String manganh = dc.getNganhToHop() != null && dc.getNganhToHop().getNganh() != null
-                        ? dc.getNganhToHop().getNganh().getManganh() : null;
+                String manganh = dc.getNganhToHop() != null && dc.getNganhToHop().getNganh() != null ? dc.getNganhToHop().getNganh().getManganh() : null;
 
                 if (manganh != null) {
                     manganh = manganh.trim().toUpperCase();
-                    // 1. Lưu Key: MANGANH (Dùng làm Fallback, chuẩn nhất cho các trường Đại học)
                     diemChuanMap.putIfAbsent(manganh, score);
 
-                    // 2. Lưu Key: MANGANH|MATOHOP (vd: 7480201|A00)
                     if (dc.getNganhToHop().getToHopMon() != null && dc.getNganhToHop().getToHopMon().getMatohop() != null) {
                         String matohop = dc.getNganhToHop().getToHopMon().getMatohop().trim().toUpperCase();
                         diemChuanMap.put(manganh + "|" + matohop, score);
-                    }
-                    
-                    // 3. Lưu Key: MANGANH|MON1-MON2-MON3 (Để khớp với chữ TO-VA-LI của Thí sinh)
-                    String m1 = dc.getNganhToHop().getThMon1();
-                    String m2 = dc.getNganhToHop().getThMon2();
-                    String m3 = dc.getNganhToHop().getThMon3();
-                    if (m1 != null && m2 != null && m3 != null) {
-                         String combo = m1.trim().toUpperCase() + "-" + m2.trim().toUpperCase() + "-" + m3.trim().toUpperCase();
-                         diemChuanMap.put(manganh + "|" + combo, score);
                     }
                 }
             }
@@ -141,10 +155,60 @@ public class XetTuyenService {
             int soTrungTuyen = 0;
             int soRot = 0;
 
+            // Duyệt qua từng thí sinh để tính điểm tối ưu và xét tuyển
             for (Map.Entry<String, List<NguyenVong>> entry : mapThiSinh.entrySet()) {
-                boolean daDau = false;
-                
-                // Cập nhật điểm max vào hồ sơ
+                String cccd = entry.getKey();
+                DiemThiXetTuyen dtXt = diemThiMap.get(cccd);
+
+                // BƯỚC THAY THẾ: Tính toán điểm tối ưu dựa trên phương thức tuyển sinh
+                for (NguyenVong nv : entry.getValue()) {
+                    String maNganhNorm = nv.getNganh().getManganh() != null ? nv.getNganh().getManganh().trim().toUpperCase() : "";
+                    String maThNorm = nv.getTtThm() != null ? nv.getTtThm().trim().toUpperCase() : "";
+                    String dcKey = cccd + "_" + maNganhNorm + "_" + maThNorm;
+
+                    DiemCong dcRecord = diemCongMap.get(dcKey);
+                    double diemBonusIelts = (dcRecord != null && dcRecord.getDiemCC() != null) ? dcRecord.getDiemCC().doubleValue() : 0.0;
+                    double diemUuTienKhuVuc = (dcRecord != null && dcRecord.getDiemUtxt() != null) ? dcRecord.getDiemUtxt().doubleValue() : 0.0;
+
+                    double diemToiUu = 0.0;
+                    String phuongThuc = nv.getTtPhuongthuc() != null ? nv.getTtPhuongthuc().trim().toUpperCase() : "THPT";
+
+                    if ("DGNL".equalsIgnoreCase(phuongThuc)) {
+                        // Kịch bản DGNL: Điểm xét tuyển = Điểm quy đổi thang 30 + Điểm ưu tiên khu vực
+                        diemToiUu = diemBonusIelts + diemUuTienKhuVuc;
+                    } else {
+                        // Kịch bản THPT / HOCBA: ÁP DỤNG PHÉP SO SÁNH TỐI ƯU IELTS ĐÃ BÀN
+                        NganhToHop nthConfig = nthMap.get(maNganhNorm + "|" + maThNorm);
+                        if (nthConfig != null && dtXt != null) {
+                            String m1 = nthConfig.getThMon1();
+                            String m2 = nthConfig.getThMon2();
+                            String m3 = nthConfig.getThMon3();
+
+                            // Phương án A: Thay thế môn Anh bằng điểm hệ 10 quy đổi (N1_CC) - KHÔNG ĐƯỢC cộng điểm thưởng
+                            double scoreOptA = getDiemMonThpt(dtXt, m1, true)
+                                    + getDiemMonThpt(dtXt, m2, true)
+                                    + getDiemMonThpt(dtXt, m3, true);
+
+                            // Phương án B: Giữ điểm thi thật (N1_THI) + Cộng điểm thưởng chứng chỉ (diemBonusIelts)
+                            double scoreOptB = getDiemMonThpt(dtXt, m1, false)
+                                    + getDiemMonThpt(dtXt, m2, false)
+                                    + getDiemMonThpt(dtXt, m3, false)
+                                    + diemBonusIelts;
+
+                            // Lấy giá trị lớn nhất đem đi xét tuyển
+                            diemToiUu = Math.max(scoreOptA, scoreOptB) + diemUuTienKhuVuc;
+                        } else {
+                            diemToiUu = nv.getDiemXettuyen() != null ? nv.getDiemXettuyen() : 0.0;
+                        }
+                    }
+
+                    // Làm tròn chuẩn 2 chữ số thập phân, cập nhật lại vào đối tượng nguyện vọng
+                    diemToiUu = Math.round(diemToiUu * 100.0) / 100.0;
+                    nv.setDiemXettuyen(diemToiUu);
+                    session.merge(nv);
+                }
+
+                // Cập nhật tổng điểm cao nhất vào hồ sơ thí sinh
                 Double tongDiemMax = entry.getValue().stream()
                         .mapToDouble(nv -> nv.getDiemXettuyen() != null ? nv.getDiemXettuyen() : 0.0).max().orElse(0.0);
 
@@ -154,6 +218,8 @@ public class XetTuyenService {
                     session.merge(hs);
                 }
 
+                // Vòng lặp xét ĐẬU / RỚT theo thứ tự nguyện vọng ưu tiên (1, 2, 3...)
+                boolean daDau = false;
                 for (NguyenVong nv : entry.getValue()) {
                     if (daDau) {
                         nv.setNvKetqua("HUY");
@@ -165,20 +231,14 @@ public class XetTuyenService {
                     String maThNorm = nv.getTtThm() != null ? nv.getTtThm().trim().toUpperCase() : "";
                     String key = maNganhNorm + "|" + maThNorm;
 
-                    // MAPPING THÔNG MINH
                     Double diemChuan = 999.0;
                     if (diemChuanMap.containsKey(key)) {
-                        diemChuan = diemChuanMap.get(key); // Khớp theo Manganh|TO-VA-LI hoặc Manganh|A00
+                        diemChuan = diemChuanMap.get(key);
                     } else if (diemChuanMap.containsKey(maNganhNorm)) {
-                        diemChuan = diemChuanMap.get(maNganhNorm); // Lấy Điểm chuẩn chung của Ngành đó
+                        diemChuan = diemChuanMap.get(maNganhNorm);
                     }
 
                     Double diemThiSinh = nv.getDiemXettuyen() != null ? nv.getDiemXettuyen() : 0.0;
-                    nv.setDiemXettuyen(diemThiSinh);
-                    
-                    System.out.println("[DEBUG XET TUYEN] CCCD=" + nv.getThiSinh().getCccd() 
-                        + " | NV=" + nv.getNvTt() + " | Ngành=" + maNganhNorm 
-                        + " | Tổ Hợp=" + maThNorm + " | Điểm TS=" + diemThiSinh + " | Điểm Chuẩn=" + diemChuan);
 
                     if (diemThiSinh >= diemChuan) {
                         nv.setNvKetqua("DAU");
@@ -203,19 +263,42 @@ public class XetTuyenService {
                 }
             }
             transaction.commit();
-            
-            System.out.println("[XetTuyenService] Hoan thanh xet tuyen Dot ID=" + idDot + ": " + soTrungTuyen
-                    + " trung tuyen, " + soRot + " rot");
+
+            System.out.println("[XetTuyenService] Hoan thanh xet tuyen Dot ID=" + idDot + ": " + soTrungTuyen + " trung tuyen, " + soRot + " rot");
             SystemLogger.log(null, "System", "Hoàn thành xét tuyển Đợt ID=" + idDot + ": " + soTrungTuyen + " trúng tuyển, " + soRot + " rớt", true);
-            
+
         } catch (Exception e) {
             if (transaction != null) transaction.rollback();
             System.err.println("[XetTuyenService] Loi chay thuat toan xet tuyen: " + e.getMessage());
             e.printStackTrace();
-            SystemLogger.log(null, "System", "Lỗi chạy thuật toán xét tuyển Đợt ID=" + idDot + ": " + e.getMessage(), false);
             throw new RuntimeException("Loi chay thuat toan: " + e.getMessage());
         } finally {
             if (session != null) session.close();
+        }
+    }
+
+    /**
+     * Hàm Helper bốc điểm thi theo môn học lẻ từ xt_diemthixettuyen
+     */
+    private double getDiemMonThpt(DiemThiXetTuyen dt, String mon, boolean useCertificate) {
+        if (dt == null || mon == null) return 0.0;
+        switch (mon.trim().toUpperCase()) {
+            case "TO": return dt.getTo() != null ? dt.getTo().doubleValue() : 0.0;
+            case "LI": return dt.getLi() != null ? dt.getLi().doubleValue() : 0.0;
+            case "HO": return dt.getHo() != null ? dt.getHo().doubleValue() : 0.0;
+            case "SI": return dt.getSi() != null ? dt.getSi().doubleValue() : 0.0;
+            case "SU": return dt.getSu() != null ? dt.getSu().doubleValue() : 0.0;
+            case "DI": return dt.getDi() != null ? dt.getDi().doubleValue() : 0.0;
+            case "VA": return dt.getVa() != null ? dt.getVa().doubleValue() : 0.0;
+            case "N1":
+                if (useCertificate) {
+                    // n1Cc tương ứng với getN1Cc() của Lombok
+                    return dt.getN1Cc() != null ? dt.getN1Cc().doubleValue() : 0.0;
+                } else {
+                    // n1Thi tương ứng với getN1Thi() của Lombok
+                    return dt.getN1Thi() != null ? dt.getN1Thi().doubleValue() : 0.0;
+                }
+            default: return 0.0;
         }
     }
 
@@ -224,7 +307,7 @@ public class XetTuyenService {
     }
 
     // ══════════════════════════════════════════════════════════════════════════════
-    // 2. IELTS IMPORT (Từ Branch)
+    // 2. IELTS IMPORT (Đã cập nhật tối ưu và sửa lỗi chặn tổ hợp)
     // ══════════════════════════════════════════════════════════════════════════════
 
     public List<String> processIELTSImport(File file) {
@@ -244,7 +327,18 @@ public class XetTuyenService {
 
         for (IeltsImportDTO dto : rows) {
             String cccd = dto.getCccd().trim();
-            List<String> rowErrors = buildIeltsCommands(cccd, dto.getDiemQd(), dto.getDiemCong(), n1Updates, dcUpserts);
+
+            // TRUYỀN ĐỦ 3 ĐẦU ĐIỂM:
+            // 1. Điểm gốc IELTS (vd: 7.5) | 2. Điểm Quy đổi từ Excel (vd: 10) | 3. Điểm cộng từ Excel (vd: 2)
+            // Lưu ý: Hãy kiểm tra lại các hàm get...() của IeltsImportDTO để khớp với thuộc tính file Excel của ông nhé!
+            List<String> rowErrors = buildIeltsCommands(
+                    cccd,
+                    dto.getDiemIeltsRaw(),   // Điểm gốc IELTS (ví dụ: 7.5)
+                    dto.getDiemQd(),         // Điểm Quy đổi hệ 10 từ Excel (ví dụ: 10)
+                    dto.getDiemCong(),       // Điểm cộng từ Excel (ví dụ: 2)
+                    n1Updates,
+                    dcUpserts
+            );
             errors.addAll(rowErrors);
         }
 
@@ -255,10 +349,18 @@ public class XetTuyenService {
         return errors;
     }
 
-    public List<String> processSingleIelts(String cccd, BigDecimal diemTho) {
+    /**
+     * Xử lý nộp đơn lẻ qua Web API (Hỗ trợ Admin nhập tay hoặc Học sinh tự nộp).
+     */
+    public List<String> processSingleIelts(String cccd, BigDecimal diemIeltsRaw, BigDecimal diemQdExcel, BigDecimal diemCongOriginal) {
         List<N1UpdateCommand> n1Updates = new ArrayList<>();
         List<DiemCong> dcUpserts = new ArrayList<>();
-        List<String> errors = buildIeltsCommands(cccd, diemTho, null, n1Updates, dcUpserts);
+
+        // Khi gọi từ Web:
+        // - Nếu học sinh tự nộp: diemQdExcel và diemCongOriginal truyền vào là NULL (hệ thống sẽ tự tra cứu bảng quy đổi)
+        // - Nếu Admin nhập tay trên Form duyệt hồ sơ: Có thể truyền giá trị override trực tiếp từ giao diện vào
+        List<String> errors = buildIeltsCommands(cccd, diemIeltsRaw, diemQdExcel, diemCongOriginal, n1Updates, dcUpserts);
+
         if (!n1Updates.isEmpty())
             errors.addAll(flushN1Updates(n1Updates));
         if (!dcUpserts.isEmpty())
@@ -266,8 +368,8 @@ public class XetTuyenService {
         return errors;
     }
 
-    private List<String> buildIeltsCommands(String cccd, BigDecimal diemQd, BigDecimal diemCongOriginal,
-            List<N1UpdateCommand> n1Updates, List<DiemCong> dcUpserts) {
+    private List<String> buildIeltsCommands(String cccd, BigDecimal diemIeltsRaw, BigDecimal diemQdExcel, BigDecimal diemCongOriginal,
+                                            List<N1UpdateCommand> n1Updates, List<DiemCong> dcUpserts) {
         List<String> errors = new ArrayList<>();
         Optional<DiemThiXetTuyen> optDiem = diemThiDAO.findByCccd(cccd);
         if (optDiem.isEmpty()) {
@@ -280,26 +382,41 @@ public class XetTuyenService {
             return errors;
         }
 
-        BigDecimal diemTho = coalesceZero(diemQd);
-        BigDecimal diemCC = bangQuyDoiDAO.lookupDiemb("IELTS", "N1", diemTho);
-        if (diemCC == null) {
-            diemCC = coalesceZero(diemCongOriginal);
-        }
-        diemCC = diemCC.setScale(2, RoundingMode.HALF_UP);
-
         DiemThiXetTuyen dt = optDiem.get();
 
+        // ─── 1. Xác định Điểm thay thế môn Tiếng Anh (diemThayTheN1 - Hệ 10) ───────
+        BigDecimal diemThayTheN1;
+        if (diemQdExcel != null && diemQdExcel.compareTo(BigDecimal.ZERO) > 0) {
+            // Nếu trường Điểm Quy đổi từ Excel có giá trị (ví dụ: 10), sử dụng luôn
+            diemThayTheN1 = diemQdExcel.setScale(2, RoundingMode.HALF_UP);
+        } else {
+            // Nếu khuyết, dùng Điểm số IELTS thô (ví dụ: 7.5) để tra cứu từ DB
+            BigDecimal rawIelts = coalesceZero(diemIeltsRaw);
+            BigDecimal lookupResult = bangQuyDoiDAO.lookupDiemb("IELTS", "N1", rawIelts);
+            diemThayTheN1 = (lookupResult != null ? lookupResult : BigDecimal.ZERO)
+                    .setScale(2, RoundingMode.HALF_UP);
+        }
+
+        // ─── 2. Xác định Điểm cộng ưu tiên (ví dụ: 2) ─────────────────────────────
+        BigDecimal diemCongUuTien = coalesceZero(diemCongOriginal).setScale(2, RoundingMode.HALF_UP);
+
+        // Cờ bảo vệ: Đảm bảo chỉ update bảng diemthixettuyen đúng 1 lần cho 1 thí sinh
+        boolean hasAddedN1Update = false;
+
+        // ─── 3. Duyệt danh sách Nguyện vọng ────────────────────────────────────────
         for (NganhToHop nth : toHopList) {
-            if (!passesSubsetCheck(dt, nth))
-                continue;
             String manganh = nth.getNganh().getManganh();
             String matohop = nth.getToHopMon().getMatohop();
-
-            if (Boolean.TRUE.equals(nth.getN1())) {
-                n1Updates.add(new N1UpdateCommand(cccd, diemCC));
-            }
             String dcKey = cccd + "_" + manganh + "_" + matohop;
-            dcUpserts.add(buildDiemCong(dt.getThiSinh(), manganh, matohop, diemCC, dcKey));
+
+            // ─ Thao tác 1: Kho tĩnh (Chỉ add 1 lần duy nhất để tối ưu hiệu năng Batch)
+            if (!hasAddedN1Update) {
+                n1Updates.add(new N1UpdateCommand(cccd, diemThayTheN1));
+                hasAddedN1Update = true; // Khóa cờ
+            }
+
+            // ─ Thao tác 2: Kho động (Lưu điểm cộng theo từng nguyện vọng cụ thể)
+            dcUpserts.add(buildDiemCong(dt.getThiSinh(), manganh, matohop, diemCongUuTien, dcKey));
         }
         return errors;
     }
