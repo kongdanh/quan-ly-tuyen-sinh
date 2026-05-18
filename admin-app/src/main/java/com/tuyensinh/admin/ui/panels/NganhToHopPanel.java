@@ -152,9 +152,7 @@ public class NganhToHopPanel extends BaseTablePanel<NganhToHop> {
         if (!confirmDelete("liên kết " + code)) return;
 
         int id = getIdFromRow(tableRow);
-        CompletableFuture.runAsync(() -> {
-            nganhToHopService.deleteByIdAsync(id);
-        }).thenRun(() -> SwingUtilities.invokeLater(() -> {
+        nganhToHopService.deleteByIdAsync(id).thenRun(() -> SwingUtilities.invokeLater(() -> {
             loadTableData();
             showSuccess("Đã xóa liên kết ngành!");
         }));
@@ -209,6 +207,25 @@ public class NganhToHopPanel extends BaseTablePanel<NganhToHop> {
                 }
             }
         );
+
+        if (toolbar.getBtnImport() != null) {
+            toolbar.getBtnImport().addActionListener(e -> {
+                JFileChooser fileChooser = new JFileChooser();
+                fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Excel Files", "xlsx", "xls"));
+                if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+                    java.io.File file = fileChooser.getSelectedFile();
+                    nganhToHopService.importExcel(file).thenRun(() -> {
+                        SwingUtilities.invokeLater(() -> {
+                            showSuccess("Nhập dữ liệu từ Excel thành công!");
+                            loadTableData();
+                        });
+                    }).exceptionally(ex -> {
+                        SwingUtilities.invokeLater(() -> showError("Lỗi nhập Excel: " + ex.getCause().getMessage()));
+                        return null;
+                    });
+                }
+            });
+        }
     }
 
     @Override
