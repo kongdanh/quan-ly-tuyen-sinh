@@ -43,10 +43,11 @@ public class DiemThiFormDialog extends BaseFormDialog<DiemThiXetTuyen> {
         super(parent, "Điểm thi xét tuyển", entity, isAddNew, 540, 760);
 
         buildFormFields();
+        setupExtras();         
         if (!isAddNew) {
             populateForm(entity);
+            applyMethodRules();   
         }
-        setupExtras();
     }
 
     @Override
@@ -216,8 +217,12 @@ public class DiemThiFormDialog extends BaseFormDialog<DiemThiXetTuyen> {
         if (!isAddNew) {
             txtCccd.setEnabled(false);
         }
+        // Listener: khi admin thay đổi phương thức thì cập nhật ô enable/disable
         cbPhuongThuc.addActionListener(e -> applyMethodRules());
-        applyMethodRules();
+        // Nếu là form thêm mới: áp dụng ngay theo giá trị mặc định
+        if (isAddNew) {
+            applyMethodRules();
+        }
     }
 
     private void addScoreField(String key, String label) {
