@@ -348,30 +348,28 @@ public class TableToolbar extends JPanel {
             setOpaque(true);
             setBackground(Color.WHITE);
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            setBorder(new EmptyBorder(4, 10, 4, 10));
+            setBorder(new EmptyBorder(6, 12, 6, 12));
+            setAlignmentX(Component.LEFT_ALIGNMENT);
 
             addMouseListener(new MouseAdapter() {
-                @Override public void mouseEntered(MouseEvent e) {
-                    setBackground(Color.decode(UIConstants.DASH_SELECT_BG));
-                }
-                @Override public void mouseExited(MouseEvent e) {
-                    setBackground(Color.WHITE);
-                }
                 @Override public void mousePressed(MouseEvent e) {
-                    // Xử lý ngay khi nhấn xuống, không chờ nhả chuột
-                    MenuSelectionManager.defaultManager().clearSelectedPath();
-                    onClick.run();
+                    if (SwingUtilities.isLeftMouseButton(e)) {
+                        MenuSelectionManager.defaultManager().clearSelectedPath();
+                        onClick.run();
+                    }
                 }
             });
         }
 
+        @Override
+        public Dimension getMaximumSize() {
+            return new Dimension(Short.MAX_VALUE, getPreferredSize().height);
+        }
+
         @Override public void processMouseEvent(MouseEvent event, MenuElement[] path, MenuSelectionManager manager) {
-            // Chỉ dùng để duy trì path khi hover, KHÔNG xử lý click ở đây
-            // để tránh bị gọi 2 lần
             if (event.getID() == MouseEvent.MOUSE_ENTERED) {
                 manager.setSelectedPath(path);
             }
-            // Relay event xuống component để MouseAdapter bắt được
             dispatchEvent(event);
         }
         @Override public void processKeyEvent(KeyEvent event, MenuElement[] path, MenuSelectionManager manager) {}

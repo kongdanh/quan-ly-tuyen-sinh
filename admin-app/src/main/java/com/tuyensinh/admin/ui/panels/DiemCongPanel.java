@@ -21,6 +21,7 @@ public class DiemCongPanel extends BaseTablePanel<DiemCong> {
 
     public DiemCongPanel() {
         super("Quản lý Điểm Cộng", "Danh sách các loại điểm ưu tiên, chứng chỉ của thí sinh");
+        setupExtras();
         loadTableData();
     }
 
@@ -112,6 +113,9 @@ public class DiemCongPanel extends BaseTablePanel<DiemCong> {
 
     @Override
     protected void setupExtras() {
-        // Có thể thêm nút Import Excel tại đây nếu cần
+        toolbar.addClearFilterOption(() -> applyFilter("phuongthuc", null));
+        toolbar.addDynamicFilterCategory("Phương Thức", -1, Arrays.asList("Tất cả", "THPT", "DGNL", "VSAT"), (col, val) -> {
+            applyFilter("phuongthuc", val);
+        });
     }
 }
