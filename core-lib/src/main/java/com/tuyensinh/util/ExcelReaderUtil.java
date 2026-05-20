@@ -115,34 +115,51 @@ public class ExcelReaderUtil {
     }
 
     private static <T> Map<String, Integer> buildHeaderMap(Row headerRow, Class<T> dtoClass) {
-        Map<String, Integer> headerMap = new HashMap<>();
+        Map<String, Deque<Integer>> headerMap = new HashMap<>();
 
         for (Cell cell : headerRow) {
             String headerValue = normalize(getCellValue(cell));
-            headerMap.put(headerValue, cell.getColumnIndex());
+            headerMap.computeIfAbsent(headerValue, key -> new ArrayDeque<>())
+                    .add(cell.getColumnIndex());
         }
 
         Map<String, Integer> fieldIndexMap = new HashMap<>();
         for (Field field : dtoClass.getDeclaredFields()) {
-            if (field.isAnnotationPresent(ExcelColumn.class)) {
-                ExcelColumn annotation = field.getAnnotation(ExcelColumn.class);
-
-                String normalizedMain = normalize(annotation.value());
-                if (headerMap.containsKey(normalizedMain)) {
-                    fieldIndexMap.put(field.getName(), headerMap.get(normalizedMain));
-                    continue;
-                }
-
-                for (String alias : annotation.aliases()) {
-                    String normalizedAlias = normalize(alias);
-                    if (headerMap.containsKey(normalizedAlias)) {
-                        fieldIndexMap.put(field.getName(), headerMap.get(normalizedAlias));
-                        break;
-                    }
-                }
+            if (!field.isAnnotationPresent(ExcelColumn.class)) {
+                continue;
+            }
+            ExcelColumn annotation = field.getAnnotation(ExcelColumn.class);
+            Integer index = findNextHeaderIndex(headerMap, annotation.value(), annotation.aliases());
+            if (index != null) {
+                fieldIndexMap.put(field.getName(), index);
             }
         }
         return fieldIndexMap;
+    }
+
+    private static Integer findNextHeaderIndex(Map<String, Deque<Integer>> headerMap,
+                                              String mainHeader,
+                                              String[] aliases) {
+        Integer index = pollHeaderIndex(headerMap, mainHeader);
+        if (index != null) {
+            return index;
+        }
+        for (String alias : aliases) {
+            index = pollHeaderIndex(headerMap, alias);
+            if (index != null) {
+                return index;
+            }
+        }
+        return null;
+    }
+
+    private static Integer pollHeaderIndex(Map<String, Deque<Integer>> headerMap, String header) {
+        String normalized = normalize(header);
+        Deque<Integer> indices = headerMap.get(normalized);
+        if (indices == null || indices.isEmpty()) {
+            return null;
+        }
+        return indices.pollFirst();
     }
 
     private static <T> T mapRowToDTO(Row row, Map<String, Integer> headerMap, Class<T> dtoClass) throws Exception {
