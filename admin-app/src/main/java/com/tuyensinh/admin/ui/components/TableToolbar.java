@@ -88,6 +88,28 @@ public class TableToolbar extends JPanel {
         });
     }
 
+    private void uncheckAllCheckBoxes(Component comp) {
+        if (comp instanceof JCheckBox) {
+            ((JCheckBox) comp).setSelected(false);
+        } else if (comp instanceof JMenu) {
+            JMenu menu = (JMenu) comp;
+            for (Component sub : menu.getMenuComponents()) {
+                uncheckAllCheckBoxes(sub);
+            }
+        } else if (comp instanceof Container) {
+            Container container = (Container) comp;
+            for (Component child : container.getComponents()) {
+                uncheckAllCheckBoxes(child);
+            }
+            if (comp instanceof JViewport) {
+                Component view = ((JViewport) comp).getView();
+                if (view != null) {
+                    uncheckAllCheckBoxes(view);
+                }
+            }
+        }
+    }
+
     public void addClearFilterOption(Runnable onClearAction) {
         JMenuItem itemClear = new JMenuItem("Xóa bộ lọc (Tất cả)");
         itemClear.setFont(UIManager.getFont("defaultFont").deriveFont(Font.BOLD, 12f));
@@ -95,6 +117,7 @@ public class TableToolbar extends JPanel {
         itemClear.addActionListener(e -> {
             btnFilter.setText("Bộ lọc");
             lblTitle.setText("Danh sách 2026");
+            uncheckAllCheckBoxes(filterMenu);
             onClearAction.run();
         });
         filterMenu.add(itemClear);
@@ -130,6 +153,98 @@ public class TableToolbar extends JPanel {
         
         categoryMenu.add(scrollPane);
         filterMenu.add(categoryMenu);
+    }
+
+    public void addMultiSelectFilterCategory(String categoryName, List<String> uniqueValues, java.util.function.Consumer<List<String>> onFilterAction) {
+        JMenu categoryMenu = new JMenu(categoryName);
+        categoryMenu.setFont(UIManager.getFont("defaultFont").deriveFont(Font.BOLD, 12f));
+        
+        MenuPanel panel = new MenuPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBackground(Color.WHITE);
+        
+        List<JCheckBox> checkBoxes = new java.util.ArrayList<>();
+        
+        for (String val : uniqueValues) {
+            JCheckBox cb = new JCheckBox(val);
+            cb.setFont(UIManager.getFont("defaultFont").deriveFont(Font.PLAIN, 12f));
+            cb.setOpaque(true);
+            cb.setBackground(Color.WHITE);
+            cb.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            cb.setBorder(BorderFactory.createEmptyBorder(4, 10, 4, 10));
+            cb.setAlignmentX(Component.LEFT_ALIGNMENT);
+            cb.setHorizontalAlignment(SwingConstants.LEFT);
+            cb.setMaximumSize(new Dimension(Integer.MAX_VALUE, 25));
+            
+            cb.addMouseListener(new MouseAdapter() {
+                @Override public void mouseEntered(MouseEvent e) {
+                    cb.setBackground(Color.decode(UIConstants.DASH_SELECT_BG));
+                }
+                @Override public void mouseExited(MouseEvent e) {
+                    cb.setBackground(Color.WHITE);
+                }
+            });
+            
+            panel.add(cb);
+            checkBoxes.add(cb);
+        }
+        
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
+        btnPanel.setOpaque(true);
+        btnPanel.setBackground(Color.WHITE);
+        btnPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        btnPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35));
+        
+        JButton btnApply = new JButton("Áp dụng");
+        btnApply.setFont(UIManager.getFont("defaultFont").deriveFont(Font.BOLD, 11f));
+        btnApply.setBackground(Color.decode(UIConstants.DASH_PRIMARY));
+        btnApply.setForeground(Color.WHITE);
+        btnApply.setFocusPainted(false);
+        
+        JButton btnClear = new JButton("Xóa");
+        btnClear.setFont(UIManager.getFont("defaultFont").deriveFont(Font.PLAIN, 11f));
+        btnClear.setBackground(Color.decode(UIConstants.COLOR_BORDER));
+        btnClear.setFocusPainted(false);
+        
+        btnPanel.add(btnApply);
+        btnPanel.add(btnClear);
+        panel.add(btnPanel);
+        
+        MenuScrollPane scrollPane = new MenuScrollPane(panel);
+        scrollPane.setBorder(null);
+        int maxItems = Math.min(uniqueValues.size(), 10);
+        scrollPane.setPreferredSize(new Dimension(200, maxItems * 25 + 40));
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        
+        categoryMenu.add(scrollPane);
+        filterMenu.add(categoryMenu);
+        
+        btnApply.addActionListener(e -> {
+            List<String> selected = new java.util.ArrayList<>();
+            for (JCheckBox cb : checkBoxes) {
+                if (cb.isSelected()) {
+                    selected.add(cb.getText());
+                }
+            }
+            if (selected.isEmpty()) {
+                btnFilter.setText("Bộ lọc");
+                lblTitle.setText("Danh sách 2026");
+            } else {
+                String labelText = String.join(", ", selected);
+                btnFilter.setText("Lọc: " + (labelText.length() > 15 ? labelText.substring(0, 12) + "..." : labelText));
+                lblTitle.setText(categoryName + ": " + labelText);
+            }
+            onFilterAction.accept(selected);
+            filterMenu.setVisible(false);
+        });
+        
+        btnClear.addActionListener(e -> {
+            for (JCheckBox cb : checkBoxes) {
+                cb.setSelected(false);
+            }
+        });
     }
 
     public SearchTextField getSearchField() { return txtSearch; }

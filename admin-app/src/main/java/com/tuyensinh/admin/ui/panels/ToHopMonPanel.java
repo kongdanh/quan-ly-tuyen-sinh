@@ -9,6 +9,7 @@ import com.tuyensinh.service.ImportService;
 
 import javax.swing.*;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -19,6 +20,7 @@ public class ToHopMonPanel extends BaseTablePanel<ToHopMon> {
 
     public ToHopMonPanel() {
         super("Quản lý Tổ Hợp Môn", "Danh sách các tổ hợp môn xét tuyển");
+        setupExtras();
         loadTableData();
     }
 
@@ -54,18 +56,49 @@ public class ToHopMonPanel extends BaseTablePanel<ToHopMon> {
 
     @Override
     protected CompletableFuture<List<ToHopMon>> fetchPage(String keyword, Map<String, Object> filters, int page, int pageSize) {
-        return dao.findPageWithFilters(keyword, getSearchFields(), filters, page, pageSize);
+        return dao.findPageWithMonFilter(keyword, getSearchFields(), filters, page, pageSize);
     }
 
     @Override
     protected CompletableFuture<Long> fetchCount(String keyword, Map<String, Object> filters) {
-        return dao.countWithFiltersAsync(keyword, getSearchFields(), filters);
+        return dao.countWithMonFilter(keyword, getSearchFields(), filters);
     }
 
     @Override
     protected void setupExtras() {
         toolbar.getBtnImport().setVisible(true);
         toolbar.getBtnImport().addActionListener(e -> handleImportExcel());
+
+        // --- Bộ lọc theo Môn học ---
+        // Lấy danh sách môn duy nhất từ DB (chạy nền để không block UI)
+        CompletableFuture.supplyAsync(() -> dao.findDistinctMonHoc())
+            .thenAccept(monList -> {
+                if (monList == null || monList.isEmpty()) return;
+
+                // Thêm tên đầy đủ vào label (nếu có mapping)
+                List<String> displayList = new ArrayList<>(monList);
+
+                javax.swing.SwingUtilities.invokeLater(() -> {
+                    toolbar.addClearFilterOption(() -> {
+                        activeFilters.remove("monHocs");
+                        currentPage = 1;
+                        loadTableData();
+                    });
+                    toolbar.addMultiSelectFilterCategory(
+                        "Lọc theo Môn",
+                        displayList,
+                        (selectedMons) -> {
+                            if (selectedMons == null || selectedMons.isEmpty()) {
+                                activeFilters.remove("monHocs");
+                            } else {
+                                activeFilters.put("monHocs", selectedMons);
+                            }
+                            currentPage = 1;
+                            loadTableData();
+                        }
+                    );
+                });
+            });
     }
 
     @Override

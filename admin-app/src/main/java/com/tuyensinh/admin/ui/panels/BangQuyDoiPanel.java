@@ -16,6 +16,7 @@ public class BangQuyDoiPanel extends BaseTablePanel<BangQuyDoi> {
 
     public BangQuyDoiPanel() {
         super("Bảng Quy Đổi", "Quản lý các mức quy đổi điểm (chứng chỉ, DGNL, VSAT)");
+        setupExtras();
         loadTableData();
     }
 
