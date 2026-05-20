@@ -19,6 +19,7 @@ public class ToHopMonPanel extends BaseTablePanel<ToHopMon> {
 
     public ToHopMonPanel() {
         super("Quản lý Tổ Hợp Môn", "Danh sách các tổ hợp môn xét tuyển");
+        setupExtras();
         loadTableData();
     }
 

@@ -9,9 +9,18 @@ import com.tuyensinh.service.DotTuyenSinhService;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import java.io.File;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+
+import com.tuyensinh.dto.DiemChuanImportDTO;
+import com.tuyensinh.service.ToHopMonService;
+import com.tuyensinh.util.ExcelReaderUtil;
+import com.tuyensinh.util.SystemLogger;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
@@ -22,10 +31,12 @@ public class DiemChuanPanel extends BaseTablePanel<DiemChuanDot> {
     private CustomComboBox<DotTuyenSinh> cbDotFilter;
     private List<DiemChuanDot> listDataPage = new ArrayList<>();
     private DiemChuanDotService service = new DiemChuanDotService();
+    private ToHopMonService toHopMonService = new ToHopMonService();
     
     public DiemChuanPanel() {
         super("Quản lý Điểm chuẩn", "Thiết lập điểm trúng tuyển cho từng Đợt và Tổ hợp");
         setupBatchFilter();
+        setupExtras();
     }
 
     private java.awt.event.ActionListener dotFilterListener;
@@ -50,9 +61,24 @@ public class DiemChuanPanel extends BaseTablePanel<DiemChuanDot> {
             SwingUtilities.invokeLater(() -> {
                 System.out.println("✓ Loaded " + dots.size() + " Đợt from database");
                 
+                DotTuyenSinh defaultDot = null;
                 for (DotTuyenSinh d : dots) {
                     cbDotFilter.addItem(d);
+                    if ("ACTIVE".equals(d.getTrangThai())) {
+                        defaultDot = d;
+                    }
                 }
+                
+                // Nếu không có đợt ACTIVE nào, chọn đợt cuối cùng (mới nhất)
+                if (defaultDot == null && !dots.isEmpty()) {
+                    defaultDot = dots.get(dots.size() - 1);
+                }
+                
+                // Set default selection mà không trigger action listener sớm
+                if (defaultDot != null) {
+                    cbDotFilter.setSelectedItem(defaultDot);
+                }
+                
                 cbDotFilter.addActionListener(dotFilterListener);
                 
                 if (cbDotFilter.getItemCount() > 0) {
@@ -119,6 +145,93 @@ public class DiemChuanPanel extends BaseTablePanel<DiemChuanDot> {
     }
 
     @Override
+    protected void setupExtras() {
+        toolbar.addClearFilterOption(() -> applyFilter("nganhToHop.toHopMon.matohop", null));
+
+        // Lấy danh sách tổ hợp môn làm bộ lọc
+        CompletableFuture.supplyAsync(() -> toHopMonService.getAll())
+            .thenAccept(toHopList -> {
+                SwingUtilities.invokeLater(() -> {
+                    List<String> maToHops = toHopList.stream()
+                        .map(th -> th.getMatohop())
+                        .distinct()
+                        .collect(Collectors.toList());
+                    
+                    toolbar.addDynamicFilterCategory("Tổ Hợp", -1, maToHops, (col, val) -> {
+                        applyFilter("nganhToHop.toHopMon.matohop", val);
+                    });
+                });
+            });
+
+        if (toolbar.getBtnImport() != null) {
+            toolbar.getBtnImport().addActionListener(e -> {
+                JFileChooser fileChooser = new JFileChooser();
+                fileChooser.setDialogTitle("Chọn file Excel chứa Điểm chuẩn");
+                if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+                    importExcel(fileChooser.getSelectedFile());
+                }
+            });
+        }
+    }
+
+    private void importExcel(File file) {
+        DotTuyenSinh selectedDot = (DotTuyenSinh) cbDotFilter.getSelectedItem();
+        if (selectedDot == null) {
+            showError("Vui lòng chọn một Đợt tuyển sinh trước khi Import!");
+            return;
+        }
+
+        try {
+            List<DiemChuanImportDTO> importedData = ExcelReaderUtil.readExcel(file, DiemChuanImportDTO.class);
+            if (importedData == null || importedData.isEmpty()) {
+                showError("File Excel rỗng hoặc không đúng định dạng!");
+                return;
+            }
+
+            // Load tất cả DiemChuanDot của đợt hiện tại
+            Map<String, Object> filter = new java.util.HashMap<>();
+            filter.put("dotTuyenSinh.id", selectedDot.getId());
+            
+            // Lấy toàn bộ (không phân trang) để map với dữ liệu excel
+            List<DiemChuanDot> allCurrentDots = service.findPage("", filter, 1, Integer.MAX_VALUE).get();
+            
+            int updatedCount = 0;
+            List<DiemChuanDot> batchUpdateList = new ArrayList<>();
+
+            for (DiemChuanImportDTO dto : importedData) {
+                if (dto.getMaNganh() == null || dto.getMaToHop() == null || dto.getDiemChuan() == null) continue;
+
+                for (DiemChuanDot dc : allCurrentDots) {
+                    String nganh = dc.getNganhToHop().getNganh().getManganh();
+                    String toHop = dc.getNganhToHop().getToHopMon().getMatohop();
+                    
+                    if (nganh.equalsIgnoreCase(dto.getMaNganh().trim()) && 
+                        toHop.equalsIgnoreCase(dto.getMaToHop().trim())) {
+                        
+                        dc.setDiemChuan(dto.getDiemChuan());
+                        batchUpdateList.add(dc);
+                        updatedCount++;
+                        break;
+                    }
+                }
+            }
+
+            if (!batchUpdateList.isEmpty()) {
+                dcService.updateBatch(batchUpdateList);
+                SystemLogger.log(null, "System", "Import Excel: Đã cập nhật " + updatedCount + " điểm chuẩn cho Đợt ID=" + selectedDot.getId(), true);
+                showSuccess("Cập nhật thành công " + updatedCount + " điểm chuẩn từ file Excel!");
+                loadTableData();
+            } else {
+                showError("Không tìm thấy ngành/tổ hợp nào khớp với dữ liệu trong file!");
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            showError("Lỗi khi đọc file Excel: " + e.getMessage());
+        }
+    }
+
+    @Override
     public Object[] toTableRow(DiemChuanDot dc) {
         try {
             return new Object[]{
@@ -146,6 +259,9 @@ public class DiemChuanPanel extends BaseTablePanel<DiemChuanDot> {
         // TẠO MAP MỚI thay vì clear map cũ để tránh side effects
         Map<String, Object> newFilters = new java.util.HashMap<>();
         newFilters.put("dotTuyenSinh.id", selected.getId());
+        if (flt != null) {
+            newFilters.putAll(flt);
+        }
         
         System.out.println("fetchPage: Đợt ID=" + selected.getId() + ", keyword='" + kw + "', page=" + page + ", size=" + size);
         
@@ -167,7 +283,9 @@ public class DiemChuanPanel extends BaseTablePanel<DiemChuanDot> {
                 }
             }
             
-            this.listDataPage = list;
+            // Bỏ gán listDataPage ở đây vì đang chạy khác thread (ForkJoinPool)
+            // Sẽ gán lại ở EDT cùng lúc với tableModel để đảm bảo đồng bộ
+            // this.listDataPage = list;
             return list;
         }).exceptionally(ex -> {
             System.err.println("fetchPage exception: " + ex.getMessage());
@@ -186,6 +304,9 @@ public class DiemChuanPanel extends BaseTablePanel<DiemChuanDot> {
 
         Map<String, Object> newFilters = new java.util.HashMap<>();
         newFilters.put("dotTuyenSinh.id", selected.getId());
+        if (flt != null) {
+            newFilters.putAll(flt);
+        }
         
         System.out.println("fetchCount: Đợt ID=" + selected.getId() + ", keyword='" + kw + "'");
         
@@ -228,6 +349,8 @@ public class DiemChuanPanel extends BaseTablePanel<DiemChuanDot> {
                 System.out.println("loadTableData got " + list.size() + " items, total=" + total);
 
                 SwingUtilities.invokeLater(() -> {
+                    // Đảm bảo listDataPage và tableModel được cập nhật cùng lúc trên EDT
+                    this.listDataPage = list;
                     tableModel.setRowCount(0);
                     for (DiemChuanDot entity : list) {
                         Object[] row = toTableRow(entity);

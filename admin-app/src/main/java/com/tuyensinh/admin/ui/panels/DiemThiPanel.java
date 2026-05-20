@@ -19,8 +19,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Panel Quản lý Điểm Thi – thiết kế Master-Detail.
- *
+ * * Panel Quản lý Điểm Thi – thiết kế Master-Detail.
  * Giải pháp UX:
  * 1. Cột động theo phương thức (THPT / VSAT / DGNL / Tất cả).
  * 2. Tiêu đề cột tiếng Việt rõ nghĩa.

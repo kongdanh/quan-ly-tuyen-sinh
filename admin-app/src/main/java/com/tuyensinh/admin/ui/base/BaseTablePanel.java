@@ -81,6 +81,15 @@ public abstract class BaseTablePanel<T> extends JPanel {
         card.add(paginationPanel, BorderLayout.SOUTH);
 
         add(card, BorderLayout.CENTER);
+
+        // Auto-refresh data when panel is shown
+        addComponentListener(new java.awt.event.ComponentAdapter() {
+            @Override
+            public void componentShown(java.awt.event.ComponentEvent e) {
+                // If a module relies on activeFilters we might want to keep the current filters and just refresh
+                loadTableData();
+            }
+        });
     }
 
     // ================================================================
@@ -206,6 +215,9 @@ public abstract class BaseTablePanel<T> extends JPanel {
      * Load data từ DB vào bảng — dùng CompletableFuture để không block EDT.
      */
     protected void loadTableData() {
+        if (table != null && table.isEditing()) {
+            table.getCellEditor().cancelCellEditing();
+        }
         System.out.println("loadTableData() called with keyword='" + currentSearchKeyword + "', page=" + currentPage + ", filters=" + activeFilters);
         paginationPanel.setEnabled(false);
 

@@ -19,7 +19,7 @@ public class HoSoTuyenSinhFormDialog extends BaseFormDialog<HoSoTuyenSinh> {
     private final NguyenVongService nvService = new NguyenVongService();
     
     private RoundedTextField txtCccd, txtHoTen, txtEmail, txtSdt, txtNgaySinh, txtGioiTinh, txtNoiSinh, txtKhuVuc, txtDoiTuong;
-    private RoundedTextField txtMaHoSo, txtDiem;
+    private RoundedTextField txtMaHoSo, txtDiem, txtMaxToHop, txtDiemVsat, txtDiemDgnl;
     private JComboBox<String> cbTrangThai;
     private JTable tbNguyenVong;
     private DefaultTableModel nvModel;
@@ -51,6 +51,10 @@ public class HoSoTuyenSinhFormDialog extends BaseFormDialog<HoSoTuyenSinh> {
         txtKhuVuc = new RoundedTextField(""); txtKhuVuc.setEnabled(false);
         txtDoiTuong = new RoundedTextField(""); txtDoiTuong.setEnabled(false);
 
+        txtMaxToHop = new RoundedTextField(""); txtMaxToHop.setEnabled(false);
+        txtDiemVsat = new RoundedTextField(""); txtDiemVsat.setEnabled(false);
+        txtDiemDgnl = new RoundedTextField(""); txtDiemDgnl.setEnabled(false);
+
         addSectionHeader(leftPanel, "THÔNG TIN THÍ SINH");
         addLeftField(leftPanel, "CCCD:", txtCccd);
         addLeftField(leftPanel, "Họ tên:", txtHoTen);
@@ -60,7 +64,12 @@ public class HoSoTuyenSinhFormDialog extends BaseFormDialog<HoSoTuyenSinh> {
         addLeftField(leftPanel, "Ưu tiên:", txtDoiTuong);
         addLeftField(leftPanel, "Email:", txtEmail);
         addLeftField(leftPanel, "Điện thoại:", txtSdt);
-        // addLeftField(leftPanel, "Nơi sinh:", txtNoiSinh); // Ẩn bớt cho gọn
+
+        leftPanel.add(Box.createVerticalStrut(10));
+        addSectionHeader(leftPanel, "ĐIỂM XÉT TUYỂN CHI TIẾT");
+        addLeftField(leftPanel, "Tổ hợp tối ưu:", txtMaxToHop);
+        addLeftField(leftPanel, "Điểm VSAT:", txtDiemVsat);
+        addLeftField(leftPanel, "Điểm ĐGNL:", txtDiemDgnl);
 
         // RIGHT PANEL: Thông tin hồ sơ & Nguyện vọng
         JPanel rightPanel = new JPanel();
@@ -109,7 +118,7 @@ public class HoSoTuyenSinhFormDialog extends BaseFormDialog<HoSoTuyenSinh> {
         row.setMaximumSize(new Dimension(1000, 30));
         
         JLabel lbl = new JLabel(label);
-        lbl.setPreferredSize(new Dimension(75, 26));
+        lbl.setPreferredSize(new Dimension(95, 26));
         lbl.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         
         row.add(lbl, BorderLayout.WEST);
@@ -138,6 +147,30 @@ public class HoSoTuyenSinhFormDialog extends BaseFormDialog<HoSoTuyenSinh> {
         
         txtDiem.setText(hs.getTongDiemXetTuyen() != null ? String.valueOf(hs.getTongDiemXetTuyen()) : "0.0");
         cbTrangThai.setSelectedItem(hs.getTrangThai());
+        
+        if (hs.getThiSinh() != null) {
+            com.tuyensinh.service.DiemService diemService = new com.tuyensinh.service.DiemService();
+            diemService.findByCccd(hs.getThiSinh().getCccd()).ifPresentOrElse(diem -> {
+                java.util.Map<String, Object> maxToHop = diemService.tinhMaxToHop(diem);
+                if (maxToHop != null) {
+                    txtMaxToHop.setText(maxToHop.get("name") + " (" + maxToHop.get("totalStr") + ")");
+                } else {
+                    txtMaxToHop.setText("Chưa đủ điểm");
+                }
+                
+                txtDiemDgnl.setText(diem.getNl1() != null ? diem.getNl1().toString() : "Không có");
+                
+                if ("VSAT".equals(diem.getDPhuongthuc())) {
+                    txtDiemVsat.setText("Đã cập nhật");
+                } else {
+                    txtDiemVsat.setText("Không có");
+                }
+            }, () -> {
+                txtMaxToHop.setText("Chưa có điểm thi");
+                txtDiemVsat.setText("Không có");
+                txtDiemDgnl.setText("Không có");
+            });
+        }
     }
     
     // Hàm gọi DB lấy nguyện vọng của hồ sơ này

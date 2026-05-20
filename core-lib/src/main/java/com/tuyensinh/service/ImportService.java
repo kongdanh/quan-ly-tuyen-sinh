@@ -57,8 +57,8 @@ public class ImportService {
                     ts.setCccd(dto.getCccd());
                     ts.setSobaodanh(dto.getSoBaoDanh());
                     
-                    if (dto.getHoTen() != null && !dto.getHoTen().trim().isEmpty()) {
-                        String fullName = dto.getHoTen().trim();
+                    String fullName = trimToNull(dto.getHoTen());
+                    if (fullName != null) {
                         int lastSpace = fullName.lastIndexOf(' ');
                         if (lastSpace > 0) {
                             ts.setHo(fullName.substring(0, lastSpace));
@@ -68,15 +68,18 @@ public class ImportService {
                             ts.setTen(fullName);
                         }
                     } else {
-                        ts.setHo(dto.getHo());
-                        ts.setTen(dto.getTen());
+                        ts.setHo(trimToNull(dto.getHo()));
+                        ts.setTen(trimToNull(dto.getTen()));
                     }
                     
-                    String ngaySinh = dto.getNgaySinh(); 
+                    String ngaySinh = pickFirstNonBlank(dto.getNgaySinh(), dto.getNgaySinhAlt());
                     ts.setNgaySinh(ngaySinh);
                     ts.setDienThoai(dto.getDienThoai());
-                    ts.setGioiTinh(dto.getGioiTinh());
+                    ts.setGioiTinh(pickFirstNonBlank(dto.getGioiTinh(), dto.getGioiTinhAlt()));
                     ts.setEmail(dto.getEmail());
+                    ts.setNoiSinh(dto.getNoiSinh());
+                    ts.setDoiTuong(dto.getDoiTuongUuTien());
+                    ts.setKhuVuc(dto.getKhuVucUuTien());
 
                     ThiSinhAccount account = new ThiSinhAccount();
                     String rawPassword = (ngaySinh != null && !ngaySinh.isEmpty()) ? ngaySinh : "123456"; 
@@ -110,6 +113,9 @@ public class ImportService {
                                 existing.setDienThoai(entity.getDienThoai());
                                 existing.setGioiTinh(entity.getGioiTinh());
                                 existing.setEmail(entity.getEmail());
+                                existing.setNoiSinh(entity.getNoiSinh());
+                                existing.setDoiTuong(entity.getDoiTuong());
+                                existing.setKhuVuc(entity.getKhuVuc());
                                 session.merge(existing);
                             }
                             
@@ -160,6 +166,22 @@ public class ImportService {
             System.out.println("[ImportService] Import thi sinh co " + errors.size() + " loi");
         }
         return errors;
+    }
+
+    private static String pickFirstNonBlank(String primary, String secondary) {
+        String first = trimToNull(primary);
+        if (first != null) {
+            return first;
+        }
+        return trimToNull(secondary);
+    }
+
+    private static String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     /**
