@@ -241,9 +241,23 @@ private static final String[] COLUMN_NAMES = {
                 Arrays.asList("Tất cả", "< 100", "100 - 150", "150 - 200", "> 200"),
                 (col, val) -> { if ("Tất cả".equals(val)) activeFilters.remove("nChitieuRange"); else activeFilters.put("nChitieuRange", val); currentPage = 1; loadTableData(); });
 
-        toolbar.addDynamicFilterCategory("Xét tuyển thẳng", -1,
-                Arrays.asList("Tất cả", "Có", "Không"),
-                (col, val) -> { if ("Tất cả".equals(val)) activeFilters.remove("nTuyenthang"); else applyFilter("nTuyenthang", "Có".equals(val) ? "1" : "0"); });
+        toolbar.addDynamicFilterCategory("Phương thức", -1,
+                Arrays.asList("Tất cả", "Xét tuyển thẳng", "ĐGNL", "THPT", "VSAT"),
+                (col, val) -> {
+                    activeFilters.remove("nTuyenthang");
+                    activeFilters.remove("nDgnl");
+                    activeFilters.remove("nThpt");
+                    activeFilters.remove("nVsat");
+                    if (!"Tất cả".equals(val)) {
+                        switch(val) {
+                            case "Xét tuyển thẳng": activeFilters.put("nTuyenthang", "1"); break;
+                            case "ĐGNL": activeFilters.put("nDgnl", "1"); break;
+                            case "THPT": activeFilters.put("nThpt", "1"); break;
+                            case "VSAT": activeFilters.put("nVsat", "1"); break;
+                        }
+                    }
+                    currentPage = 1; loadTableData();
+                });
 
         toolbar.getBtnImport().addActionListener(e -> importExcel());
 

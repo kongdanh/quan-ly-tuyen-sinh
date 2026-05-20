@@ -43,6 +43,12 @@ public class ThongKePanel extends JPanel {
     private DefaultTableModel modelNganh;
     private JTable tblPhuongThuc;
     private DefaultTableModel modelPhuongThuc;
+    private JPanel pnlTopTinhThanh;
+    private JTable tblTinhThanh;
+    private DefaultTableModel modelTinhThanh;
+    private JPanel pnlDoiTuong;
+    private JTable tblDoiTuong;
+    private DefaultTableModel modelDoiTuong;
     
     public ThongKePanel() {
         setLayout(new BorderLayout());
@@ -50,6 +56,13 @@ public class ThongKePanel extends JPanel {
         initHeader();
         initMainTabs();
         loadInitialData();
+
+        addComponentListener(new java.awt.event.ComponentAdapter() {
+            @Override
+            public void componentShown(java.awt.event.ComponentEvent e) {
+                reloadAllData();
+            }
+        });
     }
     
     private void initHeader() {
@@ -111,18 +124,86 @@ public class ThongKePanel extends JPanel {
         JPanel panel = new JPanel(new BorderLayout(0, 20));
         panel.setOpaque(false);
         
-        // Hàng 1: Giới tính + Khu vực
+        // Hàng 1: Giới tính + Khu vực (2 biểu đồ tròn)
         JPanel row1 = new JPanel(new GridLayout(1, 2, 15, 0));
         row1.setOpaque(false);
         panel.add(row1, BorderLayout.NORTH);
+        pnlStudentCharts = row1;
         
-        // Hàng 2: Top tỉnh thành
-        JPanel row2 = new JPanel(new BorderLayout());
+        // Hàng 2: Top tỉnh thành + Đối tượng ưu tiên (2 table)
+        JPanel row2 = new JPanel(new GridLayout(1, 2, 15, 0));
         row2.setOpaque(false);
         row2.setBorder(new EmptyBorder(15, 0, 0, 0));
-        panel.add(row2, BorderLayout.CENTER);
         
-        pnlStudentCharts = row1;
+        // Bảng Tỉnh/Thành
+        String[] colsTT = {"Tỉnh/Thành", "Số lượng thí sinh"};
+        modelTinhThanh = new DefaultTableModel(colsTT, 0) {
+            @Override public boolean isCellEditable(int r, int c) { return false; }
+        };
+        tblTinhThanh = new JTable(modelTinhThanh);
+        tblTinhThanh.setRowHeight(30);
+        tblTinhThanh.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        tblTinhThanh.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
+        
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
+        tblTinhThanh.getColumnModel().getColumn(1).setCellRenderer(centerRenderer);
+        
+        JScrollPane scrollTT = new JScrollPane(tblTinhThanh);
+        scrollTT.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200)));
+        
+        JPanel wrapperTT = new JPanel(new BorderLayout());
+        wrapperTT.setBackground(Color.WHITE);
+        wrapperTT.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(200, 200, 200)),
+            new EmptyBorder(12, 12, 12, 12)
+        ));
+        JLabel lblTT = new JLabel("Top Tỉnh/Thành có nhiều thí sinh");
+        lblTT.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        lblTT.setForeground(new Color(33, 37, 41));
+        lblTT.setBorder(new EmptyBorder(0, 0, 10, 0));
+        wrapperTT.add(lblTT, BorderLayout.NORTH);
+        wrapperTT.add(scrollTT, BorderLayout.CENTER);
+        
+        pnlTopTinhThanh = new JPanel(new BorderLayout());
+        pnlTopTinhThanh.setOpaque(false);
+        pnlTopTinhThanh.add(wrapperTT, BorderLayout.CENTER);
+        row2.add(pnlTopTinhThanh);
+        
+        // Bảng Đối tượng ưu tiên
+        String[] colsDt = {"Đối tượng ưu tiên", "Số lượng thí sinh"};
+        modelDoiTuong = new DefaultTableModel(colsDt, 0) {
+            @Override public boolean isCellEditable(int r, int c) { return false; }
+        };
+        tblDoiTuong = new JTable(modelDoiTuong);
+        tblDoiTuong.setRowHeight(30);
+        tblDoiTuong.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        tblDoiTuong.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
+        
+        tblDoiTuong.getColumnModel().getColumn(1).setCellRenderer(centerRenderer);
+        
+        JScrollPane scrollDt = new JScrollPane(tblDoiTuong);
+        scrollDt.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200)));
+        
+        JPanel wrapperDt = new JPanel(new BorderLayout());
+        wrapperDt.setBackground(Color.WHITE);
+        wrapperDt.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(200, 200, 200)),
+            new EmptyBorder(12, 12, 12, 12)
+        ));
+        JLabel lblDt = new JLabel("Thống kê theo Đối tượng");
+        lblDt.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        lblDt.setForeground(new Color(33, 37, 41));
+        lblDt.setBorder(new EmptyBorder(0, 0, 10, 0));
+        wrapperDt.add(lblDt, BorderLayout.NORTH);
+        wrapperDt.add(scrollDt, BorderLayout.CENTER);
+        
+        JPanel pnlDoiTuongWrapper = new JPanel(new BorderLayout());
+        pnlDoiTuongWrapper.setOpaque(false);
+        pnlDoiTuongWrapper.add(wrapperDt, BorderLayout.CENTER);
+        row2.add(pnlDoiTuongWrapper);
+        
+        panel.add(row2, BorderLayout.CENTER);
         
         return panel;
     }
@@ -220,6 +301,7 @@ public class ThongKePanel extends JPanel {
         loadGioiTinh(idDot);
         loadKhuVuc(idDot);
         loadTopTinhThanh(idDot);
+        loadDoiTuongUuTien(idDot);
         
         // Tab Ngành
         loadTopNganh(idDot);
@@ -299,30 +381,18 @@ public class ThongKePanel extends JPanel {
     
     private void loadTopTinhThanh(Integer idDot) {
         tkService.getTopTinhThanh(idDot, 10).thenAccept(data -> SwingUtilities.invokeLater(() -> {
-            // Tìm panel chứa top tỉnh thành trong layout
-            JPanel parent = (JPanel) pnlStudentCharts.getParent();
-            if (parent != null && parent.getComponentCount() > 1) {
-                JPanel wrapper = createBarChartWrapper("Top 10 tỉnh/thành có nhiều thí sinh", data, "Tỉnh/Thành", "Số thí sinh", false);
-                Component oldComp = parent.getComponent(1);
-                if (oldComp instanceof JScrollPane) {
-                    parent.remove(1);
-                    JScrollPane scroll = new JScrollPane(wrapper);
-                    scroll.setBorder(null);
-                    scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-                    parent.add(scroll, BorderLayout.CENTER);
-                } else {
-                    parent.remove(1);
-                    JScrollPane scroll = new JScrollPane(wrapper);
-                    scroll.setBorder(null);
-                    parent.add(scroll, BorderLayout.CENTER);
-                }
-                parent.revalidate();
-            } else {
-                JPanel wrapper = createBarChartWrapper("Top 10 tỉnh/thành có nhiều thí sinh", data, "Tỉnh/Thành", "Số thí sinh", false);
-                JScrollPane scroll = new JScrollPane(wrapper);
-                scroll.setBorder(null);
-                pnlStudentCharts.getParent().add(scroll, BorderLayout.CENTER);
-                pnlStudentCharts.getParent().revalidate();
+            modelTinhThanh.setRowCount(0);
+            for (Map.Entry<String, Long> entry : data.entrySet()) {
+                modelTinhThanh.addRow(new Object[]{entry.getKey(), entry.getValue()});
+            }
+        }));
+    }
+    
+    private void loadDoiTuongUuTien(Integer idDot) {
+        tkService.getThongKeDoiTuongUuTien(idDot).thenAccept(data -> SwingUtilities.invokeLater(() -> {
+            modelDoiTuong.setRowCount(0);
+            for (Map.Entry<String, Long> entry : data.entrySet()) {
+                modelDoiTuong.addRow(new Object[]{entry.getKey(), entry.getValue()});
             }
         }));
     }

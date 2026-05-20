@@ -127,9 +127,16 @@ public class ThiSinhPanel extends BaseTablePanel<ThiSinh> {
 
         // Filter khu vuc
         toolbar.addDynamicFilterCategory(
-            "Khu Vực", 7,
+            "Khu Vực", -1,
             Arrays.asList("Tất cả", "1", "2", "2NT", "3"),
             (col, val) -> applyFilter("khuVuc", "Tất cả".equals(val) ? "" : val)
+        );
+
+        // Filter doi tuong
+        toolbar.addDynamicFilterCategory(
+            "Đối tượng", -1,
+            Arrays.asList("Tất cả", "UT1", "UT2", "UT3","Không"),
+            (col, val) -> applyFilter("doiTuong", "Tất cả".equals(val) ? "" : val)
         );
 
         // Import Excel

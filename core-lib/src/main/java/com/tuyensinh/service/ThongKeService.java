@@ -222,12 +222,12 @@ public class ThongKeService {
         return CompletableFuture.supplyAsync(() -> {
             Map<String, Long> map = new LinkedHashMap<>();
             try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-                String hql = "SELECT h.thiSinh.tinhThanh, COUNT(DISTINCT h.thiSinh.id) FROM HoSoTuyenSinh h ";
+                String hql = "SELECT h.thiSinh.noiSinh, COUNT(DISTINCT h.thiSinh.id) FROM HoSoTuyenSinh h WHERE 1=1 ";
                 if (idDot != null && idDot > 0) {
-                    hql += " WHERE h.dotTuyenSinh.id = :idDot ";
+                    hql += " AND h.dotTuyenSinh.id = :idDot ";
                 }
-                hql += " AND h.thiSinh.tinhThanh IS NOT NULL AND h.thiSinh.tinhThanh != '' ";
-                hql += " GROUP BY h.thiSinh.tinhThanh ORDER BY COUNT(DISTINCT h.thiSinh.id) DESC";
+                hql += " AND h.thiSinh.noiSinh IS NOT NULL AND h.thiSinh.noiSinh != '' ";
+                hql += " GROUP BY h.thiSinh.noiSinh ORDER BY COUNT(DISTINCT h.thiSinh.id) DESC";
                 
                 var query = session.createQuery(hql, Object[].class);
                 if (idDot != null && idDot > 0) query.setParameter("idDot", idDot);
