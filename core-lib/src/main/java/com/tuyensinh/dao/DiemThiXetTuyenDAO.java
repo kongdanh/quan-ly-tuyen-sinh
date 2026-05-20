@@ -25,6 +25,7 @@ public class DiemThiXetTuyenDAO extends GenericDAO<DiemThiXetTuyen> {
             String hql = "SELECT d FROM DiemThiXetTuyen d WHERE d.cccd = :cccd";
             DiemThiXetTuyen diem = session.createQuery(hql, DiemThiXetTuyen.class)
                     .setParameter("cccd", cccd)
+                    .setMaxResults(1)
                     .uniqueResult();
             return Optional.ofNullable(diem);
         }
