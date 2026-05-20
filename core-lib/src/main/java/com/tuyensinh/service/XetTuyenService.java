@@ -650,10 +650,10 @@ public class XetTuyenService {
                 String manganh = nth.getNganh().getManganh();
                 String matohop = nth.getToHopMon().getMatohop();
 
-                List<BangQuyDoi> bp = bqCache.computeIfAbsent(matohop, k -> bangQuyDoiDAO.findAllByPhuongThucAndMon("DGNL", k));
+                List<BangQuyDoi> bp = bqCache.computeIfAbsent("NL1", k -> bangQuyDoiDAO.findAllByPhuongThucAndMon("DGNL", "NL1"));
 
                 if (bp.isEmpty()) {
-                    missingBangQuyDoi.add(matohop);
+                    missingBangQuyDoi.add("NL1");
                     continue;
                 }
 
