@@ -123,16 +123,27 @@ public class XetTuyenService {
             System.out.println("[Cache] Pre-loaded " + diemThiMap.size() + " DiemThiXetTuyen records");
 
             // ═══ BƯỚC 4: Pre-load DiemCong (sử dụng HQL để giữ Entity Relationship) ════
-            // Lưu ý: Dùng HQL "FROM DiemCong WHERE thiSinh.cccd IN :cccds" để tránh SemanticException
+            // Query theo đúng dc_keys để tối ưu hiệu năng và tránh join không cần thiết
             Map<String, DiemCong> diemCongMap = new HashMap<>();
-            if (!cccdSet.isEmpty()) {
-                String hqlDiemCong = "FROM DiemCong dc WHERE dc.thiSinh.cccd IN :cccds";
-                Query<DiemCong> queryDiemCong = session.createQuery(hqlDiemCong, DiemCong.class);
-                queryDiemCong.setParameter("cccds", cccdSet);
-                List<DiemCong> allDiemCong = queryDiemCong.getResultList();
-                for (DiemCong dc : allDiemCong) {
-                    if (dc.getDcKeys() != null) {
-                        diemCongMap.put(dc.getDcKeys().trim(), dc);
+            if (!listNV.isEmpty()) {
+                Set<String> dcKeysSet = new HashSet<>();
+                for (NguyenVong nv : listNV) {
+                    if (nv.getThiSinh() != null && nv.getNganh() != null && nv.getTtThm() != null) {
+                        String cccd = nv.getThiSinh().getCccd().trim();
+                        String manganh = nv.getNganh().getManganh().trim().toUpperCase();
+                        String matohop = nv.getTtThm().trim().toUpperCase();
+                        dcKeysSet.add(cccd + "_" + manganh + "_" + matohop);
+                    }
+                }
+                if (!dcKeysSet.isEmpty()) {
+                    String hqlDiemCong = "FROM DiemCong dc WHERE dc.dcKeys IN :dcKeys";
+                    Query<DiemCong> queryDiemCong = session.createQuery(hqlDiemCong, DiemCong.class);
+                    queryDiemCong.setParameter("dcKeys", dcKeysSet);
+                    List<DiemCong> allDiemCong = queryDiemCong.getResultList();
+                    for (DiemCong dc : allDiemCong) {
+                        if (dc.getDcKeys() != null) {
+                            diemCongMap.put(dc.getDcKeys().trim(), dc);
+                        }
                     }
                 }
             }
@@ -542,24 +553,30 @@ public class XetTuyenService {
             }
 
             // ════ STEP 2: Pre-load all DiemCong into Map to prevent N+1 queries ════
-            // Extract all CCCD values from the list
-            Set<String> cccdSet = new HashSet<>();
-            for (NguyenVong nv : nguyenVongList) {
-                if (nv.getThiSinh() != null && nv.getThiSinh().getCccd() != null) {
-                    cccdSet.add(nv.getThiSinh().getCccd());
-                }
-            }
-
+            // Query theo đúng dc_keys để tối ưu hiệu năng và tránh join không cần thiết
             Map<String, DiemCong> diemCongMap = new HashMap<>();
-            if (!cccdSet.isEmpty()) {
-                String hqlDC = "FROM DiemCong dc WHERE dc.thiSinh.cccd IN :cccds";
-                Query<DiemCong> queryDC = session.createQuery(hqlDC, DiemCong.class);
-                queryDC.setParameter("cccds", cccdSet);
-                List<DiemCong> allDiemCong = queryDC.getResultList();
+            if (!nguyenVongList.isEmpty()) {
+                Set<String> dcKeysSet = new HashSet<>();
+                for (NguyenVong nv : nguyenVongList) {
+                    if (nv.getThiSinh() != null && nv.getThiSinh().getCccd() != null &&
+                            nv.getNganh() != null && nv.getNganh().getManganh() != null &&
+                            nv.getTtThm() != null) {
+                        String cccd = nv.getThiSinh().getCccd().trim();
+                        String manganh = nv.getNganh().getManganh().trim().toUpperCase();
+                        String matohop = nv.getTtThm().trim().toUpperCase();
+                        dcKeysSet.add(cccd + "_" + manganh + "_" + matohop);
+                    }
+                }
+                if (!dcKeysSet.isEmpty()) {
+                    String hqlDC = "FROM DiemCong dc WHERE dc.dcKeys IN :dcKeys";
+                    Query<DiemCong> queryDC = session.createQuery(hqlDC, DiemCong.class);
+                    queryDC.setParameter("dcKeys", dcKeysSet);
+                    List<DiemCong> allDiemCong = queryDC.getResultList();
 
-                for (DiemCong dc : allDiemCong) {
-                    if (dc.getDcKeys() != null) {
-                        diemCongMap.put(dc.getDcKeys().trim(), dc);
+                    for (DiemCong dc : allDiemCong) {
+                        if (dc.getDcKeys() != null) {
+                            diemCongMap.put(dc.getDcKeys().trim(), dc);
+                        }
                     }
                 }
             }
